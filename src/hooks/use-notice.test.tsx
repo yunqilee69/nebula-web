@@ -5,7 +5,7 @@ describe('useNotice', () => {
   it('returns the shared notice api for React components', async () => {
     const [{ useNotice }, { notice }] = await Promise.all([
       import('./use-notice'),
-      import('../app/notice'),
+      import('../providers/notice'),
     ]);
 
     const { result } = renderHook(() => useNotice());

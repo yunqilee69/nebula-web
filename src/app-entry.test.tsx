@@ -115,7 +115,7 @@ describe('app entry wiring', () => {
         request: async (config: { url?: string }): Promise<unknown> => {
           switch (config.url) {
             case '/api/auth/users/page':
-              return { records: [], total: 0 };
+              return { data: [], total: 0 };
             case '/api/auth/roles/list':
             case '/api/auth/orgs/list':
               return [];
@@ -165,8 +165,7 @@ describe('app entry wiring', () => {
     await waitFor(() => {
       expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
     });
-    expect(await screen.findByTestId('ne-table-search')).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /用户管理/ })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /用户管理/ })).toHaveClass('ant-menu-item-selected');
     expect(screen.getByRole('menuitem', { name: /组织管理/ })).toBeInTheDocument();
 
     useAuthStore.setState({ refreshUser: originalRefreshUser });
@@ -223,7 +222,7 @@ describe('app entry wiring', () => {
                 ],
               };
             case '/api/auth/users/page':
-              return { records: [], total: 0 };
+              return { data: [], total: 0 };
             case '/api/auth/roles/list':
             case '/api/auth/orgs/list':
               return [];

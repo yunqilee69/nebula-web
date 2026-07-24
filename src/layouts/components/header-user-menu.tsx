@@ -2,9 +2,10 @@ import { Avatar, Button, Drawer, Dropdown, Radio, Space, Typography, theme as an
 import type { MenuProps } from 'antd';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createStyles } from 'antd-style';
 import type { NebulaLocale } from '@/i18n/types';
-import { useNebulaLoginBadge } from '@/auth/login-badge-context';
-import { clearAuthTokens } from '@/auth/token-session';
+import { useNebulaLoginBadge } from '@/providers/login-badge-provider';
+import { clearAuthTokens } from '@/utils/auth/token-session';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNebulaTheme } from '@/hooks/use-nebula-theme';
 import { useAuthStore } from '@/stores/auth-store';
@@ -14,6 +15,20 @@ interface HeaderUserMenuProps {
   onOpenProfile: () => void;
 }
 
+const useStyles = createStyles(({ token }) => ({
+  trigger: {
+    height: 40,
+    paddingInline: token.paddingXS,
+    borderRadius: token.borderRadiusLG,
+  },
+  avatar: {
+    background: token.colorPrimary,
+  },
+  displayName: {
+    maxWidth: 128,
+  },
+}));
+
 function getAvatarFallback(name: string): string {
   return Array.from(name.trim())[0]?.toUpperCase() ?? '?';
 }
@@ -21,6 +36,7 @@ function getAvatarFallback(name: string): string {
 export function HeaderUserMenu({ onOpenProfile }: HeaderUserMenuProps) {
   const navigate = useNavigate();
   const { token } = antdTheme.useToken();
+  const { styles } = useStyles();
   const loginBadge = useNebulaLoginBadge();
   const { locale, setLocale, t } = useNebulaI18n();
   const mode = useNebulaTheme((state) => state.mode);
@@ -97,17 +113,13 @@ export function HeaderUserMenu({ onOpenProfile }: HeaderUserMenuProps) {
         <Button
           type="text"
           aria-label={displayName}
-          style={{
-            height: 40,
-            paddingInline: token.paddingXS,
-            borderRadius: token.borderRadiusLG,
-          }}
+          className={styles.trigger}
         >
           <Space size={token.marginXS} align="center">
-            <Avatar src={user?.avatar} alt={displayName} size={32} style={{ background: token.colorPrimary }}>
+            <Avatar src={user?.avatar} alt={displayName} size={32} className={styles.avatar}>
               {getAvatarFallback(displayName)}
             </Avatar>
-            <Typography.Text strong ellipsis style={{ maxWidth: 128 }}>
+            <Typography.Text strong ellipsis className={styles.displayName}>
               {displayName}
             </Typography.Text>
           </Space>
@@ -127,8 +139,8 @@ export function HeaderUserMenu({ onOpenProfile }: HeaderUserMenuProps) {
           </Space>
         }
       >
-        <Space orientation="vertical" size={token.marginLG} style={{ width: '100%' }}>
-          <Space orientation="vertical" size={token.marginXS} style={{ width: '100%' }}>
+        <Space orientation="vertical" size={token.marginLG} className="w-full">
+          <Space orientation="vertical" size={token.marginXS} className="w-full">
             <Typography.Text strong>{t('layout.headerUser.themeLabel')}</Typography.Text>
             <Radio.Group
               optionType="button"
@@ -141,7 +153,7 @@ export function HeaderUserMenu({ onOpenProfile }: HeaderUserMenuProps) {
               ]}
             />
           </Space>
-          <Space orientation="vertical" size={token.marginXS} style={{ width: '100%' }}>
+          <Space orientation="vertical" size={token.marginXS} className="w-full">
             <Typography.Text strong>{t('layout.headerUser.languageLabel')}</Typography.Text>
             <Radio.Group
               optionType="button"

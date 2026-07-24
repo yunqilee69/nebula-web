@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AuthAdapter, CurrentUser, Organization } from '@/auth/types';
+import type { AuthAdapter, CurrentUser, Organization } from '@/types/auth';
 
 export interface AuthState {
   user: CurrentUser | null;

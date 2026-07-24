@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { NebulaProvider } from '@/app/nebula-provider';
+import { NebulaProvider } from '@/providers/nebula-provider';
 import type { AuthManagementService } from '@/services/auth-management';
 import { useLocaleStore } from '@/stores/locale-store';
 import type { PageResp, UserResp } from '@/types/auth-management';
@@ -10,7 +10,7 @@ import { UserManagementPage } from './index';
 function createService(overrides: Partial<AuthManagementService> = {}): AuthManagementService {
   return {
     pageUsers: vi.fn().mockResolvedValue({
-      records: [
+      data: [
         { id: 'user-1', username: 'yunqi', nickname: '云起', email: 'yunqi@cludix.com', phone: '13800000001', status: 1 },
       ],
       total: 1,
@@ -21,7 +21,7 @@ function createService(overrides: Partial<AuthManagementService> = {}): AuthMana
     getUserDetail: vi.fn().mockResolvedValue({ id: 'user-1', username: 'yunqi', nickname: '云起', status: 1 }),
     listRoles: vi.fn().mockResolvedValue([{ id: 'role-1', name: '平台管理员', code: 'ADMIN' }]),
     listOrgs: vi.fn().mockResolvedValue([{ id: 'org-1', name: '研发中心', code: 'RND' }]),
-    pageOrgs: vi.fn().mockResolvedValue({ records: [], total: 0 }),
+    pageOrgs: vi.fn().mockResolvedValue({ data: [], total: 0 }),
     getOrgTree: vi.fn().mockResolvedValue([]),
     createOrg: vi.fn().mockResolvedValue(undefined),
     updateOrg: vi.fn().mockResolvedValue(undefined),
@@ -47,17 +47,17 @@ describe('UserManagementPage', () => {
     });
   });
 
-  it('renders a NeTable search area, toolbar, and user rows', async () => {
+  it('renders a ProTable search form, toolbar, and user rows', async () => {
     const service = renderPage();
 
-    expect(screen.getByTestId('ne-table-search')).toBeInTheDocument();
-    expect(screen.getByTestId('ne-table-toolbar')).toBeInTheDocument();
+    expect(screen.getByLabelText('账号')).toBeInTheDocument();
+    expect(screen.getByLabelText('昵称')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /新增用户/ })).toBeInTheDocument();
     expect(await screen.findByText('yunqi')).toBeInTheDocument();
     expect(service.pageUsers).toHaveBeenCalledWith({ pageNum: 1, pageSize: 10 });
   });
 
-  it('submits search values through NeTable request query', async () => {
+  it('submits search values through ProTable request query', async () => {
     const user = userEvent.setup();
     const service = renderPage();
 
@@ -69,7 +69,7 @@ describe('UserManagementPage', () => {
     });
   });
 
-  it('opens the user drawer from the NeTable toolbar', async () => {
+  it('opens the user drawer from the ProTable toolbar', async () => {
     const user = userEvent.setup();
     renderPage();
 

@@ -68,7 +68,7 @@ export const permissionService: PermissionService = {
     return {
       orgs: orgs.map(mapOrgSubject),
       roles: roles.map(mapRoleSubject),
-      users: usersPage.records.map(mapUserSubject),
+      users: usersPage.data.map(mapUserSubject),
     };
   },
 

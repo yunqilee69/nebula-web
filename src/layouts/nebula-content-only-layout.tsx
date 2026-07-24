@@ -1,25 +1,34 @@
-import { Layout, theme as antdTheme } from 'antd';
+import { Layout } from 'antd';
+import { createStyles } from 'antd-style';
 import type { ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 
 const { Content } = Layout;
+
+const useStyles = createStyles(({ token }) => ({
+  root: {
+    minHeight: '100dvh',
+    background: token.colorBgLayout,
+  },
+  content: {
+    minHeight: 0,
+    padding: token.paddingLG,
+    background: token.colorBgLayout,
+  },
+}));
 
 interface NebulaContentOnlyLayoutProps {
   children?: ReactNode;
 }
 
 export function NebulaContentOnlyLayout({ children }: NebulaContentOnlyLayoutProps) {
-  const { token } = antdTheme.useToken();
+  const { styles } = useStyles();
 
   return (
-    <Layout style={{ minHeight: '100vh', background: token.colorBgLayout }}>
+    <Layout className={styles.root}>
       <Content
         role="main"
-        style={{
-          minHeight: 0,
-          padding: token.paddingLG,
-          background: token.colorBgLayout,
-        }}
+        className={styles.content}
       >
         {children ?? <Outlet />}
       </Content>

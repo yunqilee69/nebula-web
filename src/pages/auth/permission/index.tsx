@@ -60,7 +60,7 @@ export function PermissionConfigPage({ service: serviceProp }: PermissionConfigP
     service
       .pageSubjectPermissions({ subjectType: selectedSubject.type, subjectId: selectedSubject.id })
       .then((page) => {
-        if (mounted) setEffectMap(createEffectMap(page.records));
+        if (mounted) setEffectMap(createEffectMap(page.data));
       })
       .catch((error: unknown) => {
         if (!mounted) return;

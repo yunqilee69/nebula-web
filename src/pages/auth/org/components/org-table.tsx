@@ -1,8 +1,8 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { App, Button, Form, Input, Popconfirm, Select, Space, Table, Tag } from 'antd';
-import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
-import { NeTable } from '@/components/ne-table';
-import type { NeTableAction, NeTableRequestParams } from '@/components/ne-table/types';
+import { App, Button, Popconfirm, Tag } from 'antd';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { NebulaProTable } from '@/components/nebula-pro-table';
+import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { AuthManagementService } from '@/services/auth-management';
 import type { EnableStatus, OrgPageReq, OrgResp, OrgType } from '@/types/auth-management';
@@ -24,17 +24,19 @@ interface OrgQuery {
   status?: EnableStatus;
 }
 
-function buildOrgPageReq(params: NeTableRequestParams<OrgQuery>, parentId?: string): OrgPageReq {
+function buildOrgPageReq(params: OrgQuery & NebulaPageReq, parentId?: string): OrgPageReq {
   const req: OrgPageReq = {
-    pageNum: params.current,
+    pageNum: params.pageNum,
     pageSize: params.pageSize,
   };
   if (parentId !== undefined) req.parentId = parentId;
-  const name = params.query.name?.trim() || undefined;
-  const code = params.query.code?.trim() || undefined;
+  if (params.orderName) req.orderName = params.orderName;
+  if (params.orderType) req.orderType = params.orderType;
+  const name = params.name?.trim() || undefined;
+  const code = params.code?.trim() || undefined;
   if (name) req.name = name;
   if (code) req.code = code;
-  if (params.query.status !== undefined) req.status = params.query.status;
+  if (params.status !== undefined) req.status = Number(params.status) as EnableStatus;
   return req;
 }
 
@@ -42,7 +44,8 @@ export const OrgTable = forwardRef<OrgTableHandle, OrgTableProps>(function OrgTa
   { service, parentId, onCreate, onEdit },
   ref,
 ) {
-  const actionRef = useRef<NeTableAction>(null);
+  const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
+  const didMountRef = useRef(false);
   const { message } = App.useApp();
   const { t } = useNebulaI18n();
   const orgTypeLabels: Record<OrgType, string> = {
@@ -55,11 +58,16 @@ export const OrgTable = forwardRef<OrgTableHandle, OrgTableProps>(function OrgTa
     reload: () => actionRef.current?.reload() ?? Promise.resolve(),
   }));
 
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    void actionRef.current?.reload();
+  }, [parentId]);
+
   const requestOrgs = useCallback(
-    async (params: NeTableRequestParams<OrgQuery>) => {
-      const page = await service.pageOrgs(buildOrgPageReq(params, parentId));
-      return { data: page.records, total: page.total };
-    },
+    (params: OrgQuery & NebulaPageReq) => service.pageOrgs(buildOrgPageReq(params, parentId)),
     [service, parentId],
   );
 
@@ -77,83 +85,77 @@ export const OrgTable = forwardRef<OrgTableHandle, OrgTableProps>(function OrgTa
     [service, message, t],
   );
 
+  const statusValueEnum = useMemo(
+    () => ({
+      1: { text: t('auth.orgManagement.status.enabled') },
+      0: { text: t('auth.orgManagement.status.disabled') },
+    }),
+    [t],
+  );
+
+  const columns = useMemo<NebulaProColumns<OrgResp>[]>(() => [
+    {
+      title: t('auth.orgManagement.columns.name'),
+      dataIndex: 'name',
+      sorter: true,
+    },
+    {
+      title: t('auth.orgManagement.columns.code'),
+      dataIndex: 'code',
+      sorter: true,
+    },
+    {
+      title: t('auth.orgManagement.columns.type'),
+      dataIndex: 'type',
+      search: false,
+      render: (_, record) => orgTypeLabels[record.type],
+    },
+    {
+      title: t('auth.orgManagement.columns.status'),
+      dataIndex: 'status',
+      valueType: 'select',
+      valueEnum: statusValueEnum,
+      fieldProps: { 'aria-label': t('auth.orgManagement.columns.status') },
+      render: (_, record) => (
+        <Tag color={record.status === 1 ? 'success' : 'default'}>
+          {record.status === 1 ? t('auth.orgManagement.status.enabled') : t('auth.orgManagement.status.disabled')}
+        </Tag>
+      ),
+    },
+    {
+      title: t('auth.orgManagement.columns.actions'),
+      key: 'action',
+      valueType: 'option',
+      search: false,
+      render: (_, record) => [
+        <Button key="edit" type="link" icon={<EditOutlined />} onClick={() => onEdit(record)}>
+          {t('auth.orgManagement.actions.edit')}
+        </Button>,
+        <Popconfirm
+          key="delete"
+          title={`${t('auth.orgManagement.actions.delete')}?`}
+          okText={t('auth.orgManagement.actions.delete')}
+          cancelText={t('auth.orgManagement.actions.cancel')}
+          onConfirm={() => void removeOrg(record)}
+        >
+          <Button type="link" danger icon={<DeleteOutlined />}>
+            {t('auth.orgManagement.actions.delete')}
+          </Button>
+        </Popconfirm>,
+      ],
+    },
+  ], [onEdit, orgTypeLabels, removeOrg, statusValueEnum, t]);
+
   return (
-    <NeTable<OrgResp, OrgQuery> actionRef={actionRef} rowKey="id" request={requestOrgs}>
-      <NeTable.Search<OrgQuery>>
-        {({ form, submit, reset }) => (
-          <Form form={form} layout="inline" onFinish={submit}>
-            <Form.Item name="name" label={t('auth.orgManagement.columns.name')}>
-              <Input allowClear placeholder={t('auth.orgManagement.placeholders.name')} />
-            </Form.Item>
-            <Form.Item name="code" label={t('auth.orgManagement.columns.code')}>
-              <Input allowClear placeholder={t('auth.orgManagement.placeholders.code')} />
-            </Form.Item>
-            <Form.Item name="status" label={t('auth.orgManagement.columns.status')}>
-              <Select
-                allowClear
-                placeholder={t('auth.orgManagement.placeholders.status')}
-                options={[
-                  { label: t('auth.orgManagement.status.enabled'), value: 1 },
-                  { label: t('auth.orgManagement.status.disabled'), value: 0 },
-                ]}
-                style={{ width: 120 }}
-              />
-            </Form.Item>
-            <Form.Item>
-              <Space>
-                <Button type="primary" htmlType="submit">
-                  {t('auth.orgManagement.actions.search')}
-                </Button>
-                <Button onClick={() => void reset()}>{t('auth.orgManagement.actions.reset')}</Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        )}
-      </NeTable.Search>
-
-      <NeTable.Toolbar>
-        <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
+    <NebulaProTable<OrgResp, OrgQuery>
+      actionRef={actionRef}
+      columns={columns}
+      request={requestOrgs}
+      toolBarRender={() => [
+        <Button key="create" type="primary" icon={<PlusOutlined />} onClick={onCreate}>
           {t('auth.orgManagement.actions.create')}
-        </Button>
-      </NeTable.Toolbar>
-
-      <Table.Column<OrgResp> title={t('auth.orgManagement.columns.name')} dataIndex="name" key="name" />
-      <Table.Column<OrgResp> title={t('auth.orgManagement.columns.code')} dataIndex="code" key="code" />
-      <Table.Column<OrgResp>
-        title={t('auth.orgManagement.columns.type')}
-        dataIndex="type"
-        key="type"
-        render={(type: OrgType) => orgTypeLabels[type]}
-      />
-      <Table.Column<OrgResp>
-        title={t('auth.orgManagement.columns.status')}
-        dataIndex="status"
-        key="status"
-        render={(status: EnableStatus) => (
-          <Tag color={status === 1 ? 'success' : 'default'}>{status === 1 ? t('auth.orgManagement.status.enabled') : t('auth.orgManagement.status.disabled')}</Tag>
-        )}
-      />
-      <Table.Column<OrgResp>
-        title={t('auth.orgManagement.columns.actions')}
-        key="action"
-        render={(_, record) => (
-          <Space size="small">
-            <Button type="link" icon={<EditOutlined />} onClick={() => onEdit(record)}>
-              {t('auth.orgManagement.actions.edit')}
-            </Button>
-            <Popconfirm
-              title={`${t('auth.orgManagement.actions.delete')}?`}
-              okText={t('auth.orgManagement.actions.delete')}
-              cancelText={t('auth.orgManagement.actions.cancel')}
-              onConfirm={() => void removeOrg(record)}
-            >
-              <Button type="link" danger icon={<DeleteOutlined />}>
-                {t('auth.orgManagement.actions.delete')}
-              </Button>
-            </Popconfirm>
-          </Space>
-        )}
-      />
-    </NeTable>
+        </Button>,
+      ]}
+    />
   );
 });

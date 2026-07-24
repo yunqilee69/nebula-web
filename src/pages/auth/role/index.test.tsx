@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { NebulaProvider } from '@/app/nebula-provider';
+import { NebulaProvider } from '@/providers/nebula-provider';
 import { roleService as defaultRoleService } from '@/services/role';
 import { useLocaleStore } from '@/stores/locale-store';
 import type { RoleService } from '@/services/role';
@@ -36,7 +36,7 @@ describe('RoleManagementPage', () => {
     useLocaleStore.getState().setLocale('zh-CN');
   });
 
-  it('loads roles through NeTable with backend pageNum/pageSize fields', async () => {
+  it('loads roles through ProTable with backend pageNum/pageSize fields', async () => {
     const page: PageResp<RoleResp> = {
       data: [{ id: 'role-1', name: '管理员', code: 'ADMIN', status: 1, createTime: '2026-06-06T10:00:00' }],
       total: 1,
@@ -64,7 +64,7 @@ describe('RoleManagementPage', () => {
 
     await user.type(screen.getByLabelText('角色名称'), '管理员');
     await user.type(screen.getByLabelText('角色编码'), 'ADMIN');
-    await user.click(screen.getByRole('combobox', { name: '状态' }));
+    await user.click(screen.getByLabelText('状态'));
     await user.click(await screen.findByTitle('启用'));
     await user.click(screen.getByRole('button', { name: /查\s*询/ }));
 

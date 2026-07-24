@@ -1,12 +1,13 @@
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 import svgr from 'vite-plugin-svgr';
-import { devServerProxy } from './src/dev-server-config';
 
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     react(),
     svgr({ svgrOptions: { icon: true } }),
     dts({
@@ -20,7 +21,12 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: devServerProxy,
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_BASE_URL || 'http://localhost:9999',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     lib: {
@@ -36,6 +42,8 @@ export default defineConfig({
         'react/jsx-runtime',
         'antd',
         '@ant-design/icons',
+        '@ant-design/pro-components',
+        'antd-style',
         'react-router-dom',
         'zustand',
         'zustand/middleware',
@@ -47,6 +55,8 @@ export default defineConfig({
           'react/jsx-runtime': 'jsxRuntime',
           antd: 'antd',
           '@ant-design/icons': 'icons',
+          '@ant-design/pro-components': 'AntDesignProComponents',
+          'antd-style': 'antdStyle',
           'react-router-dom': 'ReactRouterDOM',
           zustand: 'zustand',
           'zustand/middleware': 'zustandMiddleware',

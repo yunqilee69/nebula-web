@@ -1,9 +1,9 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag } from 'antd';
+import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Tag } from 'antd';
 import type { FormInstance } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { NeTable } from '@/components/ne-table';
-import type { NeTableAction, NeTableRequestParams } from '@/components/ne-table/types';
+import { NebulaProTable } from '@/components/nebula-pro-table';
+import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import type { MenuService } from '@/services/menu';
@@ -25,8 +25,8 @@ export interface ButtonManagementModalProps {
 }
 
 interface ButtonSearchValues {
-  buttonName?: string;
-  buttonCode?: string;
+  name?: string;
+  code?: string;
   status?: ButtonStatus;
 }
 
@@ -149,7 +149,7 @@ export function ButtonManagementModal({
   menuService,
   onCancel,
 }: ButtonManagementModalProps) {
-  const actionRef = useRef<NeTableAction>(null);
+  const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
   const { t } = useNebulaI18n();
   const notice = useNotice();
   const [form] = Form.useForm<ButtonFormValues>();
@@ -160,19 +160,21 @@ export function ButtonManagementModal({
   const [detailLoading, setDetailLoading] = useState(false);
 
   const requestButtons = useCallback(
-    async (params: NeTableRequestParams<ButtonSearchValues>) => {
+    async (params: ButtonSearchValues & NebulaPageReq) => {
       if (!menu) return { data: [], total: 0 };
 
-      const buttonName = normalizeOptionalText(params.query.buttonName);
-      const buttonCode = normalizeOptionalText(params.query.buttonCode);
+      const buttonName = normalizeOptionalText(params.name);
+      const buttonCode = normalizeOptionalText(params.code);
 
       const page = await menuService.pageButtons({
-        pageNum: params.current,
+        pageNum: params.pageNum,
         pageSize: params.pageSize,
         menuId: menu.id,
+        ...(params.orderName ? { orderName: params.orderName } : {}),
+        ...(params.orderType ? { orderType: params.orderType } : {}),
         ...(buttonName ? { name: buttonName } : {}),
         ...(buttonCode ? { code: buttonCode } : {}),
-        ...(params.query.status !== undefined ? { status: params.query.status } : {}),
+        ...(params.status !== undefined ? { status: Number(params.status) as ButtonStatus } : {}),
       });
 
       return { data: page.data, total: page.total };
@@ -274,6 +276,86 @@ export function ButtonManagementModal({
     [t],
   );
 
+  const statusValueEnum = useMemo(
+    () => Object.fromEntries(statusOptions.map((option) => [option.value, { text: option.label }])),
+    [statusOptions],
+  );
+
+  const columns = useMemo<NebulaProColumns<ButtonResp>[]>(() => [
+    {
+      title: t('auth.menuManagement.fields.buttonName'),
+      dataIndex: 'name',
+      width: 180,
+      sorter: true,
+    },
+    {
+      title: t('auth.menuManagement.fields.buttonCode'),
+      dataIndex: 'code',
+      width: 180,
+      sorter: true,
+    },
+    {
+      title: t('auth.menuManagement.columns.status'),
+      dataIndex: 'status',
+      width: 100,
+      valueType: 'select',
+      valueEnum: statusValueEnum,
+      fieldProps: { 'aria-label': t('auth.menuManagement.fields.status') },
+      render: (_, record) => (
+        <Tag color={record.status === 1 ? 'success' : 'default'}>
+          {record.status === 1
+            ? t('auth.menuManagement.status.enabled')
+            : t('auth.menuManagement.status.disabled')}
+        </Tag>
+      ),
+    },
+    {
+      title: t('auth.menuManagement.columns.createTime'),
+      dataIndex: 'createTime',
+      width: 180,
+      search: false,
+      sorter: true,
+      render: (_, record) => formatDateTime(record.createTime),
+    },
+    {
+      title: t('auth.menuManagement.columns.updateTime'),
+      dataIndex: 'updateTime',
+      width: 180,
+      search: false,
+      sorter: true,
+      render: (_, record) => formatDateTime(record.updateTime),
+    },
+    {
+      title: t('auth.menuManagement.columns.actions'),
+      key: 'actions',
+      fixed: 'right',
+      width: 160,
+      valueType: 'option',
+      search: false,
+      render: (_, record) => [
+        <Button
+          key="edit"
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => void openEditForm(record)}
+        >
+          {t('auth.menuManagement.actions.edit')}
+        </Button>,
+        <Popconfirm
+          key="delete"
+          title={t('auth.menuManagement.confirm.buttonDeleteTitle')}
+          okText={t('auth.menuManagement.actions.delete')}
+          cancelText={t('auth.menuManagement.actions.cancel')}
+          onConfirm={() => void removeButton(record)}
+        >
+          <Button type="link" danger icon={<DeleteOutlined />}>
+            {t('auth.menuManagement.actions.delete')}
+          </Button>
+        </Popconfirm>,
+      ],
+    },
+  ], [openEditForm, removeButton, statusValueEnum, t]);
+
   if (!menu) return null;
 
   return (
@@ -285,132 +367,21 @@ export function ButtonManagementModal({
       width={800}
       destroyOnHidden
     >
-      <NeTable<ButtonResp, ButtonSearchValues>
+      <NebulaProTable<ButtonResp, ButtonSearchValues>
         actionRef={actionRef}
-        rowKey="id"
+        columns={columns}
         request={requestButtons}
         onRequestError={() =>
           notice.error(t('auth.menuManagement.feedback.buttonListLoadFailed'))
         }
         size="middle"
         scroll={{ x: 640 }}
-      >
-        <NeTable.Search<ButtonSearchValues>>
-          {({ form: searchForm, submit, reset }) => (
-            <Form form={searchForm} layout="inline" onFinish={submit}>
-              <Form.Item
-                name="buttonName"
-                label={t('auth.menuManagement.fields.buttonName')}
-              >
-                <Input
-                  allowClear
-                  placeholder={t('auth.menuManagement.placeholders.buttonName')}
-                />
-              </Form.Item>
-              <Form.Item
-                name="buttonCode"
-                label={t('auth.menuManagement.fields.buttonCode')}
-              >
-                <Input
-                  allowClear
-                  placeholder={t('auth.menuManagement.placeholders.buttonCode')}
-                />
-              </Form.Item>
-              <Form.Item name="status" label={t('auth.menuManagement.fields.status')}>
-                <Select
-                  allowClear
-                  placeholder={t('auth.menuManagement.placeholders.status')}
-                  options={statusOptions}
-                  style={{ width: 120 }}
-                />
-              </Form.Item>
-              <Form.Item>
-                <Space>
-                  <Button type="primary" htmlType="submit">
-                    {t('auth.menuManagement.actions.search')}
-                  </Button>
-                  <Button onClick={() => void reset()}>
-                    {t('auth.menuManagement.actions.reset')}
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          )}
-        </NeTable.Search>
-
-        <NeTable.Toolbar>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateForm}>
+        toolBarRender={() => [
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={openCreateForm}>
             {t('auth.menuManagement.actions.createButton')}
-          </Button>
-        </NeTable.Toolbar>
-
-        <Table.Column<ButtonResp>
-          title={t('auth.menuManagement.fields.buttonName')}
-          dataIndex="name"
-          key="name"
-          width={180}
-        />
-        <Table.Column<ButtonResp>
-          title={t('auth.menuManagement.fields.buttonCode')}
-          dataIndex="code"
-          key="code"
-          width={180}
-        />
-        <Table.Column<ButtonResp>
-          title={t('auth.menuManagement.columns.status')}
-          dataIndex="status"
-          key="status"
-          width={100}
-          render={(status: ButtonStatus) => (
-            <Tag color={status === 1 ? 'success' : 'default'}>
-              {status === 1
-                ? t('auth.menuManagement.status.enabled')
-                : t('auth.menuManagement.status.disabled')}
-            </Tag>
-          )}
-        />
-        <Table.Column<ButtonResp>
-          title={t('auth.menuManagement.columns.createTime')}
-          dataIndex="createTime"
-          key="createTime"
-          width={180}
-          render={formatDateTime}
-        />
-        <Table.Column<ButtonResp>
-          title={t('auth.menuManagement.columns.updateTime')}
-          dataIndex="updateTime"
-          key="updateTime"
-          width={180}
-          render={formatDateTime}
-        />
-        <Table.Column<ButtonResp>
-          title={t('auth.menuManagement.columns.actions')}
-          key="actions"
-          fixed="right"
-          width={160}
-          render={(_, record) => (
-            <Space size="small">
-              <Button
-                type="link"
-                icon={<EditOutlined />}
-                onClick={() => void openEditForm(record)}
-              >
-                {t('auth.menuManagement.actions.edit')}
-              </Button>
-              <Popconfirm
-                title={t('auth.menuManagement.confirm.buttonDeleteTitle')}
-                okText={t('auth.menuManagement.actions.delete')}
-                cancelText={t('auth.menuManagement.actions.cancel')}
-                onConfirm={() => void removeButton(record)}
-              >
-                <Button type="link" danger icon={<DeleteOutlined />}>
-                  {t('auth.menuManagement.actions.delete')}
-                </Button>
-              </Popconfirm>
-            </Space>
-          )}
-        />
-      </NeTable>
+          </Button>,
+        ]}
+      />
 
       <ButtonFormModal
         form={form}

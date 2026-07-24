@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { NebulaProvider } from '@/app/nebula-provider';
+import { NebulaProvider } from '@/providers/nebula-provider';
 import type { PermissionService } from '@/services/permission';
 import { useLocaleStore } from '@/stores/locale-store';
 import { PermissionConfigPage } from './index';
@@ -27,7 +27,7 @@ const groups = [
 
 function createService(overrides: Partial<PermissionService> = {}): PermissionService {
   return {
-    pageSubjectPermissions: vi.fn().mockResolvedValue({ records: [], total: 0 }),
+    pageSubjectPermissions: vi.fn().mockResolvedValue({ data: [], total: 0 }),
     saveSubjectPermissions: vi.fn().mockResolvedValue(undefined),
     listSubjects: vi.fn().mockResolvedValue({
       orgs: [{ id: 'org-rd', type: 'ORG' as const, name: '研发中心', code: 'ORG_RD' }],
@@ -69,7 +69,7 @@ describe('PermissionConfigPage', () => {
     const user = userEvent.setup();
     const service = createService({
       pageSubjectPermissions: vi.fn().mockResolvedValue({
-        records: [{ id: 'g1', subjectType: 'ORG', subjectId: 'org-rd', resourceType: 'MENU', resourceId: 'menu-user', effect: 'Allow' }],
+        data: [{ id: 'g1', subjectType: 'ORG', subjectId: 'org-rd', resourceType: 'MENU', resourceId: 'menu-user', effect: 'Allow' }],
         total: 1,
       }),
     });

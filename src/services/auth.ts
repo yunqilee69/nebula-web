@@ -14,7 +14,7 @@ import type {
   WechatWebQrCodeCreateReq,
   WechatWebQrCodeResp,
   WechatWebLoginStatusResp,
-} from '@/auth/types';
+} from '@/types/auth';
 
 export interface AuthService {
   getAuthConfig: () => Promise<AuthInitResp>;

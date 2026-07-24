@@ -1,11 +1,13 @@
 export interface PageResp<T> {
-  records: T[];
+  data: T[];
   total: number;
 }
 
 export interface PageReq {
   pageNum: number;
   pageSize: number;
+  orderName?: string;
+  orderType?: 'asc' | 'desc';
 }
 
 export type EnableStatus = 0 | 1;

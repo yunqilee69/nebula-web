@@ -1,26 +1,26 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
-vi.mock('@/auth/token-session', () => ({
+vi.mock('@/utils/auth/token-session', () => ({
   getStoredAccessToken: vi.fn(() => null),
   getStoredRefreshToken: vi.fn(() => null),
   saveAuthTokens: vi.fn(),
   clearAuthTokens: vi.fn(),
 }));
 
-vi.mock('@/auth/session-expired', () => ({
+vi.mock('@/utils/auth/session-expired', () => ({
   notifySessionExpired: vi.fn(),
 }));
 
-vi.mock('@/app/notice', () => ({
+vi.mock('@/providers/notice', () => ({
   notice: {
     error: vi.fn(),
   },
 }));
 
-import { getStoredAccessToken, getStoredRefreshToken, saveAuthTokens, clearAuthTokens } from '@/auth/token-session';
-import { notifySessionExpired } from '@/auth/session-expired';
-import { notice } from '@/app/notice';
+import { getStoredAccessToken, getStoredRefreshToken, saveAuthTokens, clearAuthTokens } from '@/utils/auth/token-session';
+import { notifySessionExpired } from '@/utils/auth/session-expired';
+import { notice } from '@/providers/notice';
 import { request, requestClient } from './request';
 
 function mockAdapter(

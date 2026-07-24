@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 import { RouterProvider } from 'react-router-dom';
-import { NebulaProvider } from '@/app/nebula-provider';
-import { toCurrentUser } from '@/auth/current-user';
-import { getStoredAccessToken, getStoredRefreshToken } from '@/auth/token-session';
+import '@/styles/index.css';
+import { NebulaProvider } from '@/providers/nebula-provider';
+import { toCurrentUser } from '@/utils/auth/current-user';
+import { getStoredAccessToken, getStoredRefreshToken } from '@/utils/auth/token-session';
 import { authService } from '@/services/auth';
-import { builtInMenuComponentRegistry } from '@/routing/menu-component-registry';
-import { createNebulaRouter } from '@/routing/create-nebula-router';
-import type { NebulaRouteObject } from '@/routing/types';
+import { builtInMenuComponentRegistry } from '@/route/menu-component-registry';
+import { createNebulaRouter } from '@/route/create-nebula-router';
+import type { NebulaRouteObject } from '@/route/types';
 import { useAuthStore } from '@/stores/auth-store';
 
 // Permission-controlled business routes are generated from backend menu records via the component registry below.

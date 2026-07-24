@@ -3,17 +3,17 @@ import userEvent, { PointerEventsCheckLevel } from '@testing-library/user-event'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { useRef } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { NebulaProvider } from '@/app/nebula-provider';
+import { NebulaProvider } from '@/providers/nebula-provider';
 import { NebulaLayout } from './nebula-layout';
 import { useAppStore } from '@/stores/app-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useLocaleStore } from '@/stores/locale-store';
 import { useThemeStore } from '@/stores/theme-store';
 import type { AuthService } from '@/services/auth';
-import type { NebulaMenuItem } from '@/routing/types';
-import { clearAuthTokens } from '@/auth/token-session';
+import type { NebulaMenuItem } from '@/route/types';
+import { clearAuthTokens } from '@/utils/auth/token-session';
 
-vi.mock('@/auth/token-session', () => ({
+vi.mock('@/utils/auth/token-session', () => ({
   saveAuthTokens: vi.fn(),
   getStoredAccessToken: vi.fn(() => null),
   getStoredRefreshToken: vi.fn(() => null),
@@ -144,6 +144,16 @@ describe('NebulaLayout', () => {
     expect(screen.getByRole('button', { name: 'Demo User' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '用户管理' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('main')).toHaveTextContent('用户内容');
+  });
+
+  it('keeps route-tab styling in generated classes instead of injecting raw style tags', async () => {
+    const { container } = renderLayout('/system/users');
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: '用户管理' })).toBeInTheDocument();
+    });
+
+    expect(container.querySelector('.nebula-route-tabs style')).not.toBeInTheDocument();
   });
 
   describe('default header user menu', () => {
@@ -349,7 +359,7 @@ describe('NebulaLayout', () => {
     const navigation = await screen.findByRole('navigation', { name: '主导航' });
     const main = screen.getByRole('main');
 
-    expect(navigation.parentElement).toHaveStyle('height: 100vh; overflow: hidden;');
+    expect(navigation.parentElement).toHaveStyle('height: 100dvh; overflow: hidden;');
     expect(main.parentElement).toHaveStyle('height: 100%; overflow: hidden;');
     expect(main).toHaveStyle('flex: 1; min-height: 0; overflow: auto;');
   });

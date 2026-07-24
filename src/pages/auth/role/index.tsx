@@ -1,8 +1,8 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Popconfirm, Select, Space, Table, Tag } from 'antd';
+import { Button, Form, Popconfirm, Tag } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { NeTable } from '@/components/ne-table';
-import type { NeTableAction, NeTableRequestParams } from '@/components/ne-table/types';
+import { NebulaProTable } from '@/components/nebula-pro-table';
+import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { PageContainer } from '@/components/page-container';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
@@ -27,17 +27,19 @@ function normalizeOptionalText(value: string | undefined) {
   return normalized ? normalized : undefined;
 }
 
-function buildRolePageReq(params: NeTableRequestParams<RoleSearchValues>): RolePageReq {
+function buildRolePageReq(params: RoleSearchValues & NebulaPageReq): RolePageReq {
   const req: RolePageReq = {
-    pageNum: params.current,
+    pageNum: params.pageNum,
     pageSize: params.pageSize,
   };
-  const name = normalizeOptionalText(params.query.name);
-  const code = normalizeOptionalText(params.query.code);
+  const name = normalizeOptionalText(params.name);
+  const code = normalizeOptionalText(params.code);
 
+  if (params.orderName) req.orderName = params.orderName;
+  if (params.orderType) req.orderType = params.orderType;
   if (name) req.name = name;
   if (code) req.code = code;
-  if (params.query.status !== undefined) req.status = params.query.status;
+  if (params.status !== undefined) req.status = Number(params.status) as RoleStatus;
 
   return req;
 }
@@ -52,7 +54,7 @@ function getPermissionIds(role: RoleDetailResp) {
 }
 
 export function RoleManagementPage({ roleService = defaultRoleService, defaultPageSize = 10 }: RoleManagementPageProps) {
-  const actionRef = useRef<NeTableAction>(null);
+  const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
   const { t } = useNebulaI18n();
   const notice = useNotice();
   const [form] = Form.useForm<RoleFormValues>();
@@ -63,10 +65,7 @@ export function RoleManagementPage({ roleService = defaultRoleService, defaultPa
   const [detailLoading, setDetailLoading] = useState(false);
 
   const requestRoles = useCallback(
-    async (params: NeTableRequestParams<RoleSearchValues>) => {
-      const page = await roleService.pageRoles(buildRolePageReq(params));
-      return { data: page.data, total: page.total };
-    },
+    (params: RoleSearchValues & NebulaPageReq) => roleService.pageRoles(buildRolePageReq(params)),
     [roleService],
   );
 
@@ -153,74 +152,93 @@ export function RoleManagementPage({ roleService = defaultRoleService, defaultPa
     ],
     [t],
   );
-  const statusFilters = useMemo(() => roleStatusOptions.map((option) => ({ text: option.label, value: option.value })), [roleStatusOptions]);
+  const statusValueEnum = useMemo(
+    () => Object.fromEntries(roleStatusOptions.map((option) => [option.value, { text: option.label }])),
+    [roleStatusOptions],
+  );
+  const columns = useMemo<NebulaProColumns<RoleResp>[]>(() => [
+    {
+      title: t('auth.roleManagement.columns.name'),
+      dataIndex: 'name',
+      fixed: 'left',
+      width: 180,
+      sorter: true,
+    },
+    {
+      title: t('auth.roleManagement.columns.code'),
+      dataIndex: 'code',
+      width: 180,
+      sorter: true,
+    },
+    {
+      title: t('auth.roleManagement.columns.status'),
+      dataIndex: 'status',
+      width: 100,
+      valueType: 'select',
+      valueEnum: statusValueEnum,
+      fieldProps: { 'aria-label': t('auth.roleManagement.fields.status') },
+      render: (_, record) => (
+        <Tag color={record.status === 1 ? 'success' : 'default'}>
+          {record.status === 1 ? t('auth.roleManagement.status.enabled') : t('auth.roleManagement.status.disabled')}
+        </Tag>
+      ),
+    },
+    {
+      title: t('auth.roleManagement.columns.createTime'),
+      dataIndex: 'createTime',
+      width: 180,
+      search: false,
+      sorter: true,
+      render: (_, record) => formatDateTime(record.createTime),
+    },
+    {
+      title: t('auth.roleManagement.columns.updateTime'),
+      dataIndex: 'updateTime',
+      width: 180,
+      search: false,
+      sorter: true,
+      render: (_, record) => formatDateTime(record.updateTime),
+    },
+    {
+      title: t('auth.roleManagement.columns.actions'),
+      key: 'actions',
+      fixed: 'right',
+      width: 160,
+      valueType: 'option',
+      search: false,
+      render: (_, record) => [
+        <Button key="edit" type="link" icon={<EditOutlined />} onClick={() => void openUpdateModal(record)}>
+          {t('auth.roleManagement.actions.edit')}
+        </Button>,
+        <Popconfirm
+          key="delete"
+          title={t('auth.roleManagement.confirm.deleteTitle')}
+          okText={t('auth.roleManagement.actions.delete')}
+          cancelText={t('auth.roleManagement.actions.cancel')}
+          onConfirm={() => void removeRole(record)}
+        >
+          <Button type="link" danger icon={<DeleteOutlined />}>
+            {t('auth.roleManagement.actions.delete')}
+          </Button>
+        </Popconfirm>,
+      ],
+    },
+  ], [openUpdateModal, removeRole, statusValueEnum, t]);
 
   return (
     <PageContainer>
-      <NeTable<RoleResp, RoleSearchValues>
+      <NebulaProTable<RoleResp, RoleSearchValues>
         actionRef={actionRef}
-        defaultPageSize={defaultPageSize}
-        rowKey="id"
+        columns={columns}
+        pagination={{ defaultPageSize }}
         request={requestRoles}
         onRequestError={() => notice.error(t('auth.roleManagement.feedback.listLoadFailed'))}
         size="middle"
         scroll={{ x: 960 }}
-      >
-        <NeTable.Search<RoleSearchValues>>
-          {({ form: searchForm, submit, reset }) => (
-            <Form form={searchForm} layout="inline" onFinish={submit}>
-              <Form.Item name="name" label={t('auth.roleManagement.fields.name')}>
-                <Input allowClear placeholder={t('auth.roleManagement.placeholders.name')} />
-              </Form.Item>
-              <Form.Item name="code" label={t('auth.roleManagement.fields.code')}>
-                <Input allowClear placeholder={t('auth.roleManagement.placeholders.code')} />
-              </Form.Item>
-              <Form.Item name="status" label={t('auth.roleManagement.fields.status')}>
-                <Select allowClear placeholder={t('auth.roleManagement.placeholders.status')} options={roleStatusOptions} style={{ width: 120 }} />
-              </Form.Item>
-              <Form.Item>
-                <Space>
-                  <Button type="primary" htmlType="submit">{t('auth.roleManagement.actions.search')}</Button>
-                  <Button onClick={() => void reset()}>{t('auth.roleManagement.actions.reset')}</Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          )}
-        </NeTable.Search>
-
-        <NeTable.Toolbar>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>{t('auth.roleManagement.actions.create')}</Button>
-        </NeTable.Toolbar>
-
-        <Table.Column<RoleResp> title={t('auth.roleManagement.columns.name')} dataIndex="name" key="name" fixed="left" width={180} />
-        <Table.Column<RoleResp> title={t('auth.roleManagement.columns.code')} dataIndex="code" key="code" width={180} />
-        <Table.Column<RoleResp>
-          title={t('auth.roleManagement.columns.status')}
-          dataIndex="status"
-          key="status"
-          width={100}
-          filters={statusFilters}
-          render={(status: RoleStatus) => (
-            <Tag color={status === 1 ? 'success' : 'default'}>{status === 1 ? t('auth.roleManagement.status.enabled') : t('auth.roleManagement.status.disabled')}</Tag>
-          )}
-        />
-        <Table.Column<RoleResp> title={t('auth.roleManagement.columns.createTime')} dataIndex="createTime" key="createTime" width={180} render={formatDateTime} />
-        <Table.Column<RoleResp> title={t('auth.roleManagement.columns.updateTime')} dataIndex="updateTime" key="updateTime" width={180} render={formatDateTime} />
-        <Table.Column<RoleResp>
-          title={t('auth.roleManagement.columns.actions')}
-          key="actions"
-          fixed="right"
-          width={160}
-          render={(_, record) => (
-            <Space size="small">
-              <Button type="link" icon={<EditOutlined />} onClick={() => void openUpdateModal(record)}>{t('auth.roleManagement.actions.edit')}</Button>
-              <Popconfirm title={t('auth.roleManagement.confirm.deleteTitle')} okText={t('auth.roleManagement.actions.delete')} cancelText={t('auth.roleManagement.actions.cancel')} onConfirm={() => void removeRole(record)}>
-                <Button type="link" danger icon={<DeleteOutlined />}>{t('auth.roleManagement.actions.delete')}</Button>
-              </Popconfirm>
-            </Space>
-          )}
-        />
-      </NeTable>
+        toolBarRender={() => [
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>{t('auth.roleManagement.actions.create')}</Button>,
+        ]}
+      />
 
       <RoleFormModal
         form={form}

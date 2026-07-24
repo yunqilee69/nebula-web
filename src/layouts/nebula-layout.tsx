@@ -1,19 +1,122 @@
 import { flushSync } from 'react-dom';
-import { Breadcrumb, Button, Dropdown, Input, Layout, Menu, Tabs, Typography, theme as antdTheme } from 'antd';
+import { Breadcrumb, Button, Dropdown, Input, Layout, Menu, Tabs, Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import type { BreadcrumbProps, MenuProps, TabsProps, InputRef } from 'antd';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useNebulaBrand } from '@/app/brand-context';
-import { resolveNebulaIcon } from '@/icons/nebula-icons';
-import type { NebulaMenuItem } from '@/routing/types';
+import { createStyles } from 'antd-style';
+import { useNebulaBrand } from '@/providers/brand-context';
+import { resolveNebulaIcon } from '@/utils/icons';
+import type { NebulaMenuItem } from '@/route/types';
 import { useAppStore } from '@/stores/app-store';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
-import { nebulaTokens } from '@/theme/tokens';
+import { nebulaTokens } from '@/providers/tokens';
 import { HeaderUserMenu } from './components/header-user-menu';
 
 const { Header, Sider, Content } = Layout;
+
+const useStyles = createStyles(({ token }) => ({
+  shell: {
+    height: '100dvh',
+    overflow: 'hidden',
+    background: token.colorBgLayout,
+  },
+  sider: {
+    position: 'sticky' as const,
+    top: 0,
+    height: '100dvh',
+    overflow: 'visible',
+    scrollbarWidth: 'thin' as const,
+    background: token.colorBgContainer,
+    borderRight: `1px solid ${token.colorBorderSecondary}`,
+  },
+  brandHeader: {
+    position: 'relative' as const,
+    height: nebulaTokens.headerHeight,
+    display: 'flex',
+    alignItems: 'center',
+    gap: token.marginSM,
+    borderBottom: `1px solid ${token.colorBorderSecondary}`,
+  },
+  brandHeaderExpanded: {
+    justifyContent: 'flex-start',
+    paddingInline: token.paddingMD,
+  },
+  brandHeaderCollapsed: {
+    justifyContent: 'center',
+    paddingInline: 0,
+  },
+  brandLogo: {
+    display: 'inline-flex',
+    color: token.colorPrimary,
+  },
+  brandTitle: {
+    color: token.colorText,
+  },
+  collapseButton: {
+    border: `1px solid ${token.colorBorderSecondary}`,
+    background: token.colorBgContainer,
+    boxShadow: token.boxShadowSecondary,
+  },
+  collapseIcon: {
+    color: token.colorTextTertiary,
+    fontSize: 14,
+    width: 14,
+    height: 14,
+    lineHeight: '14px',
+    '& svg': {
+      width: 14,
+      height: 14,
+    },
+  },
+  menu: {
+    borderInlineEnd: 0,
+    paddingBlock: token.paddingSM,
+  },
+  workspace: {
+    minWidth: 0,
+    height: '100%',
+    overflow: 'hidden',
+    background: token.colorBgLayout,
+  },
+  header: {
+    height: nebulaTokens.headerHeight,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingInline: token.paddingLG,
+    background: token.colorBgContainer,
+    borderBottom: `1px solid ${token.colorBorderSecondary}`,
+  },
+  routeTabs: {
+    '& .ant-tabs-nav-list': {
+      gap: 4,
+    },
+  },
+  tabs: {
+    height: nebulaTokens.tabsHeight,
+    paddingInline: token.paddingXS,
+    paddingTop: token.paddingXS,
+    background: token.colorBgContainer,
+    borderBottom: `1px solid ${token.colorBorderSecondary}`,
+  },
+  content: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    minHeight: 0,
+    overflow: 'auto',
+    padding: token.padding,
+    background: token.colorBgLayout,
+  },
+  contentInner: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    flex: '1 1 auto',
+    minHeight: 0,
+    height: '100%',
+  },
+}));
 
 interface NebulaLayoutProps {
   title?: string;
@@ -68,11 +171,11 @@ function toMenuItems(items: NebulaMenuItem[]): MenuProps['items'] {
     }));
 }
 
-function createSidebarCollapseIcon(collapsed: boolean): ReactNode {
+function createSidebarCollapseIcon(collapsed: boolean, className?: string): ReactNode {
   return collapsed ? (
-    <RightOutlined className="nebula-sidebar-collapse-control-icon" aria-hidden="true" data-testid="nebula-sidebar-expand-icon" />
+    <RightOutlined className={className} aria-hidden="true" data-testid="nebula-sidebar-expand-icon" />
   ) : (
-    <LeftOutlined className="nebula-sidebar-collapse-control-icon" aria-hidden="true" data-testid="nebula-sidebar-collapse-icon" />
+    <LeftOutlined className={className} aria-hidden="true" data-testid="nebula-sidebar-collapse-icon" />
   );
 }
 
@@ -212,10 +315,10 @@ export function NebulaLayout({
   const brandLogo = logo ?? brand.logo;
   const location = useLocation();
   const navigate = useNavigate();
-  const { token } = antdTheme.useToken();
   const siderCollapsed = useAppStore((state) => state.siderCollapsed);
   const setSiderCollapsed = useAppStore((state) => state.setSiderCollapsed);
   const { t } = useNebulaI18n();
+  const { styles, cx } = useStyles();
 
   const currentMenuPath = useMemo(
     () => findMenuPath(menuItems, location.pathname),
@@ -510,7 +613,7 @@ export function NebulaLayout({
   }
 
   return (
-    <Layout hasSider style={{ height: '100vh', overflow: 'hidden', background: token.colorBgLayout }}>
+    <Layout hasSider className={styles.shell}>
       <Sider
         width={nebulaTokens.siderWidth}
         collapsedWidth={nebulaTokens.siderCollapsedWidth}
@@ -519,43 +622,27 @@ export function NebulaLayout({
         trigger={null}
         role="navigation"
         aria-label={t('layout.sidebarAriaLabel')}
-        style={{
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          overflow: 'visible',
-          scrollbarWidth: 'thin',
-          background: token.colorBgContainer,
-          borderRight: `1px solid ${token.colorBorderSecondary}`,
-        }}
+        className={styles.sider}
       >
         <div
           data-testid="nebula-sidebar-brand"
-          style={{
-            position: 'relative',
-            height: nebulaTokens.headerHeight,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: siderCollapsed ? 'center' : 'flex-start',
-            gap: token.marginSM,
-            paddingInline: siderCollapsed ? 0 : token.paddingMD,
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          }}
+          className={cx(styles.brandHeader, siderCollapsed ? styles.brandHeaderCollapsed : styles.brandHeaderExpanded)}
         >
-          <span aria-hidden="true" style={{ display: 'inline-flex', color: token.colorPrimary }}>
-            {brandLogo ?? createSidebarCollapseIcon(false)}
+          <span aria-hidden="true" className={styles.brandLogo}>
+            {brandLogo ?? createSidebarCollapseIcon(false, cx('nebula-sidebar-collapse-control-icon', styles.collapseIcon))}
           </span>
           {!siderCollapsed && (
-            <Typography.Text strong ellipsis style={{ color: token.colorText }}>
+            <Typography.Text strong ellipsis className={styles.brandTitle}>
               {brandTitle}
             </Typography.Text>
           )}
           <Button
             type="text"
-            icon={createSidebarCollapseIcon(siderCollapsed)}
+            icon={createSidebarCollapseIcon(siderCollapsed, cx('nebula-sidebar-collapse-control-icon', styles.collapseIcon))}
             aria-label={siderCollapsed ? t('layout.sidebarExpand') : t('layout.sidebarCollapse')}
             aria-expanded={!siderCollapsed}
             onClick={() => setSiderCollapsed(!siderCollapsed)}
+            className={styles.collapseButton}
             style={{
               position: 'absolute',
               insetInlineEnd: -16,
@@ -567,9 +654,6 @@ export function NebulaLayout({
               minWidth: 32,
               padding: 0,
               borderRadius: '50%',
-              border: `1px solid ${token.colorBorderSecondary}`,
-              background: token.colorBgContainer,
-              boxShadow: token.boxShadowSecondary,
             }}
           />
         </div>
@@ -579,41 +663,19 @@ export function NebulaLayout({
           defaultOpenKeys={openMenuKeys}
           items={toMenuItems(menuItems)}
           onClick={({ key }) => openMenuKey(String(key))}
-          style={{ borderInlineEnd: 0, paddingBlock: token.paddingSM }}
+          className={styles.menu}
         />
       </Sider>
-      <Layout style={{ minWidth: 0, height: '100%', overflow: 'hidden', background: token.colorBgLayout }}>
+      <Layout className={styles.workspace}>
         <Header
-          style={{
-            height: nebulaTokens.headerHeight,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingInline: token.paddingLG,
-            background: token.colorBgContainer,
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          }}
+          className={styles.header}
         >
           <Breadcrumb aria-label={t('layout.breadcrumbAriaLabel')} items={breadcrumbItems} />
           {rightContent ?? (
             <HeaderUserMenu onOpenProfile={() => openRouteWithLabel('/profile/info', t('layout.headerUser.profile'))} />
           )}
         </Header>
-        <div className="nebula-route-tabs">
-          <style>{`
-            .nebula-route-tabs .ant-tabs-nav-list { gap: 4px; }
-            .nebula-sidebar-collapse-control-icon {
-              color: ${token.colorTextTertiary};
-              font-size: 14px;
-              width: 14px;
-              height: 14px;
-              line-height: 14px;
-            }
-            .nebula-sidebar-collapse-control-icon svg {
-              width: 14px;
-              height: 14px;
-            }
-          `}</style>
+        <div className={cx('nebula-route-tabs', styles.routeTabs)}>
           <Tabs
             type="editable-card"
             hideAdd
@@ -649,36 +711,17 @@ export function NebulaLayout({
                 }}
               </DefaultTabBar>
             )}
-            style={{
-              height: nebulaTokens.tabsHeight,
-              paddingInline: token.paddingXS,
-              paddingTop: token.paddingXS,
-              background: token.colorBgContainer,
-              borderBottom: `1px solid ${token.colorBorderSecondary}`,
-            }}
+            className={styles.tabs}
           />
         </div>
         <Content
           role="main"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            flex: 1,
-            minHeight: 0,
-            overflow: 'auto',
-            padding: token.padding,
-            background: token.colorBgLayout,
-          }}
+          className={styles.content}
+          style={{ flex: '1 1 0%' }}
         >
           <div
             key={`${location.pathname}:${routeRefreshKeys[location.pathname] ?? 0}`}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              flex: '1 1 auto',
-              minHeight: 0,
-              height: '100%',
-            }}
+            className={styles.contentInner}
           >
             {children ?? <Outlet />}
           </div>

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { NebulaProvider } from '@/app/nebula-provider';
+import { NebulaProvider } from '@/providers/nebula-provider';
 import { useLocaleStore } from '@/stores/locale-store';
 import { menuService as defaultMenuService } from '@/services/menu';
 import type { MenuService } from '@/services/menu';

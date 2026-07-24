@@ -1,10 +1,10 @@
 import { createRequestClient } from './create-request-client';
 import type { NebulaRequestConfig, NebulaRequestFn } from './types';
 import type { AxiosError } from 'axios';
-import { getStoredAccessToken, getStoredRefreshToken, saveAuthTokens, clearAuthTokens } from '@/auth/token-session';
-import { notifySessionExpired } from '@/auth/session-expired';
-import { notice } from '@/app/notice';
-import type { LoginResp } from '@/auth/types';
+import { getStoredAccessToken, getStoredRefreshToken, saveAuthTokens, clearAuthTokens } from '@/utils/auth/token-session';
+import { notifySessionExpired } from '@/utils/auth/session-expired';
+import { notice } from '@/providers/notice';
+import type { LoginResp } from '@/types/auth';
 
 let notifying = false;
 const defaultHttpErrorMessage = '接口请求出错，请稍后重试';

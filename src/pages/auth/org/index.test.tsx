@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { NebulaProvider } from '@/app/nebula-provider';
+import { NebulaProvider } from '@/providers/nebula-provider';
 import type { AuthManagementService } from '@/services/auth-management';
 import { useLocaleStore } from '@/stores/locale-store';
 import type { OrgResp, OrgTreeResp, PageResp } from '@/types/auth-management';
@@ -21,7 +21,7 @@ const orgTree: OrgTreeResp[] = [
 ];
 
 const orgPage: PageResp<OrgResp> = {
-  records: [
+  data: [
     { id: 'org-1', name: '研发中心', code: 'RND', type: 'DEPARTMENT', status: 1 },
   ],
   total: 1,
@@ -30,7 +30,7 @@ const orgPage: PageResp<OrgResp> = {
 function createService(overrides: Partial<AuthManagementService> = {}): AuthManagementService {
   return {
     pageUsers: vi.fn().mockResolvedValue({
-      records: [],
+      data: [],
       total: 0,
     } satisfies PageResp<OrgResp>),
     createUser: vi.fn().mockResolvedValue(undefined),
@@ -80,7 +80,8 @@ describe('OrgManagementPage', () => {
     const service = renderPage();
 
     expect(await screen.findByRole('treeitem', { name: /Cludix Nebula/ })).toBeInTheDocument();
-    expect(screen.getByTestId('ne-table-toolbar')).toBeInTheDocument();
+    expect(screen.getByLabelText('组织名称')).toBeInTheDocument();
+    expect(screen.getByLabelText('组织编码')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /新增组织/ })).toBeInTheDocument();
 
     expect(await screen.findByRole('row', { name: /研发中心 RND/ })).toBeInTheDocument();

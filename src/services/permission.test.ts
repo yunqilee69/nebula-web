@@ -15,7 +15,7 @@ beforeEach(() => {
 
 describe('permissionService', () => {
   it('loads permissions for a selected subject', async () => {
-    mockedRequest.mockResolvedValue({ records: [], total: 0 });
+    mockedRequest.mockResolvedValue({ data: [], total: 0 });
 
     await permissionService.pageSubjectPermissions({ subjectType: 'ROLE', subjectId: 'role-admin' });
 
@@ -65,7 +65,7 @@ describe('permissionService', () => {
     mockedRequest
       .mockResolvedValueOnce(orgs)
       .mockResolvedValueOnce(roles)
-      .mockResolvedValueOnce({ records: users, total: 1 });
+      .mockResolvedValueOnce({ data: users, total: 1 });
 
     const result = await permissionService.listSubjects();
 
@@ -96,7 +96,7 @@ describe('permissionService', () => {
         },
       ])
       .mockResolvedValueOnce([{ id: 'role-admin', name: '管理员', code: 'ADMIN' }])
-      .mockResolvedValueOnce({ records: [{ id: 'user-1', username: 'yunqi', nickname: '云起', status: 1 }], total: 1 });
+      .mockResolvedValueOnce({ data: [{ id: 'user-1', username: 'yunqi', nickname: '云起', status: 1 }], total: 1 });
 
     const result = await permissionService.listSubjects();
 

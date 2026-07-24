@@ -76,6 +76,6 @@ export interface PermissionPageReq {
 }
 
 export interface PageResp<T> {
-  records: T[];
+  data: T[];
   total: number;
 }

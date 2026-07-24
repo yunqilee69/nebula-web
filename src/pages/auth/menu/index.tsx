@@ -1,13 +1,13 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Popconfirm, Select, Space, Table, Tag } from 'antd';
+import { Button, Form, Popconfirm, Tag } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { Key } from 'react';
-import { NeTable } from '@/components/ne-table';
-import type { NeTableAction, NeTableRequestParams } from '@/components/ne-table/types';
+import { NebulaProTable } from '@/components/nebula-pro-table';
+import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { PageContainer } from '@/components/page-container';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
-import type { MenuComponentRegistry } from '@/routing/types';
+import type { MenuComponentRegistry } from '@/route/types';
 import { menuService as defaultMenuService } from '@/services/menu';
 import type { MenuService } from '@/services/menu';
 import type {
@@ -172,7 +172,7 @@ export function MenuManagementPage({
   componentOptions: componentOptionsProp,
 }: MenuManagementPageProps) {
   const menuService = menuServiceProp ?? defaultMenuService;
-  const actionRef = useRef<NeTableAction>(null);
+  const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
   const { t } = useNebulaI18n();
   const notice = useNotice();
   const [form] = Form.useForm<MenuFormValues>();
@@ -204,12 +204,13 @@ export function MenuManagementPage({
   );
 
   const requestMenuTree = useCallback(
-    async (params: NeTableRequestParams<MenuSearchValues>) => {
+    async (params: MenuSearchValues & NebulaPageReq) => {
       const tree = await menuService.getMenuTree();
       setMenuTree(tree);
-      const filtered = filterMenuTree(tree, params.query.name, params.query.code, params.query.status);
+      const status = params.status === undefined ? undefined : Number(params.status) as MenuStatus;
+      const filtered = filterMenuTree(tree, params.name, params.code, status);
       setExpandedKeys(collectParentRowKeys(filtered));
-      return { data: filtered, total: undefined };
+      return { data: filtered, total: filtered.length };
     },
     [menuService],
   );
@@ -378,78 +379,120 @@ export function MenuManagementPage({
     [t],
   );
 
+  const statusValueEnum = useMemo(
+    () => Object.fromEntries(menuStatusOptions.map((option) => [option.value, { text: option.label }])),
+    [menuStatusOptions],
+  );
+
+  const columns = useMemo<NebulaProColumns<MenuTreeResp>[]>(() => [
+    {
+      title: t('auth.menuManagement.columns.name'),
+      dataIndex: 'name',
+      fixed: 'left',
+      width: 180,
+      sorter: true,
+    },
+    {
+      title: t('auth.menuManagement.columns.code'),
+      dataIndex: 'code',
+      width: 180,
+      sorter: true,
+    },
+    {
+      title: t('auth.menuManagement.columns.type'),
+      dataIndex: 'type',
+      width: 100,
+      search: false,
+      render: (_, record) => formatMenuType(record.type),
+    },
+    {
+      title: t('auth.menuManagement.columns.path'),
+      dataIndex: 'path',
+      width: 180,
+      search: false,
+    },
+    {
+      title: t('auth.menuManagement.columns.sort'),
+      dataIndex: 'sort',
+      width: 80,
+      search: false,
+      sorter: true,
+    },
+    {
+      title: t('auth.menuManagement.columns.status'),
+      dataIndex: 'status',
+      width: 100,
+      valueType: 'select',
+      valueEnum: statusValueEnum,
+      fieldProps: { 'aria-label': t('auth.menuManagement.fields.status') },
+      render: (_, record) => (
+        <Tag color={record.status === 1 ? 'success' : 'default'}>
+          {record.status === 1 ? t('auth.menuManagement.status.enabled') : t('auth.menuManagement.status.disabled')}
+        </Tag>
+      ),
+    },
+    {
+      title: t('auth.menuManagement.columns.createTime'),
+      dataIndex: 'createTime',
+      width: 180,
+      search: false,
+      sorter: true,
+      render: (_, record) => formatDateTime(record.createTime),
+    },
+    {
+      title: t('auth.menuManagement.columns.updateTime'),
+      dataIndex: 'updateTime',
+      width: 180,
+      search: false,
+      sorter: true,
+      render: (_, record) => formatDateTime(record.updateTime),
+    },
+    {
+      title: t('auth.menuManagement.columns.actions'),
+      key: 'actions',
+      fixed: 'right',
+      width: 220,
+      valueType: 'option',
+      search: false,
+      render: (_, record) => [
+        <Button key="edit" type="link" icon={<EditOutlined />} onClick={() => void openUpdateModal(record)}>
+          {t('auth.menuManagement.actions.edit')}
+        </Button>,
+        <Popconfirm
+          key="delete"
+          title={t('auth.menuManagement.confirm.deleteTitle')}
+          okText={t('auth.menuManagement.actions.delete')}
+          cancelText={t('auth.menuManagement.actions.cancel')}
+          onConfirm={() => void removeMenu(record)}
+        >
+          <Button type="link" danger icon={<DeleteOutlined />}>
+            {t('auth.menuManagement.actions.delete')}
+          </Button>
+        </Popconfirm>,
+        isMenuType(record.type) ? (
+          <Button key="buttons" type="link" onClick={() => openButtonModal(record)}>
+            {t('auth.menuManagement.actions.manageButtons')}
+          </Button>
+        ) : null,
+      ],
+    },
+  ], [formatMenuType, openButtonModal, openUpdateModal, removeMenu, statusValueEnum, t]);
+
   return (
     <PageContainer>
-      <NeTable<MenuTreeResp, MenuSearchValues>
+      <NebulaProTable<MenuTreeResp, MenuSearchValues>
         actionRef={actionRef}
-        rowKey="id"
+        columns={columns}
         pagination={false}
         expandable={expandable}
         request={requestMenuTree}
         onRequestError={handleRequestError}
         size="middle"
         scroll={{ x: 1200 }}
-      >
-        <NeTable.Search<MenuSearchValues>>
-          {({ form: searchForm, submit, reset }) => (
-            <Form form={searchForm} layout="inline" onFinish={submit}>
-              <Form.Item name="name" label={t('auth.menuManagement.fields.name')}>
-                <Input allowClear placeholder={t('auth.menuManagement.placeholders.name')} />
-              </Form.Item>
-              <Form.Item name="code" label={t('auth.menuManagement.fields.code')}>
-                <Input allowClear placeholder={t('auth.menuManagement.placeholders.code')} />
-              </Form.Item>
-              <Form.Item name="status" label={t('auth.menuManagement.fields.status')}>
-                <Select allowClear placeholder={t('auth.menuManagement.placeholders.status')} options={menuStatusOptions} style={{ width: 120 }} />
-              </Form.Item>
-              <Form.Item>
-                <Space>
-                  <Button type="primary" htmlType="submit">{t('auth.menuManagement.actions.search')}</Button>
-                  <Button onClick={() => void reset()}>{t('auth.menuManagement.actions.reset')}</Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          )}
-        </NeTable.Search>
-
-        <NeTable.Toolbar>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>{t('auth.menuManagement.actions.create')}</Button>
-        </NeTable.Toolbar>
-
-        <Table.Column<MenuTreeResp> title={t('auth.menuManagement.columns.name')} dataIndex="name" key="name" fixed="left" width={180} />
-        <Table.Column<MenuTreeResp> title={t('auth.menuManagement.columns.code')} dataIndex="code" key="code" width={180} />
-        <Table.Column<MenuTreeResp> title={t('auth.menuManagement.columns.type')} dataIndex="type" key="type" width={100} render={formatMenuType} />
-        <Table.Column<MenuTreeResp> title={t('auth.menuManagement.columns.path')} dataIndex="path" key="path" width={180} />
-        <Table.Column<MenuTreeResp> title={t('auth.menuManagement.columns.sort')} dataIndex="sort" key="sort" width={80} />
-        <Table.Column<MenuTreeResp>
-          title={t('auth.menuManagement.columns.status')}
-          dataIndex="status"
-          key="status"
-          width={100}
-          render={(status: MenuStatus) => (
-            <Tag color={status === 1 ? 'success' : 'default'}>{status === 1 ? t('auth.menuManagement.status.enabled') : t('auth.menuManagement.status.disabled')}</Tag>
-          )}
-        />
-        <Table.Column<MenuTreeResp> title={t('auth.menuManagement.columns.createTime')} dataIndex="createTime" key="createTime" width={180} render={formatDateTime} />
-        <Table.Column<MenuTreeResp> title={t('auth.menuManagement.columns.updateTime')} dataIndex="updateTime" key="updateTime" width={180} render={formatDateTime} />
-        <Table.Column<MenuTreeResp>
-          title={t('auth.menuManagement.columns.actions')}
-          key="actions"
-          fixed="right"
-          width={220}
-          render={(_, record) => (
-            <Space size="small">
-              <Button type="link" icon={<EditOutlined />} onClick={() => void openUpdateModal(record)}>{t('auth.menuManagement.actions.edit')}</Button>
-              <Popconfirm title={t('auth.menuManagement.confirm.deleteTitle')} okText={t('auth.menuManagement.actions.delete')} cancelText={t('auth.menuManagement.actions.cancel')} onConfirm={() => void removeMenu(record)}>
-                <Button type="link" danger icon={<DeleteOutlined />}>{t('auth.menuManagement.actions.delete')}</Button>
-              </Popconfirm>
-              {isMenuType(record.type) && (
-                <Button type="link" onClick={() => openButtonModal(record)}>{t('auth.menuManagement.actions.manageButtons')}</Button>
-              )}
-            </Space>
-          )}
-        />
-      </NeTable>
+        toolBarRender={() => [
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>{t('auth.menuManagement.actions.create')}</Button>,
+        ]}
+      />
 
       <MenuFormModal
         form={form}

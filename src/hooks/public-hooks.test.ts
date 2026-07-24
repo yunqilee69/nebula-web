@@ -18,7 +18,7 @@ describe('public application hooks', () => {
   it('does not expose app-wide hooks from their old module locations', async () => {
     expect(existsSync(resolve(__dirname, '../i18n/use-nebula-i18n.ts'))).toBe(false);
 
-    const themeContext = await import('../theme/theme-context');
+    const themeContext = await import('../providers/theme-provider');
 
     expect(Object.prototype.hasOwnProperty.call(themeContext, 'useNebulaTheme')).toBe(false);
   });

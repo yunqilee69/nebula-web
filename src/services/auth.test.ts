@@ -20,7 +20,7 @@ import type {
   CurrentUserResp,
   WechatWebQrCodeResp,
   WechatWebLoginStatusResp,
-} from '@/auth/types';
+} from '@/types/auth';
 
 const mockedRequest = vi.mocked(request);
 

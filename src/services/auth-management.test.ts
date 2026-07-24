@@ -15,7 +15,7 @@ beforeEach(() => {
 
 describe('authManagementService', () => {
   it('pages users through the auth user endpoint', async () => {
-    mockedRequest.mockResolvedValueOnce({ records: [], total: 0 });
+    mockedRequest.mockResolvedValueOnce({ data: [], total: 0 });
 
     await authManagementService.pageUsers({ pageNum: 1, pageSize: 10, username: 'yunqi', status: 1 });
 
@@ -75,7 +75,7 @@ describe('authManagementService', () => {
 
   it('loads organization tree and pages organizations', async () => {
     mockedRequest.mockResolvedValueOnce([]);
-    mockedRequest.mockResolvedValueOnce({ records: [], total: 0 });
+    mockedRequest.mockResolvedValueOnce({ data: [], total: 0 });
 
     await authManagementService.getOrgTree();
     await authManagementService.pageOrgs({ pageNum: 1, pageSize: 20, parentId: 'org-1' });
