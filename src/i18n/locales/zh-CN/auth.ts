@@ -182,7 +182,7 @@ export const auth: NebulaAuthMessages = {
   userManagement: {
     title: '用户管理',
     actions: { create: '新增用户', edit: '编辑', delete: '删除', search: '查询', reset: '重置', save: '保存', cancel: '取消' },
-    columns: { username: '账号', nickname: '昵称', status: '状态', actions: '操作' },
+    columns: { username: '账号', nickname: '昵称', status: '状态', role: '角色', org: '组织', actions: '操作' },
     fields: { username: '用户名', password: '密码', nickname: '昵称', email: '邮箱', phone: '手机号', roles: '角色', orgs: '组织', status: '状态' },
     modal: { createTitle: '新增用户', editTitle: '编辑用户' },
     placeholders: { username: '请输入账号', password: '请输入密码', nickname: '请输入昵称', email: '请输入邮箱', phone: '请输入手机号', roles: '请选择角色', orgs: '请选择组织', status: '全部状态' },
@@ -237,5 +237,11 @@ export const auth: NebulaAuthMessages = {
       unbindFailed: '第三方账号解绑失败',
       loginRecordsLoadFailed: '登录记录加载失败',
     },
+  },
+  select: {
+    selectedSingle: '已选择',
+    selectedMultiple: '已选择 {count} 项',
+    allRoles: '全部角色',
+    allOrgs: '全部组织',
   },
 };

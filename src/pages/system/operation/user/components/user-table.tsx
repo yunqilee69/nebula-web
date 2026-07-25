@@ -5,14 +5,15 @@ import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { AuthManagementService } from '@/services/auth-management';
-import type { EnableStatus, UserPageReq, UserResp } from '@/types/auth-management';
+import type { EnableStatus, OrgOptionResp, RoleOptionResp, UserPageReq, UserResp } from '@/types/auth-management';
 import { createEnableStatusOptions, normalizeOptionalText } from './user-page-shared';
-import styles from './user-table.module.css';
 
 interface UserQuery {
   username?: string;
   nickname?: string;
   status?: EnableStatus;
+  roleId?: string;
+  orgId?: string;
 }
 
 export interface UserTableHandle {
@@ -23,6 +24,8 @@ interface UserTableProps {
   service: AuthManagementService;
   onAddUser: () => void;
   onEditUser: (record: UserResp) => void;
+  roles?: RoleOptionResp[];
+  orgs?: OrgOptionResp[];
 }
 
 function buildUserPageReq(params: UserQuery & NebulaPageReq): UserPageReq {
@@ -38,11 +41,16 @@ function buildUserPageReq(params: UserQuery & NebulaPageReq): UserPageReq {
   if (username) req.username = username;
   if (nickname) req.nickname = nickname;
   if (params.status !== undefined) req.status = Number(params.status) as EnableStatus;
+  if (params.roleId) req.roleId = params.roleId;
+  if (params.orgId) req.orgId = params.orgId;
 
   return req;
 }
 
-export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function UserTable({ service, onAddUser, onEditUser }, ref) {
+export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function UserTable(
+  { service, onAddUser, onEditUser, roles = [], orgs = [] },
+  ref,
+) {
   const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
   const { t } = useNebulaI18n();
   const statusOptions = createEnableStatusOptions(t);
@@ -86,6 +94,28 @@ export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function Us
       ),
     },
     {
+      title: t('auth.userManagement.columns.role'),
+      dataIndex: 'roleId',
+      valueType: 'select',
+      valueEnum: Object.fromEntries(roles.map((role) => [role.id, { text: role.name }])) as Record<string, { text: string }>,
+      fieldProps: {
+        showSearch: true,
+        optionFilterProp: 'label',
+      },
+    },
+    {
+      title: t('auth.userManagement.columns.org'),
+      dataIndex: 'orgId',
+      valueType: 'select',
+      valueEnum: Object.fromEntries(orgs.map((org) => [org.id, { text: org.name }])) as Record<string, { text: string }>,
+      fieldProps: {
+        showSearch: true,
+        optionFilterProp: 'label',
+        placeholder: t('auth.select.allOrgs'),
+        allowClear: true,
+      },
+    },
+    {
       title: t('auth.userManagement.columns.actions'),
       key: 'actions',
       valueType: 'option',
@@ -107,14 +137,17 @@ export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function Us
         </Popconfirm>,
       ],
     },
-  ], [onEditUser, removeUser, statusOptions, t]);
+  ], [onEditUser, removeUser, statusOptions, t, roles, orgs]);
 
   return (
     <NebulaProTable<UserResp, UserQuery>
       actionRef={actionRef}
-      className={styles.toolbar}
       columns={columns}
       request={requestUsers}
+      search={{
+        labelWidth: 'auto',
+        defaultCollapsed: false,
+      }}
       toolBarRender={() => [
         <Button key="create" type="primary" icon={<PlusOutlined />} onClick={onAddUser}>
           {t('auth.userManagement.actions.create')}

@@ -33,6 +33,7 @@ export interface UserPageReq extends PageReq {
   phone?: string;
   status?: EnableStatus;
   orgId?: string;
+  roleId?: string;
 }
 
 export interface UserResp {

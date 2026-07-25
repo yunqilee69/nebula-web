@@ -80,8 +80,8 @@ describe('OrgManagementPage', () => {
     const service = renderPage();
 
     expect(await screen.findByRole('treeitem', { name: /Cludix Nebula/ })).toBeInTheDocument();
-    expect(screen.getByLabelText('组织名称')).toBeInTheDocument();
-    expect(screen.getByLabelText('组织编码')).toBeInTheDocument();
+    expect(screen.getAllByLabelText('组织名称').length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText('组织编码').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /新增组织/ })).toBeInTheDocument();
 
     expect(await screen.findByRole('row', { name: /研发中心 RND/ })).toBeInTheDocument();
@@ -115,7 +115,7 @@ describe('OrgManagementPage', () => {
 
     await user.click(screen.getByRole('button', { name: /新增组织/ }));
 
-    const dialog = screen.getByRole('dialog', { name: '新增组织' });
+    const dialog = await screen.findByRole('dialog', { name: '新增组织' });
     expect(within(dialog).getByLabelText('组织名称')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('组织编码')).toBeInTheDocument();
   });

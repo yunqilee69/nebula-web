@@ -148,6 +148,8 @@ export function UserManagementPage({ service: serviceProp }: UserManagementPageP
       <UserTable
         ref={tableRef}
         service={service}
+        roles={roles}
+        orgs={orgs}
         onAddUser={openCreateDrawer}
         onEditUser={(record) => void openUpdateDrawer(record)}
       />

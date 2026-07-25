@@ -14,6 +14,13 @@ export interface NebulaCommonMessages {
   empty: {
     noModules: string;
   };
+  actions: {
+    confirm: string;
+    cancel: string;
+  };
+  pagination: {
+    total: string;
+  };
 }
 
 export interface NebulaTabContextMenuMessages {
@@ -250,6 +257,8 @@ export interface NebulaUserManagementMessages {
     username: string;
     nickname: string;
     status: string;
+    role: string;
+    org: string;
     actions: string;
   };
   fields: {
@@ -478,6 +487,14 @@ export interface NebulaAuthMessages {
   orgManagement: NebulaOrgManagementMessages;
   permissionConfig: NebulaPermissionConfigMessages;
   profileInfo: NebulaProfileInfoMessages;
+  select: NebulaSelectMessages;
+}
+
+export interface NebulaSelectMessages {
+  selectedSingle: string;
+  selectedMultiple: string;
+  allRoles: string;
+  allOrgs: string;
 }
 
 export interface NebulaMessages {

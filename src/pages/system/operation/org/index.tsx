@@ -11,14 +11,13 @@ import {
   buildUpdatePayload,
   type OrgDrawerFormValues,
 } from './components/org-form-drawer';
+import { OrgFormModal } from './components/org-form-modal';
 import { OrgTable, type OrgTableHandle } from './components/org-table';
 import { OrgTreePanel } from './components/org-tree-panel';
 
 export interface OrgManagementPageProps {
   service?: AuthManagementService;
 }
-
-type DrawerMode = 'create' | 'update';
 
 export function OrgManagementPage({ service: serviceProp }: OrgManagementPageProps) {
   const service = serviceProp ?? defaultAuthManagementService;
@@ -27,12 +26,12 @@ export function OrgManagementPage({ service: serviceProp }: OrgManagementPagePro
 
   const tableRef = useRef<OrgTableHandle>(null);
 
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalSubmitting, setModalSubmitting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<DrawerMode>('create');
-  const [drawerTitle, setDrawerTitle] = useState(t('auth.orgManagement.modal.createTitle'));
   const [editingOrgId, setEditingOrgId] = useState<string>();
   const [drawerInitialValues, setDrawerInitialValues] = useState<Partial<OrgDrawerFormValues>>();
-  const [submitting, setSubmitting] = useState(false);
+  const [drawerSubmitting, setDrawerSubmitting] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
 
   const [tree, setTree] = useState<OrgTreeResp[]>([]);
@@ -78,18 +77,12 @@ export function OrgManagementPage({ service: serviceProp }: OrgManagementPagePro
     }
   }, [service, notice, t]);
 
-  const openCreateDrawer = useCallback(() => {
-    setDrawerMode('create');
-    setDrawerTitle(t('auth.orgManagement.modal.createTitle'));
-    setEditingOrgId(undefined);
-    setDrawerInitialValues(undefined);
-    setDrawerOpen(true);
-  }, [t]);
+  const openCreateModal = useCallback(() => {
+    setModalOpen(true);
+  }, []);
 
   const openUpdateDrawer = useCallback(
     async (record: OrgResp) => {
-      setDrawerMode('update');
-      setDrawerTitle(t('auth.orgManagement.modal.editTitle'));
       setEditingOrgId(record.id);
       setDrawerInitialValues(undefined);
       setDrawerOpen(true);
@@ -115,35 +108,55 @@ export function OrgManagementPage({ service: serviceProp }: OrgManagementPagePro
     [service, notice, t],
   );
 
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
+
   const closeDrawer = useCallback(() => {
     setDrawerOpen(false);
     setEditingOrgId(undefined);
     setDrawerInitialValues(undefined);
   }, []);
 
-  const handleSubmit = useCallback(
+  const handleModalSubmit = useCallback(
     async (values: OrgDrawerFormValues) => {
-      setSubmitting(true);
+      setModalSubmitting(true);
       try {
-        if (drawerMode === 'create') {
-          await service.createOrg(buildCreatePayload(values));
-          notice.success(t('auth.orgManagement.feedback.createSuccess'));
-        } else if (editingOrgId) {
-          await service.updateOrg(buildUpdatePayload(editingOrgId, values));
-          notice.success(t('auth.orgManagement.feedback.updateSuccess'));
-        }
+        await service.createOrg(buildCreatePayload(values));
+        notice.success(t('auth.orgManagement.feedback.createSuccess'));
+        closeModal();
+        await refreshTreeAndOrgs();
+        await tableRef.current?.reload();
+      } catch (error: unknown) {
+        notice.error(t('auth.orgManagement.feedback.createFailed'));
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Org create failed', message);
+      } finally {
+        setModalSubmitting(false);
+      }
+    },
+    [closeModal, notice, refreshTreeAndOrgs, service, t],
+  );
+
+  const handleDrawerSubmit = useCallback(
+    async (values: OrgDrawerFormValues) => {
+      if (!editingOrgId) return;
+      setDrawerSubmitting(true);
+      try {
+        await service.updateOrg(buildUpdatePayload(editingOrgId, values));
+        notice.success(t('auth.orgManagement.feedback.updateSuccess'));
         closeDrawer();
         await refreshTreeAndOrgs();
         await tableRef.current?.reload();
       } catch (error: unknown) {
-        notice.error(drawerMode === 'create' ? t('auth.orgManagement.feedback.createFailed') : t('auth.orgManagement.feedback.updateFailed'));
+        notice.error(t('auth.orgManagement.feedback.updateFailed'));
         const message = error instanceof Error ? error.message : String(error);
-        console.error('Org submit failed', message);
+        console.error('Org update failed', message);
       } finally {
-        setSubmitting(false);
+        setDrawerSubmitting(false);
       }
     },
-    [closeDrawer, drawerMode, editingOrgId, notice, refreshTreeAndOrgs, service, t],
+    [closeDrawer, editingOrgId, notice, refreshTreeAndOrgs, service, t],
   );
 
   return (
@@ -157,19 +170,27 @@ export function OrgManagementPage({ service: serviceProp }: OrgManagementPagePro
             ref={tableRef}
             service={service}
             parentId={selectedOrgId}
-            onCreate={openCreateDrawer}
+            onCreate={openCreateModal}
             onEdit={(record) => void openUpdateDrawer(record)}
           />
         </div>
       </Flex>
+      <OrgFormModal
+        open={modalOpen}
+        title={t('auth.orgManagement.modal.createTitle')}
+        submitting={modalSubmitting}
+        orgs={orgs}
+        onClose={closeModal}
+        onSubmit={(values) => void handleModalSubmit(values)}
+      />
       <OrgFormDrawer
         open={drawerOpen}
-        title={drawerTitle}
+        title={t('auth.orgManagement.modal.editTitle')}
         initialValues={drawerInitialValues}
-        submitting={submitting || detailLoading}
+        submitting={drawerSubmitting || detailLoading}
         orgs={orgs}
         onClose={closeDrawer}
-        onSubmit={(values) => void handleSubmit(values)}
+        onSubmit={(values) => void handleDrawerSubmit(values)}
       />
     </>
   );

@@ -2,8 +2,15 @@ import type { NebulaCommonMessages } from '../../types';
 
 export const common: NebulaCommonMessages = {
   languageZh: '中文',
-  languageEn: 'EN',
+  languageEn: 'English',
   empty: {
-    noModules: '当前还没有注册业务模块',
+    noModules: '暂无模块',
+  },
+  actions: {
+    confirm: '确认',
+    cancel: '取消',
+  },
+  pagination: {
+    total: '共 {total} 条',
   },
 };

@@ -4,6 +4,7 @@ import type { SortOrder } from 'antd/es/table/interface';
 import type { ReactElement } from 'react';
 import { buildNebulaTableRequestParams, NEBULA_TABLE_DEFAULT_PAGE_SIZE } from './params';
 import type { NebulaPageReq, NebulaPageResp, ProTableRawParams } from './params';
+import './toolbar.css';
 
 export type NebulaProTableRequest<RecordType, Query extends object> = (
   params: Query & NebulaPageReq,
@@ -21,7 +22,7 @@ export function NebulaProTable<
   RecordType extends Record<string, any>,
   Query extends object = Record<string, any>,
   ValueType = 'text',
->({ request, pagination, ...props }: NebulaProTableProps<RecordType, Query, ValueType>): ReactElement {
+>({ request, pagination, className, ...props }: NebulaProTableProps<RecordType, Query, ValueType>): ReactElement {
   const wrappedRequest: ProTableProps<RecordType, Query & Record<string, any>, ValueType>['request'] = request
     ? async (params, sort) => {
         const page = await request(
@@ -47,6 +48,8 @@ export function NebulaProTable<
         ...pagination,
       };
 
+  const mergedClassName = `nebula-pro-table-toolbar${className ? ` ${className}` : ''}`;
+
   return (
     <ProTable<RecordType, Query & Record<string, any>, ValueType>
       rowKey="id"
@@ -54,6 +57,7 @@ export function NebulaProTable<
       options={{ density: true, fullScreen: true, reload: true, setting: true }}
       pagination={mergedPagination}
       {...props}
+      className={mergedClassName}
       request={wrappedRequest}
     />
   );

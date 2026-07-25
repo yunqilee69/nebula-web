@@ -182,7 +182,7 @@ export const auth: NebulaAuthMessages = {
   userManagement: {
     title: 'User Management',
     actions: { create: 'New User', edit: 'Edit', delete: 'Delete', search: 'Search', reset: 'Reset', save: 'Save', cancel: 'Cancel' },
-    columns: { username: 'Account', nickname: 'Nickname', status: 'Status', actions: 'Actions' },
+    columns: { username: 'Account', nickname: 'Nickname', status: 'Status', role: 'Role', org: 'Organization', actions: 'Actions' },
     fields: { username: 'Username', password: 'Password', nickname: 'Nickname', email: 'Email', phone: 'Phone', roles: 'Roles', orgs: 'Organizations', status: 'Status' },
     modal: { createTitle: 'New User', editTitle: 'Edit User' },
     placeholders: { username: 'Enter account', password: 'Enter password', nickname: 'Enter nickname', email: 'Enter email', phone: 'Enter phone', roles: 'Select roles', orgs: 'Select organizations', status: 'All statuses' },
@@ -237,5 +237,11 @@ export const auth: NebulaAuthMessages = {
       unbindFailed: 'Failed to unbind third-party account',
       loginRecordsLoadFailed: 'Failed to load login records',
     },
+  },
+  select: {
+    selectedSingle: 'Selected',
+    selectedMultiple: 'Selected {count} items',
+    allRoles: 'All Roles',
+    allOrgs: 'All Organizations',
   },
 };
