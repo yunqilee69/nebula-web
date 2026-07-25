@@ -1,29 +1,18 @@
-import { Card, Empty, Input, List, Tabs, Tag, Typography, theme as antdTheme } from 'antd';
-import type { TabsProps } from 'antd';
+import { Card, Empty, Flex, Input, Segmented, Tag, Typography, theme as antdTheme } from 'antd';
 import { useMemo } from 'react';
-import { NeTree } from '@/components/ne-tree';
-import type { NeTreeNode } from '@/components/ne-tree/types';
-import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
+import { OrgTree } from '@/components/org-tree';
+import type { OrgTreeResp } from '@/types/auth-management';
 import type { PermissionSubject, PermissionSubjectType } from '@/types/permission';
+import type { SubjectSelectorProps } from './types';
 
-export interface SubjectSelectorProps {
-  activeType: PermissionSubjectType;
-  keyword: string;
-  orgSubjects: PermissionSubject[];
-  roleSubjects: PermissionSubject[];
-  userSubjects: PermissionSubject[];
-  selectedSubject?: PermissionSubject;
-  onTypeChange: (type: PermissionSubjectType) => void;
-  onKeywordChange: (keyword: string) => void;
-  onSelect: (subject: PermissionSubject) => void;
-}
-
-function toTreeNodes(subjects: PermissionSubject[]): NeTreeNode[] {
+function toOrgTreeResp(subjects: PermissionSubject[]): OrgTreeResp[] {
   return subjects.map((subject) => ({
-    key: subject.id,
-    title: subject.name,
-    tag: subject.code ? <Tag>{subject.code}</Tag> : undefined,
-    children: subject.children ? toTreeNodes(subject.children) : undefined,
+    id: subject.id,
+    name: subject.name,
+    code: subject.code,
+    status: 1 as const,
+    type: 'DEPARTMENT' as const,
+    children: subject.children ? toOrgTreeResp(subject.children) : undefined,
   }));
 }
 
@@ -63,7 +52,6 @@ export function SubjectSelector({
   onSelect,
 }: SubjectSelectorProps) {
   const { token } = antdTheme.useToken();
-  const { t } = useNebulaI18n();
 
   const flatOrgs = useMemo(() => flattenSubjects(orgSubjects), [orgSubjects]);
   const filteredOrgTree = useMemo(() => filterSubjectTree(orgSubjects, keyword), [orgSubjects, keyword]);
@@ -71,56 +59,127 @@ export function SubjectSelector({
   const currentSubjects = activeType === 'ROLE' ? roleSubjects : activeType === 'USER' ? userSubjects : flatOrgs;
   const filteredSubjects = filterSubjects(currentSubjects, keyword);
 
-  const tabItems: TabsProps['items'] = [
-    { key: 'ORG', label: '组织' },
-    { key: 'ROLE', label: '角色' },
-    { key: 'USER', label: '用户' },
-  ];
+  const orgTreeData = useMemo(
+    () => toOrgTreeResp(filteredOrgTree),
+    [filteredOrgTree],
+  );
+
+  const segmentOptions = useMemo(() => [
+    { value: 'ORG', label: '组织' },
+    { value: 'ROLE', label: '角色' },
+    { value: 'USER', label: '用户' },
+  ], []);
+
+  const searchPlaceholder = activeType === 'ORG' ? '搜索组织' : activeType === 'ROLE' ? '搜索角色' : '搜索用户';
 
   return (
-    <Card styles={{ body: { padding: 14 } }}>
-      <Tabs activeKey={activeType} items={tabItems} onChange={(key) => onTypeChange(key as PermissionSubjectType)} />
-      <Input.Search
-        placeholder={activeType === 'ORG' ? '搜索组织' : activeType === 'ROLE' ? '搜索角色' : '搜索用户'}
-        value={keyword}
-        onChange={(event) => onKeywordChange(event.target.value)}
-      />
-      {activeType === 'ORG' ? (
-        <div style={{ marginTop: 12 }}>
-          <NeTree
-            title={activeType === 'ORG' ? '组织列表' : undefined}
-            dataSource={toTreeNodes(filteredOrgTree)}
+    <Card
+      styles={{
+        body: {
+          padding: token.paddingMD,
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+        },
+      }}
+      style={{ height: '100%' }}
+    >
+      <Flex vertical gap={token.marginSM}>
+        <Segmented
+          block
+          options={segmentOptions}
+          value={activeType}
+          onChange={(value) => onTypeChange(value as PermissionSubjectType)}
+        />
+
+        <Input.Search
+          placeholder={searchPlaceholder}
+          value={keyword}
+          allowClear
+          onChange={(event) => onKeywordChange(event.target.value)}
+        />
+      </Flex>
+
+      <div style={{ flex: 1, minHeight: 0, marginTop: token.marginSM }}>
+        {activeType === 'ORG' ? (
+          <OrgTree
+            dataSource={orgTreeData}
             selectedKey={selectedSubject?.id}
+            showStatusTags={false}
             searchable={false}
-            emptyText={<Empty description="暂无组织数据" />}
-            onSelect={(key) => {
-              const subject = flatOrgs.find((item) => item.id === key);
+            title={null}
+            extra={null}
+            style={{
+              border: 'none',
+              padding: 0,
+              background: 'transparent',
+              minHeight: 'auto',
+            }}
+            onSelect={(orgId) => {
+              const subject = flatOrgs.find((item) => item.id === orgId);
               if (subject) onSelect(subject);
             }}
           />
-        </div>
-      ) : (
-        <List
-          style={{ marginTop: 12 }}
-          dataSource={filteredSubjects}
-          locale={{ emptyText: <Empty description={activeType === 'ROLE' ? '暂无角色数据' : '暂无用户数据'} /> }}
-          renderItem={(subject) => (
-            <List.Item
-              style={{ cursor: 'pointer', background: subject.id === selectedSubject?.id ? token.colorPrimaryBg : undefined, borderRadius: 4, padding: '8px 12px' }}
-              onClick={() => onSelect(subject)}
+        ) : (
+          filteredSubjects.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={activeType === 'ROLE' ? '暂无角色数据' : '暂无用户数据'}
+              style={{ marginTop: 40 }}
+            />
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: token.marginXXS,
+                maxHeight: 'calc(100vh - 320px)',
+                overflow: 'auto',
+              }}
             >
-              <List.Item.Meta
-                title={subject.name}
-                description={
-                  <Typography.Text type="secondary">
-                    {subject.code}{subject.description ? ` · ${subject.description}` : ''}
-                  </Typography.Text>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      )}
+              {filteredSubjects.map((subject) => {
+                const isSelected = subject.id === selectedSubject?.id;
+                return (
+                  <Flex
+                    key={subject.id}
+                    align="center"
+                    justify="space-between"
+                    onClick={() => onSelect(subject)}
+                    style={{
+                      padding: `${token.paddingXS}px ${token.paddingSM}px`,
+                      borderRadius: token.borderRadius,
+                      cursor: 'pointer',
+                      background: isSelected ? token.colorPrimaryBg : undefined,
+                      border: `1px solid ${isSelected ? token.colorPrimaryBorder : token.colorBorderSecondary}`,
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = token.colorFillAlter;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    <Flex vertical gap={0}>
+                      <Typography.Text strong={isSelected}>{subject.name}</Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                        {subject.code}{subject.description ? ` · ${subject.description}` : ''}
+                      </Typography.Text>
+                    </Flex>
+                    {isSelected && (
+                      <Tag color="processing">已选中</Tag>
+                    )}
+                  </Flex>
+                );
+              })}
+            </div>
+          )
+        )}
+      </div>
     </Card>
   );
 }
