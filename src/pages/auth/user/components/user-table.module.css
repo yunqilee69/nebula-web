@@ -1,0 +1,14 @@
+/* Toolbar layout: custom buttons (left) | built-in options (right) */
+.toolbar :global(.ant-pro-table-list-toolbar-right) {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.toolbar :global(.ant-pro-table-list-toolbar-option) {
+  order: 1;
+}
+
+.toolbar :global(.ant-pro-table-list-toolbar-setting) {
+  order: 2;
+}

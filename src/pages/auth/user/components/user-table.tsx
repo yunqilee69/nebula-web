@@ -7,6 +7,7 @@ import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { AuthManagementService } from '@/services/auth-management';
 import type { EnableStatus, UserPageReq, UserResp } from '@/types/auth-management';
 import { createEnableStatusOptions, normalizeOptionalText } from './user-page-shared';
+import styles from './user-table.module.css';
 
 interface UserQuery {
   username?: string;
@@ -111,6 +112,7 @@ export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function Us
   return (
     <NebulaProTable<UserResp, UserQuery>
       actionRef={actionRef}
+      className={styles.toolbar}
       columns={columns}
       request={requestUsers}
       toolBarRender={() => [
