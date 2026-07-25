@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet, useLocation, type RouteObject } from 'react-router-dom';
-import { EmptyModule } from '@/components/empty-module';
-import { ExceptionResult } from '@/components/exception-result';
+import { EmptyModule } from '@/layouts/empty-module';
+import { ExceptionResult } from '@/layouts/exception-result';
 import { NebulaLayout } from '@/layouts/nebula-layout';
 import { LoginPage } from '@/pages/login';
 import { ProfileInfoPage } from '@/pages/profile/info';

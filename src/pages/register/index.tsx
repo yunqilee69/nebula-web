@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useNebulaLoginBadge } from '@/providers/login-badge-provider';
 import type { AuthInitResp, RegisterReq } from '@/types/auth';
-import { AuthShell } from '@/components/auth-shell';
+import { AuthShell } from '@/layouts/auth-shell';
 
 interface RegisterFormValues extends RegisterReq {
   confirmPassword: string;

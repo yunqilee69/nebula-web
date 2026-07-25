@@ -4,7 +4,6 @@ import { createStyles } from 'antd-style';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns } from '@/components/nebula-pro-table';
-import { PageContainer } from '@/components/page-container';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import { profileService as defaultProfileService } from '@/services/profile';
@@ -189,7 +188,7 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
   const renderNotProvided = useCallback((value: string | number | undefined) => value ?? t('auth.profileInfo.empty.notProvided'), [t]);
 
   return (
-    <PageContainer>
+    <>
       <Space orientation="vertical" size={token.marginMD} className="w-full">
         <Card title={t('auth.profileInfo.sections.basic')} loading={profileLoading} extra={<Button icon={<ReloadOutlined />} onClick={() => void loadProfile()}>{t('auth.profileInfo.actions.refresh')}</Button>}>
           <Space orientation="vertical" size={token.marginMD} className="w-full">
@@ -264,7 +263,7 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
           />
         </Card>
       </Space>
-    </PageContainer>
+    </>
   );
 }
 

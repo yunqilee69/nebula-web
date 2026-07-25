@@ -1,5 +1,5 @@
 import { KeyOutlined, LoginOutlined, MailOutlined, MobileOutlined, WechatOutlined } from '@ant-design/icons';
-import { Alert, Button, Flex, Form, Input, Space, Spin, Typography, theme } from 'antd';
+import { Alert, Button, Flex, Form, Input, Spin, Tabs, Typography, theme } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toCurrentUser } from '@/utils/auth/current-user';
@@ -15,7 +15,7 @@ import type {
   WechatWebQrCodeResp,
 } from '@/types/auth';
 import type { AuthService } from '@/services/auth';
-import { AuthShell } from '@/components/auth-shell';
+import { AuthShell } from '@/layouts/auth-shell';
 import { useAuthStore } from '@/stores/auth-store';
 
 const builtInLabels: Record<BuiltInLoginMethodKey, string> = {
@@ -73,24 +73,23 @@ function buildLoginMethodDescriptors(
 }
 
 function getLoginMethodIcon(method: LoginMethodDescriptor): ReactNode {
-  if (method.kind === 'extra') return <LoginOutlined />;
+  if (method.kind === 'extra') return <LoginOutlined aria-hidden />;
 
   switch (method.method) {
     case 'password':
-      return <KeyOutlined />;
+      return <KeyOutlined aria-hidden />;
     case 'phone':
-      return <MobileOutlined />;
+      return <MobileOutlined aria-hidden />;
     case 'email':
-      return <MailOutlined />;
+      return <MailOutlined aria-hidden />;
     case 'wechat-web':
-      return <WechatOutlined />;
+      return <WechatOutlined aria-hidden />;
   }
 }
 
 export function LoginPage() {
   const loginBadge = useNebulaLoginBadge();
   const navigate = useNavigate();
-  const { token } = theme.useToken();
   const setUser = useAuthStore((state) => state.setUser);
 
   const [config, setConfig] = useState<AuthInitResp | null>(null);
@@ -258,54 +257,46 @@ function LoginMethodSwitcher({
 
   const activeMethod = methods.find((method) => method.key === activeMethodKey) ?? methods[0];
 
+  const tabItems = useMemo(
+    () =>
+      methods.map((method) => ({
+        key: method.key,
+        label: method.label,
+        icon: getLoginMethodIcon(method),
+        children:
+          method.kind === 'built-in' && authService ? (
+            <LoginMethodPanel
+              method={method.method}
+              authService={authService}
+              onSuccess={onLoginSuccess}
+              config={config}
+            />
+          ) : method.kind === 'extra' ? (
+            <ExtraBadgePanel
+              badge={method.badge}
+              onSuccess={onExtraSuccess}
+              loginBadgeContext={loginBadgeContext}
+            />
+          ) : null,
+      })),
+    [authService, config, loginBadgeContext, methods, onExtraSuccess, onLoginSuccess],
+  );
+
   if (!activeMethod) {
     return <Alert type="info" title="暂无可用登录方式" description="当前认证服务未返回可用登录方式，请联系系统管理员检查登录管理配置。" showIcon />;
   }
 
-  const alternateMethods = methods.filter((method) => method.key !== activeMethod.key);
-
   return (
     <Flex vertical gap={token.marginMD}>
-      <Typography.Text strong className="text-center">
-        当前登录方式：{activeMethod.label}
-      </Typography.Text>
-
-      {activeMethod.kind === 'built-in' && authService ? (
-        <LoginMethodPanel
-          method={activeMethod.method}
-          authService={authService}
-          onSuccess={onLoginSuccess}
-          config={config}
-        />
-      ) : null}
-
-      {activeMethod.kind === 'extra' ? (
-        <ExtraBadgePanel
-          badge={activeMethod.badge}
-          onSuccess={onExtraSuccess}
-          loginBadgeContext={loginBadgeContext}
-        />
-      ) : null}
-
-      {alternateMethods.length > 0 && (
-        <Flex vertical align="center" gap={token.marginXS}>
-          <Typography.Text type="secondary">其他登录方式</Typography.Text>
-          <Space size={[token.marginXS, token.marginXS]} wrap className="justify-center">
-            {alternateMethods.map((method) => (
-              <Button
-                key={method.key}
-                aria-label={method.label}
-                title={method.label}
-                type="default"
-                shape="circle"
-                icon={getLoginMethodIcon(method)}
-                className="h-11 w-11"
-                onClick={() => setActiveMethodKey(method.key)}
-              />
-            ))}
-          </Space>
-        </Flex>
-      )}
+      <Tabs
+        activeKey={activeMethod.key}
+        centered
+        items={tabItems}
+        tabBarGutter={token.marginMD}
+        tabBarStyle={{ marginBottom: token.marginMD }}
+        type="line"
+        onChange={setActiveMethodKey}
+      />
     </Flex>
   );
 }

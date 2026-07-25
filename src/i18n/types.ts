@@ -1,8 +1,19 @@
+/**
+ * Internationalization resource type definitions.
+ * 
+ * - NebulaLocale: Supported language identifiers
+ * - Nebula*Messages: Message shapes for each business domain
+ * - NebulaMessages: Root message structure aggregating all domains
+ * - NebulaMessageKey: Type-safe dot-notation paths (e.g., 'auth.roleManagement.title')
+ */
 export type NebulaLocale = 'zh-CN' | 'en-US';
 
 export interface NebulaCommonMessages {
   languageZh: string;
   languageEn: string;
+  empty: {
+    noModules: string;
+  };
 }
 
 export interface NebulaTabContextMenuMessages {
@@ -475,6 +486,7 @@ export interface NebulaMessages {
   auth: NebulaAuthMessages;
 }
 
+/** Recursive type that generates all dot-notation paths to string leaves. */
 type StringLeafPath<T> = {
   [Key in keyof T & string]: T[Key] extends string
     ? Key

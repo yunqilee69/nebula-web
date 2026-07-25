@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
@@ -100,7 +100,7 @@ describe('LoginPage', () => {
     vi.mocked(saveAuthTokens).mockClear();
   });
 
-  it('loads config, shows password login by default, and renders alternate methods as badges', async () => {
+  it('loads config, shows password login by default, and renders login methods as tabs', async () => {
     const user = userEvent.setup();
     const authService = createMockAuthService({
       getAuthConfig: vi.fn().mockResolvedValue(fullConfig),
@@ -113,25 +113,21 @@ describe('LoginPage', () => {
     });
 
     expect(screen.getByLabelText('密码')).toBeInTheDocument();
-    expect(screen.getByText('当前登录方式：账号密码')).toBeInTheDocument();
-    expect(screen.getByText('其他登录方式')).toBeInTheDocument();
-    const phoneButton = screen.getByRole('button', { name: '手机验证码' });
-    const emailButton = screen.getByRole('button', { name: '邮箱验证码' });
-    const wechatButton = screen.getByRole('button', { name: '微信扫码' });
-    expect(phoneButton).toHaveClass('ant-btn-circle');
-    expect(emailButton).toHaveClass('ant-btn-circle');
-    expect(wechatButton).toHaveClass('ant-btn-circle');
-    expect(phoneButton).not.toHaveTextContent('手机验证码');
-    expect(emailButton).not.toHaveTextContent('邮箱验证码');
-    expect(wechatButton).not.toHaveTextContent('微信扫码');
-    expect(within(phoneButton).getByRole('img', { name: 'mobile' })).toBeInTheDocument();
-    expect(within(emailButton).getByRole('img', { name: 'mail' })).toBeInTheDocument();
-    expect(within(wechatButton).getByRole('img', { name: 'wechat' })).toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: '手机验证码' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/当前登录方式/)).not.toBeInTheDocument();
+    expect(screen.queryByText('其他登录方式')).not.toBeInTheDocument();
+    const passwordTab = screen.getByRole('tab', { name: '账号密码' });
+    const phoneTab = screen.getByRole('tab', { name: '手机验证码' });
+    const emailTab = screen.getByRole('tab', { name: '邮箱验证码' });
+    const wechatTab = screen.getByRole('tab', { name: '微信扫码' });
+    expect(passwordTab).toHaveAttribute('aria-selected', 'true');
+    expect(phoneTab.querySelector('.anticon-mobile')).toBeInTheDocument();
+    expect(emailTab.querySelector('.anticon-mail')).toBeInTheDocument();
+    expect(wechatTab.querySelector('.anticon-wechat')).toBeInTheDocument();
 
-    await user.click(phoneButton);
+    await user.click(phoneTab);
 
-    expect(screen.getByText('当前登录方式：手机验证码')).toBeInTheDocument();
+    expect(phoneTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText('手机号')).toBeInTheDocument();
     expect(authService.getAuthConfig).toHaveBeenCalledOnce();
   });
 
@@ -154,10 +150,9 @@ describe('LoginPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: '企业 SSO' })).toHaveClass('ant-btn-circle');
+      expect(screen.getByRole('tab', { name: '企业 SSO' })).toBeInTheDocument();
     });
-    expect(within(screen.getByRole('button', { name: '企业 SSO' })).getByRole('img', { name: 'login' })).toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: '企业 SSO' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '企业 SSO' }).querySelector('.anticon-login')).toBeInTheDocument();
   });
 
   it('shows loading state while config is loading', () => {
@@ -237,7 +232,7 @@ describe('LoginPage', () => {
       expect(screen.getByLabelText('用户名')).toBeInTheDocument();
     });
     expect(screen.getByLabelText('密码')).toBeInTheDocument();
-    expect(screen.getByText('当前登录方式：账号密码')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '账号密码' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByText(/加载认证配置失败/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/database password/i)).not.toBeInTheDocument();
   });
@@ -254,7 +249,7 @@ describe('LoginPage', () => {
     });
     expect(screen.getByText('验证码')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '发送验证码' })).toBeInTheDocument();
-    expect(screen.getByText('当前登录方式：手机验证码')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '手机验证码' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByLabelText('用户名')).not.toBeInTheDocument();
   });
 
@@ -366,10 +361,10 @@ describe('LoginPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'SSO' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'SSO' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'SSO' }));
+    await user.click(screen.getByRole('tab', { name: 'SSO' }));
 
     await user.click(await screen.findByRole('button', { name: 'SSO 登录' }));
 
@@ -402,10 +397,10 @@ describe('LoginPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'SSO' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'SSO' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'SSO' }));
+    await user.click(screen.getByRole('tab', { name: 'SSO' }));
 
     await user.click(await screen.findByRole('button', { name: 'SSO 无载荷' }));
 
@@ -445,10 +440,10 @@ describe('LoginPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'SSO' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'SSO' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'SSO' }));
+    await user.click(screen.getByRole('tab', { name: 'SSO' }));
     await user.click(await screen.findByRole('button', { name: 'SSO 登录' }));
 
     await waitFor(() => {
@@ -478,10 +473,10 @@ describe('LoginPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'SSO' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'SSO' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'SSO' }));
+    await user.click(screen.getByRole('tab', { name: 'SSO' }));
     await user.click(await screen.findByRole('button', { name: 'SSO 无载荷' }));
 
     await waitFor(() => {
@@ -570,7 +565,7 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService });
 
-    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
+    await user.click(await screen.findByRole('tab', { name: '微信扫码' }));
 
     await waitFor(() => {
       expect(authService.createWechatWebQrCode).toHaveBeenCalled();
@@ -602,7 +597,7 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService, onLoginSuccess });
 
-    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
+    await user.click(await screen.findByRole('tab', { name: '微信扫码' }));
     await waitFor(() => {
       expect(screen.getByAltText('微信登录二维码')).toBeInTheDocument();
     });
@@ -635,7 +630,7 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService });
 
-    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
+    await user.click(await screen.findByRole('tab', { name: '微信扫码' }));
     await waitFor(() => {
       expect(screen.getByAltText('微信登录二维码')).toBeInTheDocument();
     });

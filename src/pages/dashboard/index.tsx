@@ -1,7 +1,6 @@
 import { BarChartOutlined, CheckCircleOutlined, TeamOutlined } from '@ant-design/icons';
 import { Flex, Statistic, Tag, Typography, theme as antdTheme } from 'antd';
 import { createStyles } from 'antd-style';
-import { PageContainer } from '@/components/page-container';
 
 const dashboardStats = [
   { title: 'Active Sessions', value: 128, icon: <TeamOutlined /> },
@@ -31,7 +30,7 @@ export function DashboardPage() {
   const { styles } = useStyles();
 
   return (
-    <PageContainer>
+    <>
       <Flex vertical gap={token.marginLG}>
         <Flex align="center" justify="space-between" gap={token.marginMD} wrap="wrap">
           <div>
@@ -60,7 +59,7 @@ export function DashboardPage() {
           ))}
         </Flex>
       </Flex>
-    </PageContainer>
+    </>
   );
 }
 

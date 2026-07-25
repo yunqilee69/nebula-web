@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import type { RouteObject } from 'react-router-dom';
-import { EmptyModule } from '@/components/empty-module';
-import { ExternalIframePage } from '@/components/external-iframe-page';
+import { EmptyModule } from '@/layouts/empty-module';
+import { ExternalIframePage } from '@/layouts/external-iframe-page';
 import { resolveNebulaIcon } from '@/utils/icons';
 import { createPermissionCode } from '@/utils/permissions';
 import { RouteGuard } from './route-guard';

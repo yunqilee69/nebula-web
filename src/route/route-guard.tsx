@@ -1,7 +1,7 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth-store';
-import { ExceptionResult } from '@/components/exception-result';
+import { ExceptionResult } from '@/layouts/exception-result';
 import type { PermissionRequirement } from '@/utils/permissions';
 import { hasPermission } from '@/utils/permissions';
 import { RouteLoading } from './route-loading';

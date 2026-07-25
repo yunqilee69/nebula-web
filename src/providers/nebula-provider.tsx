@@ -6,7 +6,7 @@ import { useEffect, type PropsWithChildren } from 'react';
 import { NebulaBrandProvider, useNebulaBrand, type NebulaBrandConfig } from '@/providers/brand-context';
 import { NoticeProvider, type NoticeConfig } from '@/providers/notice';
 import { NebulaLoginBadgeProvider } from '@/providers/login-badge-provider';
-import { SessionExpiredModal } from '@/components/session-expired-modal';
+import { SessionExpiredModal } from '@/providers/session-expired-modal';
 import type { AuthAdapter, LoginBadgeOptions } from '@/types/auth';
 import { useAuthStore } from '@/stores/auth-store';
 import { useNebulaTheme } from '@/hooks/use-nebula-theme';

@@ -15,12 +15,11 @@ export { profileService } from './services/profile';
 export { menuService } from './services/menu';
 export { createStorageService } from './services/storage';
 export { permissionService } from './services/permission';
-export { EmptyModule } from './components/empty-module';
-export { ExceptionResult } from './components/exception-result';
-export { ExternalIframePage } from './components/external-iframe-page';
-export { PageContainer } from './components/page-container';
+export { EmptyModule } from './layouts/empty-module';
+export { ExceptionResult } from './layouts/exception-result';
+export { ExternalIframePage } from './layouts/external-iframe-page';
+export { AuthShell } from './layouts/auth-shell';
 export { NeTree } from './components/ne-tree';
-export { NeTable } from './components/ne-table';
 export { NebulaProTable } from './components/nebula-pro-table';
 export { NeUpload, NeImageUpload } from './components/ne-upload';
 export { request, requestClient } from './request/request';
@@ -37,11 +36,12 @@ export { LoginPage } from './pages/login';
 export { RegisterPage } from './pages/register';
 export { DashboardPage } from './pages/dashboard';
 export { ProfileInfoPage } from './pages/profile/info';
-export { RoleManagementPage } from './pages/auth/role';
-export { UserManagementPage } from './pages/auth/user';
-export { OrgManagementPage } from './pages/auth/org';
-export { PermissionConfigPage } from './pages/auth/permission';
-export { MenuManagementPage } from './pages/auth/menu';
+export { RoleManagementPage } from './pages/system/operation/role';
+export { UserManagementPage } from './pages/system/operation/user';
+export { OrgManagementPage } from './pages/system/operation/org';
+export { MenuPermissionPage } from './pages/system/permission/menu-permission';
+export { ButtonPermissionPage } from './pages/system/permission/button-permission';
+export { MenuManagementPage } from './pages/system/operation/menu';
 export { useAppStore } from './stores/app-store';
 export { useLocaleStore } from './stores/locale-store';
 export { useThemeStore } from './stores/theme-store';
@@ -86,11 +86,12 @@ export type { ProfileService } from './services/profile';
 export type { RoleService } from './services/role';
 export type { MenuService } from './services/menu';
 export type { PermissionService, PermissionSubjectBundle } from './services/permission';
-export type { RoleManagementPageProps } from './pages/auth/role';
-export type { UserManagementPageProps } from './pages/auth/user';
-export type { OrgManagementPageProps } from './pages/auth/org';
-export type { PermissionConfigPageProps } from './pages/auth/permission';
-export type { MenuManagementPageProps } from './pages/auth/menu';
+export type { RoleManagementPageProps } from './pages/system/operation/role';
+export type { UserManagementPageProps } from './pages/system/operation/user';
+export type { OrgManagementPageProps } from './pages/system/operation/org';
+export type { MenuPermissionPageProps } from './pages/system/permission/menu-permission';
+export type { ButtonPermissionPageProps } from './pages/system/permission/button-permission';
+export type { MenuManagementPageProps } from './pages/system/operation/menu';
 export type {
   PermissionSubjectType,
   PermissionResourceType,
@@ -165,18 +166,6 @@ export type { NebulaBrandConfig, ResolvedNebulaBrandConfig } from './providers/b
 export type { NebulaRequestConfig, NebulaRequestFn, RequestClientOptions } from './request/types';
 export type { NoticeApi, NoticeConfig, NoticeOptions } from './providers/notice';
 export type { NeTreeNode, NeTreeProps } from './components/ne-tree/types';
-export type {
-  NeTableAction,
-  NeTablePaginationProps,
-  NeTableProps,
-  NeTableRenderContext,
-  NeTableRequestParams,
-  NeTableRequestResult,
-  NeTableSearchProps,
-  NeTableSearchRenderContext,
-  NeTableTableProps,
-  NeTableToolbarProps,
-} from './components/ne-table/types';
 export type {
   NebulaPageReq,
   NebulaPageResp,
