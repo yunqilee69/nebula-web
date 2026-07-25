@@ -1,3 +1,4 @@
+import { Flex } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
@@ -147,7 +148,7 @@ export function OrgManagementPage({ service: serviceProp }: OrgManagementPagePro
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+      <Flex gap={16} style={{ height: '100%' }}>
         <div style={{ flex: '0 0 280px' }}>
           <OrgTreePanel tree={tree} selectedKey={selectedOrgId} onSelect={setSelectedOrgId} />
         </div>
@@ -160,7 +161,7 @@ export function OrgManagementPage({ service: serviceProp }: OrgManagementPagePro
             onEdit={(record) => void openUpdateDrawer(record)}
           />
         </div>
-      </div>
+      </Flex>
       <OrgFormDrawer
         open={drawerOpen}
         title={drawerTitle}
