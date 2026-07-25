@@ -26,6 +26,7 @@ const useStyles = createStyles(({ token }) => ({
   },
   displayName: {
     maxWidth: 128,
+    verticalAlign: 'middle',
   },
 }));
 
@@ -119,7 +120,7 @@ export function HeaderUserMenu({ onOpenProfile }: HeaderUserMenuProps) {
             <Avatar src={user?.avatar} alt={displayName} size={32} className={styles.avatar}>
               {getAvatarFallback(displayName)}
             </Avatar>
-            <Typography.Text strong ellipsis className={styles.displayName}>
+            <Typography.Text strong ellipsis className={styles.displayName} style={{ verticalAlign: 'middle' }}>
               {displayName}
             </Typography.Text>
           </Space>

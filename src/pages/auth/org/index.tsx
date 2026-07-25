@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PageContainer } from '@/components/page-container';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import { authManagementService as defaultAuthManagementService } from '@/services/auth-management';
@@ -147,12 +146,12 @@ export function OrgManagementPage({ service: serviceProp }: OrgManagementPagePro
   );
 
   return (
-    <PageContainer>
+    <>
       <div style={{ display: 'flex', alignItems: 'stretch' }}>
         <div style={{ flex: '0 0 280px' }}>
           <OrgTreePanel tree={tree} selectedKey={selectedOrgId} onSelect={setSelectedOrgId} />
         </div>
-        <div style={{ minWidth: 0}}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <OrgTable
             ref={tableRef}
             service={service}
@@ -171,7 +170,7 @@ export function OrgManagementPage({ service: serviceProp }: OrgManagementPagePro
         onClose={closeDrawer}
         onSubmit={(values) => void handleSubmit(values)}
       />
-    </PageContainer>
+    </>
   );
 }
 
