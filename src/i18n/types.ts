@@ -480,6 +480,75 @@ export interface NebulaProfileInfoMessages {
   };
 }
 
+export interface NebulaButtonManagementMessages {
+  title: string;
+  actions: {
+    create: string;
+    edit: string;
+    delete: string;
+    search: string;
+    reset: string;
+    save: string;
+    cancel: string;
+  };
+  columns: {
+    name: string;
+    code: string;
+    status: string;
+    createTime: string;
+    updateTime: string;
+    actions: string;
+  };
+  fields: {
+    name: string;
+    code: string;
+    type: string;
+    sort: string;
+    status: string;
+  };
+  modal: {
+    createTitle: string;
+    editTitle: string;
+  };
+  placeholders: {
+    name: string;
+    code: string;
+    type: string;
+  };
+  validation: {
+    nameRequired: string;
+    codeRequired: string;
+  };
+  buttonTypes: {
+    add: string;
+    edit: string;
+    delete: string;
+    export: string;
+  };
+  status: {
+    enabled: string;
+    disabled: string;
+  };
+  tree: {
+    title: string;
+    searchPlaceholder: string;
+    rootCount: string;
+    emptyText: string;
+  };
+  feedback: {
+    treeLoadFailed: string;
+    listLoadFailed: string;
+    detailLoadFailed: string;
+    createSuccess: string;
+    updateSuccess: string;
+    deleteSuccess: string;
+    deleteFailed: string;
+  };
+  confirm: {
+    deleteTitle: string;
+  };
+}
+
 export interface NebulaAuthMessages {
   roleManagement: NebulaRoleManagementMessages;
   menuManagement: NebulaMenuManagementMessages;
@@ -487,6 +556,7 @@ export interface NebulaAuthMessages {
   orgManagement: NebulaOrgManagementMessages;
   permissionConfig: NebulaPermissionConfigMessages;
   profileInfo: NebulaProfileInfoMessages;
+  buttonManagement: NebulaButtonManagementMessages;
   select: NebulaSelectMessages;
 }
 
