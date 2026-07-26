@@ -125,9 +125,9 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
         subjectId: selectedSubject.id,
         permissions,
       });
-      notice.success(t('auth.permissionConfig.feedback.saveSuccess'));
+      notice.success(t('auth.buttonPermission.feedback.saveSuccess'));
     } catch (error) {
-      notice.error('保存失败');
+      notice.error(t('auth.buttonPermission.feedback.saveFailed'));
       console.error('Failed to save permissions:', error);
     } finally {
       setSaving(false);
@@ -181,7 +181,7 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
                   handleToggleMenuButtons(menu, true);
                 }}
               >
-                全选
+                {t('auth.buttonPermission.actions.selectAllMenu')}
               </Button>
               <Button
                 size="small"
@@ -191,7 +191,7 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
                   handleToggleMenuButtons(menu, false);
                 }}
               >
-                取消
+                {t('auth.buttonPermission.actions.deselectAllMenu')}
               </Button>
             </Flex>
           </Flex>
@@ -209,14 +209,14 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
                   title={button.name}
                   description={<Typography.Text type="secondary">{button.code}</Typography.Text>}
                 />
-                {checkedButtonIds.has(button.id) && <Tag color="green">已授权</Tag>}
+                {checkedButtonIds.has(button.id) && <Tag color="green">{t('auth.buttonPermission.tags.authorized')}</Tag>}
               </List.Item>
             )}
           />
         ),
       })),
     );
-  }, [filteredGroups, checkedButtonIds, handleToggleButton, handleToggleMenuButtons]);
+  }, [filteredGroups, checkedButtonIds, handleToggleButton, handleToggleMenuButtons, t]);
 
   if (loading) {
     return (
@@ -246,30 +246,30 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
       </Col>
       <Col xs={24} lg={18}>
         <Card
-          title="按钮权限"
+          title={t('auth.buttonPermission.title')}
           extra={
             <Button type="primary" loading={saving} onClick={handleSave}>
-              保存
+              {t('auth.buttonPermission.actions.save')}
             </Button>
           }
           styles={{ body: { padding: 14, maxHeight: 'calc(100vh - 280px)', overflow: 'auto' } }}
         >
           <Flex wrap="wrap" gap={8} style={{ marginBottom: 12 }}>
             <Input.Search
-              placeholder="搜索按钮"
+              placeholder={t('auth.buttonPermission.searchPlaceholder')}
               value={resourceKeyword}
               onChange={(e) => setResourceKeyword(e.target.value)}
               style={{ width: 280 }}
             />
             <Button disabled={saving} onClick={() => handleBulkSelect(true)}>
-              全部选中
+              {t('auth.buttonPermission.actions.selectAll')}
             </Button>
             <Button disabled={saving} onClick={() => handleBulkSelect(false)}>
-              全部取消
+              {t('auth.buttonPermission.actions.deselectAll')}
             </Button>
           </Flex>
           {collapseItems.length === 0 ? (
-            <Empty description="暂无按钮资源" />
+            <Empty description={t('auth.buttonPermission.emptyText')} />
           ) : (
             <Collapse
               activeKey={activeCollapseKeys}

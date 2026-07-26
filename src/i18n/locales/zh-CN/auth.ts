@@ -306,6 +306,25 @@ export const auth: NebulaAuthMessages = {
       deleteTitle: '确认删除该按钮？',
     },
   },
+  buttonPermission: {
+    title: '按钮权限',
+    searchPlaceholder: '搜索按钮',
+    emptyText: '暂无按钮资源',
+    actions: {
+      save: '保存',
+      selectAll: '全部选中',
+      deselectAll: '全部取消',
+      selectAllMenu: '全选',
+      deselectAllMenu: '取消',
+    },
+    tags: {
+      authorized: '已授权',
+    },
+    feedback: {
+      saveSuccess: '权限配置已保存',
+      saveFailed: '保存失败',
+    },
+  },
   select: {
     selectedSingle: '已选择',
     selectedMultiple: '已选择 {count} 项',

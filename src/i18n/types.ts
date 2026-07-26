@@ -549,6 +549,26 @@ export interface NebulaButtonManagementMessages {
   };
 }
 
+export interface NebulaButtonPermissionMessages {
+  title: string;
+  searchPlaceholder: string;
+  emptyText: string;
+  actions: {
+    save: string;
+    selectAll: string;
+    deselectAll: string;
+    selectAllMenu: string;
+    deselectAllMenu: string;
+  };
+  tags: {
+    authorized: string;
+  };
+  feedback: {
+    saveSuccess: string;
+    saveFailed: string;
+  };
+}
+
 export interface NebulaAuthMessages {
   roleManagement: NebulaRoleManagementMessages;
   menuManagement: NebulaMenuManagementMessages;
@@ -557,6 +577,7 @@ export interface NebulaAuthMessages {
   permissionConfig: NebulaPermissionConfigMessages;
   profileInfo: NebulaProfileInfoMessages;
   buttonManagement: NebulaButtonManagementMessages;
+  buttonPermission: NebulaButtonPermissionMessages;
   select: NebulaSelectMessages;
 }
 

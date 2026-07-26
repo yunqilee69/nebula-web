@@ -306,6 +306,25 @@ export const auth: NebulaAuthMessages = {
       deleteTitle: 'Delete this button?',
     },
   },
+  buttonPermission: {
+    title: 'Button Permissions',
+    searchPlaceholder: 'Search buttons',
+    emptyText: 'No button resources',
+    actions: {
+      save: 'Save',
+      selectAll: 'Select All',
+      deselectAll: 'Deselect All',
+      selectAllMenu: 'Select All',
+      deselectAllMenu: 'Deselect',
+    },
+    tags: {
+      authorized: 'Authorized',
+    },
+    feedback: {
+      saveSuccess: 'Permissions saved',
+      saveFailed: 'Failed to save',
+    },
+  },
   select: {
     selectedSingle: 'Selected',
     selectedMultiple: 'Selected {count} items',
