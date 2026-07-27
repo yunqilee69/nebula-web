@@ -1,7 +1,7 @@
 import { Modal } from 'antd';
 import { useEffect, useState } from 'react';
 import { clearAuthTokens } from '@/utils/auth/token-session';
-import { subscribeSessionExpired } from '@/utils/auth/session-expired';
+import { resolveSessionExpired, subscribeSessionExpired } from '@/utils/auth/session-expired';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function SessionExpiredModal() {
@@ -23,6 +23,7 @@ export function SessionExpiredModal() {
       cancelText="留在当前页面"
       onOk={() => {
         clearSession();
+        resolveSessionExpired();
         setOpen(false);
         window.location.href = '/login';
       }}

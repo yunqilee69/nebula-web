@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App as AntdApp, ConfigProvider } from 'antd';
-import { notifySessionExpired, subscribeSessionExpired } from '@/utils/auth/session-expired';
+import { notifySessionExpired, resolveSessionExpired, subscribeSessionExpired } from '@/utils/auth/session-expired';
 import { SessionExpiredModal } from './index';
 
 vi.mock('@/utils/auth/token-session', () => ({
@@ -18,6 +18,10 @@ import { useAuthStore } from '@/stores/auth-store';
 
 const mockClearAuthTokens = vi.mocked(clearAuthTokens);
 const mockClearUser = vi.fn();
+
+afterEach(() => {
+  resolveSessionExpired();
+});
 
 beforeEach(() => {
   vi.mocked(useAuthStore).mockReturnValue(mockClearUser);

@@ -1,7 +1,8 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import { useSyncExternalStore, type PropsWithChildren, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth-store';
 import { ExceptionResult } from '@/layouts/exception-result';
+import { isSessionExpiredPending, subscribeSessionExpiredPending } from '@/utils/auth/session-expired';
 import type { PermissionRequirement } from '@/utils/permissions';
 import { hasPermission } from '@/utils/permissions';
 import { RouteLoading } from './route-loading';
@@ -26,12 +27,17 @@ export function RouteGuard({
   const permissions = useAuthStore((state) => state.permissions);
   const roles = useAuthStore((state) => state.roles);
   const loading = useAuthStore((state) => state.loading);
+  const sessionExpiredPending = useSyncExternalStore(
+    subscribeSessionExpiredPending,
+    isSessionExpiredPending,
+    () => false,
+  );
 
   if (loading) {
     return <>{loadingElement}</>;
   }
 
-  if (requiresAuth && !user) {
+  if (requiresAuth && !user && !sessionExpiredPending) {
     return <Navigate to={loginPath} replace />;
   }
 
