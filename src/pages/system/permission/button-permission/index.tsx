@@ -185,10 +185,9 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
         setUsers(subjects.users);
         setResources(groups);
         setSelectedSubject(subjects.orgs[0] ?? subjects.roles[0] ?? subjects.users[0]);
-        setExpandedKeys(groups.flatMap((group) => [
-          `group-${group.key}`,
-          ...collectExpandableKeys(filterButtonMenuTree(group.menus, '')),
-        ]));
+        setExpandedKeys(groups.flatMap((group) => (
+          collectExpandableKeys(filterButtonMenuTree(group.menus, ''))
+        )));
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -289,7 +288,7 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
     [resources, resourceKeyword],
   );
 
-  const treeData = useMemo(() => filteredGroups.map(({ group, menus }) => {
+  const treeData = useMemo(() => {
     const toTreeNodes = (items: PermissionMenuResource[]): NonNullable<TreeProps['treeData']> => items.map((menu) => ({
       key: `menu-${menu.id}`,
       selectable: false,
@@ -353,20 +352,12 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
       ],
     }));
 
-    return {
-      key: `group-${group.key}`,
-      title: group.name,
-      selectable: false,
-      children: toTreeNodes(menus),
-    };
-  }), [filteredGroups, handleToggleButton, permissionEffects, t, token]);
+    return filteredGroups.flatMap(({ menus }) => toTreeNodes(menus));
+  }, [filteredGroups, handleToggleButton, permissionEffects, t, token]);
 
   useEffect(() => {
     if (!resourceKeyword.trim()) return;
-    setExpandedKeys(filteredGroups.flatMap(({ group, menus }) => [
-      `group-${group.key}`,
-      ...collectExpandableKeys(menus),
-    ]));
+    setExpandedKeys(filteredGroups.flatMap(({ menus }) => collectExpandableKeys(menus)));
   }, [filteredGroups, resourceKeyword]);
 
   if (loading) {

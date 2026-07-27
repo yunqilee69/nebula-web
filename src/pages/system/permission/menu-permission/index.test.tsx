@@ -146,6 +146,9 @@ describe('MenuPermissionPage', () => {
     expect(allowedMenu).toHaveAttribute('data-permission-effect', 'Allow');
     expect(deniedMenu).toHaveAttribute('data-permission-effect', 'Deny');
     expect(unsetMenu).toHaveAttribute('data-permission-effect', 'none');
+    expect(screen.getByText('授权权限')).toBeInTheDocument();
+    expect(screen.getByText('拒绝权限')).toBeInTheDocument();
+    expect(screen.getByText('未设置权限')).toBeInTheDocument();
 
     await user.click(deniedMenu);
     await user.click(unsetMenu);

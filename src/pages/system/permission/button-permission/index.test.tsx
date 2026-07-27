@@ -101,6 +101,7 @@ describe('ButtonPermissionPage', () => {
 
     expect(await screen.findByText('Parent Menu')).toBeInTheDocument();
     expect(screen.getByText('Menu 1')).toBeInTheDocument();
+    expect(screen.queryByText('菜单资源')).not.toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: /Parent Menu/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: /Menu 1/ })).not.toBeInTheDocument();
 

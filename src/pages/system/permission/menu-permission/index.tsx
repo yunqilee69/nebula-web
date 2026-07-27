@@ -287,6 +287,9 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
           </button>
           <span>
             {menu.name} {menu.path && <Tag color="blue">{menu.path}</Tag>}
+            <Tag color={(permissionEffects[menu.id] ?? 'none') === 'Allow' ? 'green' : (permissionEffects[menu.id] ?? 'none') === 'Deny' ? 'red' : 'default'}>
+              {getPermissionStateLabel(permissionEffects[menu.id] ?? 'none')}
+            </Tag>
           </span>
         </Flex>
       ),
