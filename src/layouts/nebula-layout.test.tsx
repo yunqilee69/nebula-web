@@ -9,7 +9,7 @@ import { useAppStore } from '@/stores/app-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useLocaleStore } from '@/stores/locale-store';
 import { useThemeStore } from '@/stores/theme-store';
-import type { AuthService } from '@/services/auth';
+import type { AuthService } from '@/api/auth';
 import type { NebulaMenuItem } from '@/route/types';
 import { clearAuthTokens } from '@/utils/auth/token-session';
 
