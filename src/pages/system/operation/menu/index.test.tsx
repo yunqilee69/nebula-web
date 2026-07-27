@@ -2,13 +2,13 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import { useLocaleStore } from '@/stores/locale-store';
-import { menuService as defaultMenuService } from '@/services/menu';
-import type { MenuService } from '@/services/menu';
+import { menuService as defaultMenuService } from '@/api/menu';
+import type { MenuService } from '@/api/menu';
 import type { MenuPageResp, MenuTreeResp, ButtonResp } from '@/types/menu';
 import { MenuManagementPage } from './index';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/services/menu', () => ({
+vi.mock('@/api/menu', () => ({
   menuService: createMenuService(),
 }));
 

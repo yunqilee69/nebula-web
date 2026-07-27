@@ -7,8 +7,8 @@ import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/co
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import type { MenuComponentRegistry } from '@/route/types';
-import { menuService as defaultMenuService } from '@/services/menu';
-import type { MenuService } from '@/services/menu';
+import { menuService as defaultMenuService } from '@/api/menu';
+import type { MenuService } from '@/api/menu';
 import type {
   CreateMenuReq,
   MenuDetailResp,
