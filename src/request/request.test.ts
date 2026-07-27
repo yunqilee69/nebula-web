@@ -21,6 +21,7 @@ vi.mock('@/providers/notice', () => ({
 import { getStoredAccessToken, getStoredRefreshToken, saveAuthTokens, clearAuthTokens } from '@/utils/auth/token-session';
 import { notifySessionExpired } from '@/utils/auth/session-expired';
 import { notice } from '@/providers/notice';
+import { useAuthStore } from '@/stores/auth-store';
 import { request, requestClient } from './request';
 
 function mockAdapter(
@@ -59,6 +60,7 @@ describe('global request instance', () => {
     vi.clearAllMocks();
     vi.mocked(getStoredAccessToken).mockReturnValue(null);
     vi.mocked(getStoredRefreshToken).mockReturnValue(null);
+    useAuthStore.getState().clearUser();
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
@@ -207,6 +209,26 @@ describe('global request instance', () => {
 
     expect(clearAuthTokens).not.toHaveBeenCalled();
     expect(notifySessionExpired).not.toHaveBeenCalled();
+  });
+
+  it('notifies session expired when a business-page request returns 401 after stored tokens are removed', async () => {
+    vi.mocked(getStoredAccessToken).mockReturnValue(null);
+    vi.mocked(getStoredRefreshToken).mockReturnValue(null);
+    useAuthStore.getState().setUser({
+      id: 'active-user',
+      name: 'Active User',
+      roles: [],
+      permissions: [],
+    });
+
+    requestClient.defaults.adapter = mockAdapter((config) => {
+      return Promise.reject(make401Error(config));
+    });
+
+    await expect(request({ method: 'GET', url: '/business/page' })).rejects.toThrow('Unauthorized');
+
+    expect(clearAuthTokens).toHaveBeenCalledTimes(1);
+    expect(notifySessionExpired).toHaveBeenCalledTimes(1);
   });
 
   it('notifies session expired when only access token is stored and refresh fails', async () => {

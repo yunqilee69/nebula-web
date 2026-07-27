@@ -4,6 +4,7 @@ import type { AxiosError } from 'axios';
 import { getStoredAccessToken, getStoredRefreshToken, saveAuthTokens, clearAuthTokens } from '@/utils/auth/token-session';
 import { notifySessionExpired } from '@/utils/auth/session-expired';
 import { notice } from '@/providers/notice';
+import { useAuthStore } from '@/stores/auth-store';
 import type { LoginResp } from '@/types/auth';
 
 let notifying = false;
@@ -28,7 +29,10 @@ function getHttpErrorMessage(error: AxiosError) {
 }
 
 function handleSessionExpired() {
-  if (!getStoredAccessToken() && !getStoredRefreshToken()) return;
+  const hasStoredTokens = Boolean(getStoredAccessToken() || getStoredRefreshToken());
+  const hasActiveUser = Boolean(useAuthStore.getState().user);
+
+  if (!hasStoredTokens && !hasActiveUser) return;
   if (notifying) return;
   notifying = true;
   clearAuthTokens();
