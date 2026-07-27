@@ -3,13 +3,85 @@ import { Button, Card, Col, Collapse, Empty, Flex, Input, List, Row, Spin, Tag, 
 import type { CollapseProps } from 'antd';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
-import { permissionService as defaultPermissionService } from '@/services/permission';
-import type { PermissionService } from '@/services/permission';
-import type { PermissionMenuResource, PermissionResourceGroup, PermissionSubject, PermissionSubjectType } from '@/types/permission';
+import { permissionService as defaultPermissionService } from '@/api/permission';
+import type { PermissionService } from '@/api/permission';
+import type { MenuTreeResp } from '@/types/menu';
+import type { PermissionButtonResource, PermissionGrantResp, PermissionMenuResource, PermissionResourceGroup, PermissionSubject, PermissionSubjectType } from '@/types/permission';
 import { SubjectSelector } from '@/components/subject-selector';
+import { syncSubjectPermissions } from '@/utils/permission-sync';
 
 export interface ButtonPermissionPageProps {
   service?: PermissionService;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getOptionalString(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function getOptionalNumber(record: Record<string, unknown>, key: string): number | undefined {
+  const value = record[key];
+  return typeof value === 'number' ? value : undefined;
+}
+
+function mapButtonResource(button: unknown, menuId: string): PermissionButtonResource | undefined {
+  if (!isRecord(button)) return undefined;
+  const id = getOptionalString(button, 'id');
+  const name = getOptionalString(button, 'name');
+  const code = getOptionalString(button, 'code');
+  if (!id || !name || !code) return undefined;
+
+  return {
+    id,
+    type: 'BUTTON',
+    name,
+    code,
+    description: getOptionalString(button, 'description') ?? getOptionalString(button, 'remark'),
+    menuId: getOptionalString(button, 'menuId') ?? menuId,
+    status: getOptionalNumber(button, 'status'),
+  };
+}
+
+function getMenuButtons(menu: MenuTreeResp): PermissionButtonResource[] {
+  if (!('buttons' in menu) || !Array.isArray(menu.buttons)) return [];
+  return menu.buttons.flatMap((button) => {
+    const resource = mapButtonResource(button, menu.id);
+    return resource ? [resource] : [];
+  });
+}
+
+function mapMenuResource(menu: MenuTreeResp): PermissionMenuResource {
+  return {
+    id: menu.id,
+    parentId: menu.parentId,
+    type: 'MENU',
+    name: menu.name,
+    code: menu.code,
+    path: menu.path,
+    description: menu.remark,
+    status: menu.status,
+    buttons: getMenuButtons(menu),
+    children: menu.children?.map(mapMenuResource),
+  };
+}
+
+function flattenButtonMenus(menus: PermissionMenuResource[]): PermissionMenuResource[] {
+  return menus.flatMap((menu) => [
+    ...(menu.buttons.length > 0 ? [menu] : []),
+    ...flattenButtonMenus(menu.children ?? []),
+  ]);
+}
+
+function toButtonResourceGroups(menus: MenuTreeResp[]): PermissionResourceGroup[] {
+  return [{
+    key: 'menus',
+    name: '菜单资源',
+    menus: flattenButtonMenus(menus.map(mapMenuResource)),
+  }];
 }
 
 export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionPageProps) {
@@ -28,14 +100,16 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
   const [resources, setResources] = useState<PermissionResourceGroup[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<PermissionSubject>();
   const [checkedButtonIds, setCheckedButtonIds] = useState<Set<string>>(new Set());
+  const [loadedPermissions, setLoadedPermissions] = useState<PermissionGrantResp[]>([]);
   const [activeCollapseKeys, setActiveCollapseKeys] = useState<string[]>([]);
 
   useEffect(() => {
     let mounted = true;
 
-    Promise.all([service.listSubjects(), service.listResourceGroups()])
-      .then(([subjects, groups]) => {
+    Promise.all([service.listSubjects(), service.listMenuTree()])
+      .then(([subjects, menus]) => {
         if (!mounted) return;
+        const groups = toButtonResourceGroups(menus);
         setOrgs(subjects.orgs);
         setRoles(subjects.roles);
         setUsers(subjects.users);
@@ -65,6 +139,7 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
             .filter((g) => g.effect === 'Allow')
             .map((g) => g.resourceId),
         );
+        setLoadedPermissions(page.data);
         setCheckedButtonIds(allowedButtonIds);
       })
       .catch((error: unknown) => {
@@ -120,11 +195,18 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
         ),
       );
 
-      await service.saveSubjectPermissions({
-        subjectType: selectedSubject.type,
-        subjectId: selectedSubject.id,
-        permissions,
+      const nextPermissions = await syncSubjectPermissions({
+        service,
+        subject: selectedSubject,
+        existingPermissions: loadedPermissions,
+        desiredPermissions: permissions,
       });
+      setLoadedPermissions(nextPermissions);
+      setCheckedButtonIds(new Set(
+        nextPermissions
+          .filter((g) => g.effect === 'Allow')
+          .map((g) => g.resourceId),
+      ));
       notice.success(t('auth.buttonPermission.feedback.saveSuccess'));
     } catch (error) {
       notice.error(t('auth.buttonPermission.feedback.saveFailed'));
@@ -132,7 +214,7 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
     } finally {
       setSaving(false);
     }
-  }, [selectedSubject, service, resources, checkedButtonIds, notice, t]);
+  }, [selectedSubject, service, resources, checkedButtonIds, loadedPermissions, notice, t]);
 
   const handleBulkSelect = useCallback((selectAll: boolean) => {
     if (selectAll) {
