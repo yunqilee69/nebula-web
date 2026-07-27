@@ -4,7 +4,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
-import type { AuthManagementService } from '@/services/auth-management';
+import type { AuthManagementService } from '@/api/auth-management';
 import type { EnableStatus, OrgPageReq, OrgResp, OrgType } from '@/types/auth-management';
 
 export interface OrgTableHandle {

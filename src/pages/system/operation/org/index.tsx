@@ -2,8 +2,8 @@ import { Flex } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
-import { authManagementService as defaultAuthManagementService } from '@/services/auth-management';
-import type { AuthManagementService } from '@/services/auth-management';
+import { authManagementService as defaultAuthManagementService } from '@/api/auth-management';
+import type { AuthManagementService } from '@/api/auth-management';
 import type { OrgOptionResp, OrgResp, OrgTreeResp } from '@/types/auth-management';
 import {
   OrgFormDrawer,
