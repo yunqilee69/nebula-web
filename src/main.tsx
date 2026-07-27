@@ -4,7 +4,7 @@ import '@/styles/index.css';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import { toCurrentUser } from '@/utils/auth/current-user';
 import { getStoredAccessToken, getStoredRefreshToken } from '@/utils/auth/token-session';
-import { authService } from '@/services/auth';
+import { authService } from '@/api/auth';
 import { builtInMenuComponentRegistry } from '@/route/menu-component-registry';
 import { createNebulaRouter } from '@/route/create-nebula-router';
 import type { NebulaRouteObject } from '@/route/types';

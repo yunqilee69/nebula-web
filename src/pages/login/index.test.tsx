@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import { useAuthStore } from '@/stores/auth-store';
-import type { AuthService } from '@/services/auth';
+import type { AuthService } from '@/api/auth';
 import type {
   AuthInitResp,
   BuiltInLoginMethodKey,

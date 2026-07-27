@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { AuthService } from '@/services/auth';
+import type { AuthService } from '@/api/auth';
 import type { BackendMenuItem } from '@/route/types';
 
 export interface CurrentUser {

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
-import type { AuthService } from '@/services/auth';
+import type { AuthService } from '@/api/auth';
 import type { AuthInitResp } from '@/types/auth';
 import { RegisterPage } from './index';
 

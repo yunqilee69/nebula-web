@@ -14,7 +14,7 @@ import type {
   WechatWebLoginStatusResp,
   WechatWebQrCodeResp,
 } from '@/types/auth';
-import type { AuthService } from '@/services/auth';
+import type { AuthService } from '@/api/auth';
 import { AuthShell } from '@/layouts/auth-shell';
 import { useAuthStore } from '@/stores/auth-store';
 
