@@ -15,6 +15,7 @@ function createPermissionService(overrides: Partial<PermissionService> = {}): Pe
       users: [],
     }),
     listMenuTree: overrides.listMenuTree ?? vi.fn().mockResolvedValue([]),
+    pageButtons: overrides.pageButtons ?? vi.fn().mockResolvedValue({ data: [], total: 0 }),
     pageSubjectPermissions: overrides.pageSubjectPermissions ?? vi.fn().mockResolvedValue({ data: [], total: 0 }),
     createPermissions: overrides.createPermissions ?? vi.fn().mockResolvedValue([]),
     createPermissionItems: overrides.createPermissionItems ?? vi.fn().mockResolvedValue([]),

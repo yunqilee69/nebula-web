@@ -7,6 +7,7 @@ function createPermissionService(): PermissionService {
   return {
     listSubjects: vi.fn().mockResolvedValue({ orgs: [], roles: [], users: [] }),
     listMenuTree: vi.fn().mockResolvedValue([]),
+    pageButtons: vi.fn().mockResolvedValue({ data: [], total: 0 }),
     pageSubjectPermissions: vi.fn().mockResolvedValue({ data: [], total: 0 }),
     createPermissions: vi.fn().mockResolvedValue([]),
     createPermissionItems: vi.fn().mockResolvedValue([]),

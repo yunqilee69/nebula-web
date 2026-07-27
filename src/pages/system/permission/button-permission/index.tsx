@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Card, Col, Collapse, Empty, Flex, Input, Row, Spin, Tag, Typography, theme as antdTheme } from 'antd';
-import type { CollapseProps } from 'antd';
+import { Button, Card, Col, Empty, Flex, Input, Row, Spin, Tag, Tree, Typography, theme as antdTheme } from 'antd';
+import type { TreeProps } from 'antd';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import { permissionService as defaultPermissionService } from '@/api/permission';
 import type { PermissionService } from '@/api/permission';
-import type { MenuTreeResp } from '@/types/menu';
+import type { ButtonResp, MenuTreeResp } from '@/types/menu';
 import type {
   PermissionButtonResource,
   PermissionDraftEffect,
@@ -22,6 +22,8 @@ import { syncSubjectPermissions } from '@/utils/permission-sync';
 export interface ButtonPermissionPageProps {
   service?: PermissionService;
 }
+
+type ButtonsByMenuId = ReadonlyMap<string, readonly ButtonResp[]>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -55,15 +57,19 @@ function mapButtonResource(button: unknown, menuId: string): PermissionButtonRes
   };
 }
 
-function getMenuButtons(menu: MenuTreeResp): PermissionButtonResource[] {
+function getEmbeddedMenuButtons(menu: MenuTreeResp): unknown[] {
   if (!('buttons' in menu) || !Array.isArray(menu.buttons)) return [];
-  return menu.buttons.flatMap((button) => {
+  return menu.buttons;
+}
+
+function getMenuButtons(menu: MenuTreeResp, buttonsByMenuId: ButtonsByMenuId): PermissionButtonResource[] {
+  return [...getEmbeddedMenuButtons(menu), ...(buttonsByMenuId.get(menu.id) ?? [])].flatMap((button) => {
     const resource = mapButtonResource(button, menu.id);
     return resource ? [resource] : [];
   });
 }
 
-function mapMenuResource(menu: MenuTreeResp): PermissionMenuResource {
+function mapMenuResource(menu: MenuTreeResp, buttonsByMenuId: ButtonsByMenuId): PermissionMenuResource {
   return {
     id: menu.id,
     parentId: menu.parentId,
@@ -73,24 +79,61 @@ function mapMenuResource(menu: MenuTreeResp): PermissionMenuResource {
     path: menu.path,
     description: menu.remark,
     status: menu.status,
-    buttons: getMenuButtons(menu),
-    children: menu.children?.map(mapMenuResource),
+    buttons: getMenuButtons(menu, buttonsByMenuId),
+    children: menu.children?.map((child) => mapMenuResource(child, buttonsByMenuId)),
   };
 }
 
-function flattenButtonMenus(menus: PermissionMenuResource[]): PermissionMenuResource[] {
-  return menus.flatMap((menu) => [
-    ...(menu.buttons.length > 0 ? [menu] : []),
-    ...flattenButtonMenus(menu.children ?? []),
-  ]);
-}
-
-function toButtonResourceGroups(menus: MenuTreeResp[]): PermissionResourceGroup[] {
+function toButtonResourceGroups(menus: MenuTreeResp[], buttonsByMenuId: ButtonsByMenuId): PermissionResourceGroup[] {
   return [{
     key: 'menus',
     name: '菜单资源',
-    menus: flattenButtonMenus(menus.map(mapMenuResource)),
+    menus: menus.map((menu) => mapMenuResource(menu, buttonsByMenuId)),
   }];
+}
+
+function collectMenuIds(menus: readonly MenuTreeResp[]): string[] {
+  return menus.flatMap((menu) => [menu.id, ...collectMenuIds(menu.children ?? [])]);
+}
+
+async function loadButtonsByMenuId(service: PermissionService, menus: readonly MenuTreeResp[]): Promise<ButtonsByMenuId> {
+  const buttonPages = await Promise.all(
+    collectMenuIds(menus).map(async (menuId) => {
+      const page = await service.pageButtons({ menuId, pageNum: 1, pageSize: 500 });
+      return [menuId, page.data] as const;
+    }),
+  );
+  return new Map(buttonPages);
+}
+
+function collectButtons(menus: PermissionMenuResource[]): PermissionButtonResource[] {
+  return menus.flatMap((menu) => [
+    ...menu.buttons,
+    ...collectButtons(menu.children ?? []),
+  ]);
+}
+
+function filterButtonMenuTree(menus: PermissionMenuResource[], keyword: string): PermissionMenuResource[] {
+  const normalized = keyword.trim().toLowerCase();
+
+  return menus.flatMap((menu) => {
+    const menuMatches = `${menu.name} ${menu.code} ${menu.path ?? ''}`.toLowerCase().includes(normalized);
+    const children = filterButtonMenuTree(menu.children ?? [], menuMatches ? '' : keyword);
+    const buttons = menu.buttons.filter((button) => (
+      !normalized || menuMatches || `${button.name} ${button.code}`.toLowerCase().includes(normalized)
+    ));
+
+    if (buttons.length === 0 && children.length === 0) return [];
+    return [{ ...menu, buttons, children }];
+  });
+}
+
+function collectExpandableKeys(menus: PermissionMenuResource[]): string[] {
+  return menus.flatMap((menu) => {
+    const children = menu.children ?? [];
+    const currentKey = children.length > 0 || menu.buttons.length > 0 ? [`menu-${menu.id}`] : [];
+    return [...currentKey, ...collectExpandableKeys(children)];
+  });
 }
 
 function getNextPermissionEffect(effect: PermissionDraftEffect): PermissionDraftEffect {
@@ -127,21 +170,25 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
   const [selectedSubject, setSelectedSubject] = useState<PermissionSubject>();
   const [permissionEffects, setPermissionEffects] = useState<Record<string, PermissionDraftEffect>>({});
   const [loadedPermissions, setLoadedPermissions] = useState<PermissionGrantResp[]>([]);
-  const [activeCollapseKeys, setActiveCollapseKeys] = useState<string[]>([]);
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
   useEffect(() => {
     let mounted = true;
 
     Promise.all([service.listSubjects(), service.listMenuTree()])
-      .then(([subjects, menus]) => {
+      .then(async ([subjects, menus]) => {
+        const buttonsByMenuId = await loadButtonsByMenuId(service, menus);
         if (!mounted) return;
-        const groups = toButtonResourceGroups(menus);
+        const groups = toButtonResourceGroups(menus, buttonsByMenuId);
         setOrgs(subjects.orgs);
         setRoles(subjects.roles);
         setUsers(subjects.users);
         setResources(groups);
         setSelectedSubject(subjects.orgs[0] ?? subjects.roles[0] ?? subjects.users[0]);
-        setActiveCollapseKeys(groups.flatMap((group) => group.menus.map((menu) => menu.id)));
+        setExpandedKeys(groups.flatMap((group) => [
+          `group-${group.key}`,
+          ...collectExpandableKeys(filterButtonMenuTree(group.menus, '')),
+        ]));
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -188,39 +235,26 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
     });
   }, []);
 
-  const handleSetMenuButtons = useCallback((menu: PermissionMenuResource, effect: PermissionDraftEffect) => {
-    setPermissionEffects((prev) => {
-      const next = { ...prev };
-      menu.buttons.forEach((button) => {
-        if (effect === 'none') {
-          delete next[button.id];
-        } else {
-          next[button.id] = effect;
-        }
-      });
-      return next;
-    });
-  }, []);
+  const allButtons = useMemo(
+    () => resources.flatMap((group) => collectButtons(group.menus)),
+    [resources],
+  );
 
   const handleSave = useCallback(async () => {
     if (!selectedSubject) return;
 
     setSaving(true);
     try {
-      const permissions = resources.flatMap((group) =>
-        (group.menus ?? []).flatMap((menu) =>
-          (menu.buttons ?? []).flatMap((button) => {
-            const effect = permissionEffects[button.id] ?? 'none';
-            if (effect === 'none') return [];
-            return [{
-              resourceType: 'BUTTON' as const,
-              resourceId: button.id,
-              effect,
-              scope: 'ALL',
-            } satisfies SaveSubjectPermissionItem];
-          }),
-        ),
-      );
+      const permissions = allButtons.flatMap((button) => {
+        const effect = permissionEffects[button.id] ?? 'none';
+        if (effect === 'none') return [];
+        return [{
+          resourceType: 'BUTTON' as const,
+          resourceId: button.id,
+          effect,
+          scope: 'ALL',
+        } satisfies SaveSubjectPermissionItem];
+      });
 
       const nextPermissions = await syncSubjectPermissions({
         service,
@@ -237,12 +271,7 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
     } finally {
       setSaving(false);
     }
-  }, [selectedSubject, service, resources, permissionEffects, loadedPermissions, notice, t]);
-
-  const allButtons = useMemo(
-    () => resources.flatMap((group) => group.menus.flatMap((menu) => menu.buttons)),
-    [resources],
-  );
+  }, [selectedSubject, service, allButtons, permissionEffects, loadedPermissions, notice, t]);
 
   const handleBulkSet = useCallback((effect: PermissionDraftEffect) => {
     if (effect === 'none') {
@@ -252,128 +281,93 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
     setPermissionEffects(Object.fromEntries(allButtons.map((button) => [button.id, effect])));
   }, [allButtons]);
 
-  const filteredGroups = useMemo(() => {
-    if (!resources || resources.length === 0) return [];
-    const normalized = resourceKeyword.trim().toLowerCase();
-    if (!normalized) return resources;
+  const filteredGroups = useMemo(
+    () => resources.flatMap((group) => {
+      const menus = filterButtonMenuTree(group.menus, resourceKeyword);
+      return menus.length > 0 ? [{ group, menus }] : [];
+    }),
+    [resources, resourceKeyword],
+  );
 
-    return resources
-      .map((group) => ({
-        ...group,
-        menus: (group.menus ?? [])
-          .map((menu) => ({
-            ...menu,
-            buttons: (menu.buttons ?? []).filter((button) =>
-              `${button.name} ${button.code}`.toLowerCase().includes(normalized),
-            ),
-          }))
-          .filter((menu) => menu.buttons.length > 0),
-      }))
-      .filter((group) => group.menus.length > 0);
-  }, [resources, resourceKeyword]);
-
-  const collapseItems: CollapseProps['items'] = useMemo(() => {
-    return filteredGroups.flatMap((group) =>
-      group.menus.map((menu) => ({
-        key: menu.id,
-        label: (
-          <Flex justify="space-between" align="center">
-            <span>
-              {menu.name} <Tag color="blue">{menu.path}</Tag>
-            </span>
-            <Flex gap={8}>
-              <Button
-                size="small"
-                type="link"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSetMenuButtons(menu, 'Allow');
+  const treeData = useMemo(() => filteredGroups.map(({ group, menus }) => {
+    const toTreeNodes = (items: PermissionMenuResource[]): NonNullable<TreeProps['treeData']> => items.map((menu) => ({
+      key: `menu-${menu.id}`,
+      selectable: false,
+      title: (
+        <span>
+          {menu.name} {menu.path ? <Tag color="blue">{menu.path}</Tag> : null}
+        </span>
+      ),
+      children: [
+        ...toTreeNodes(menu.children ?? []),
+        ...menu.buttons.map((button) => ({
+          key: `button-${button.id}`,
+          selectable: false,
+          isLeaf: true,
+          title: (
+            <Flex align="center" gap={8}>
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={(permissionEffects[button.id] ?? 'none') === 'Allow' ? 'true' : (permissionEffects[button.id] ?? 'none') === 'Deny' ? 'mixed' : 'false'}
+                aria-label={`${button.name} ${t(getPermissionEffectMessageKey(permissionEffects[button.id] ?? 'none'))}`}
+                data-permission-effect={permissionEffects[button.id] ?? 'none'}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleToggleButton(button.id);
+                }}
+                style={{
+                  width: 16,
+                  height: 16,
+                  padding: 0,
+                  borderRadius: token.borderRadiusSM,
+                  border: `1px solid ${(permissionEffects[button.id] ?? 'none') === 'Allow'
+                    ? token.colorPrimary
+                    : (permissionEffects[button.id] ?? 'none') === 'Deny'
+                      ? token.colorError
+                      : token.colorBorder}`,
+                  background: (permissionEffects[button.id] ?? 'none') === 'Allow'
+                    ? token.colorPrimary
+                    : (permissionEffects[button.id] ?? 'none') === 'Deny'
+                      ? token.colorError
+                      : token.colorBgContainer,
+                  color: token.colorTextLightSolid,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  lineHeight: 1,
                 }}
               >
-                {t('auth.buttonPermission.actions.allowAllMenu')}
-              </Button>
-              <Button
-                size="small"
-                type="link"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSetMenuButtons(menu, 'Deny');
-                }}
-              >
-                {t('auth.buttonPermission.actions.denyAllMenu')}
-              </Button>
-              <Button
-                size="small"
-                type="link"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSetMenuButtons(menu, 'none');
-                }}
-              >
-                {t('auth.buttonPermission.actions.clearAllMenu')}
-              </Button>
+                {(permissionEffects[button.id] ?? 'none') === 'Allow' ? '✓' : (permissionEffects[button.id] ?? 'none') === 'Deny' ? '×' : ''}
+              </button>
+              <Typography.Text>{button.name}</Typography.Text>
+              <Typography.Text type="secondary">{button.code}</Typography.Text>
+              <Tag color={(permissionEffects[button.id] ?? 'none') === 'Allow' ? 'green' : (permissionEffects[button.id] ?? 'none') === 'Deny' ? 'red' : 'default'}>
+                {t(getPermissionEffectMessageKey(permissionEffects[button.id] ?? 'none'))}
+              </Tag>
             </Flex>
-          </Flex>
-        ),
-        children: (
-          <Flex vertical>
-            {menu.buttons.map((button) => (
-              <Flex
-                key={button.id}
-                align="center"
-                justify="space-between"
-                gap={12}
-                style={{ paddingBlock: token.paddingXS, borderBottom: `1px solid ${token.colorBorderSecondary}` }}
-              >
-                <Flex align="center" gap={8}>
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={(permissionEffects[button.id] ?? 'none') === 'Allow' ? 'true' : (permissionEffects[button.id] ?? 'none') === 'Deny' ? 'mixed' : 'false'}
-                    aria-label={`${button.name} ${t(getPermissionEffectMessageKey(permissionEffects[button.id] ?? 'none'))}`}
-                    data-permission-effect={permissionEffects[button.id] ?? 'none'}
-                    onClick={() => handleToggleButton(button.id)}
-                    style={{
-                      width: 16,
-                      height: 16,
-                      padding: 0,
-                      borderRadius: token.borderRadiusSM,
-                      border: `1px solid ${(permissionEffects[button.id] ?? 'none') === 'Allow'
-                        ? token.colorPrimary
-                        : (permissionEffects[button.id] ?? 'none') === 'Deny'
-                          ? token.colorError
-                          : token.colorBorder}`,
-                      background: (permissionEffects[button.id] ?? 'none') === 'Allow'
-                        ? token.colorPrimary
-                        : (permissionEffects[button.id] ?? 'none') === 'Deny'
-                          ? token.colorError
-                          : token.colorBgContainer,
-                      color: token.colorTextLightSolid,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 12,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {(permissionEffects[button.id] ?? 'none') === 'Allow' ? '✓' : (permissionEffects[button.id] ?? 'none') === 'Deny' ? '×' : ''}
-                  </button>
-                  <Flex vertical gap={0}>
-                    <Typography.Text>{button.name}</Typography.Text>
-                    <Typography.Text type="secondary">{button.code}</Typography.Text>
-                  </Flex>
-                </Flex>
-                <Tag color={(permissionEffects[button.id] ?? 'none') === 'Allow' ? 'green' : (permissionEffects[button.id] ?? 'none') === 'Deny' ? 'red' : 'default'}>
-                  {t(getPermissionEffectMessageKey(permissionEffects[button.id] ?? 'none'))}
-                </Tag>
-              </Flex>
-            ))}
-          </Flex>
-        ),
-      })),
-    );
-  }, [filteredGroups, handleSetMenuButtons, handleToggleButton, permissionEffects, t, token]);
+          ),
+        })),
+      ],
+    }));
+
+    return {
+      key: `group-${group.key}`,
+      title: group.name,
+      selectable: false,
+      children: toTreeNodes(menus),
+    };
+  }), [filteredGroups, handleToggleButton, permissionEffects, t, token]);
+
+  useEffect(() => {
+    if (!resourceKeyword.trim()) return;
+    setExpandedKeys(filteredGroups.flatMap(({ group, menus }) => [
+      `group-${group.key}`,
+      ...collectExpandableKeys(menus),
+    ]));
+  }, [filteredGroups, resourceKeyword]);
 
   if (loading) {
     return (
@@ -428,13 +422,14 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
               {t('auth.buttonPermission.actions.clearAll')}
             </Button>
           </Flex>
-          {collapseItems.length === 0 ? (
+          {treeData.length === 0 ? (
             <Empty description={t('auth.buttonPermission.emptyText')} />
           ) : (
-            <Collapse
-              activeKey={activeCollapseKeys}
-              onChange={(keys) => setActiveCollapseKeys(keys as string[])}
-              items={collapseItems}
+            <Tree
+              expandedKeys={expandedKeys}
+              onExpand={setExpandedKeys}
+              selectable={false}
+              treeData={treeData}
             />
           )}
         </Card>

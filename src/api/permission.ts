@@ -1,6 +1,6 @@
 import { request } from '@/request/request';
 import type { OrgTreeResp, RoleOptionResp, UserResp } from '@/types/auth-management';
-import type { MenuTreeResp } from '@/types/menu';
+import type { ButtonPageReq, ButtonResp, MenuPageResp, MenuTreeResp } from '@/types/menu';
 import type {
   BatchCreatePermissionReq,
   BatchUpdatePermissionReq,
@@ -22,6 +22,7 @@ export interface PermissionSubjectBundle {
 export interface PermissionService {
   listSubjects: () => Promise<PermissionSubjectBundle>;
   listMenuTree: () => Promise<MenuTreeResp[]>;
+  pageButtons: (params: ButtonPageReq) => Promise<MenuPageResp<ButtonResp>>;
   pageSubjectPermissions: (params: PermissionPageReq) => Promise<PageResp<PermissionGrantResp>>;
   createPermissions: (data: BatchCreatePermissionReq) => Promise<string[]>;
   createPermissionItems: (data: CreatePermissionCommand[]) => Promise<string[]>;
@@ -82,6 +83,14 @@ export const permissionService: PermissionService = {
 
   listMenuTree() {
     return request<MenuTreeResp[]>({ url: '/api/auth/menus/tree', method: 'GET' });
+  },
+
+  pageButtons(params) {
+    return request<MenuPageResp<ButtonResp>>({
+      url: '/api/auth/buttons/page',
+      method: 'POST',
+      data: params,
+    });
   },
 
   pageSubjectPermissions(params) {

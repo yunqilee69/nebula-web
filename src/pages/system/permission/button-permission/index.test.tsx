@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { PermissionService } from '@/api/permission';
+import type { ButtonResp, MenuPageResp } from '@/types/menu';
 import { ButtonPermissionPage } from './index';
 
 vi.mock('@/hooks/use-nebula-i18n', () => ({
@@ -36,6 +37,7 @@ vi.mock('@/api/permission', () => ({
         ],
       },
     ]),
+    pageButtons: vi.fn().mockResolvedValue({ data: [], total: 0 }),
     pageSubjectPermissions: vi.fn().mockResolvedValue({ data: [], total: 0 }),
     createPermissions: vi.fn().mockResolvedValue([]),
     createPermissionItems: vi.fn().mockResolvedValue([]),
@@ -61,14 +63,25 @@ describe('ButtonPermissionPage', () => {
       }),
       listMenuTree: vi.fn().mockResolvedValue([
         {
-          id: 'menu1',
-          type: 'MENU',
-          name: 'Menu 1',
-          code: 'MENU1',
-          path: '/menu1',
+          id: 'menu-parent',
+          type: 'CATALOG',
+          name: 'Parent Menu',
+          code: 'PARENT_MENU',
+          path: '/parent',
           status: 1,
-          buttons: [
-            { id: 'btn1', type: 'BUTTON', name: 'Button 1', code: 'BTN1', menuId: 'menu1' },
+          children: [
+            {
+              id: 'menu1',
+              parentId: 'menu-parent',
+              type: 'MENU',
+              name: 'Menu 1',
+              code: 'MENU1',
+              path: '/parent/menu1',
+              status: 1,
+              buttons: [
+                { id: 'btn1', type: 'BUTTON', name: 'Button 1', code: 'BTN1', menuId: 'menu1' },
+              ],
+            },
           ],
         },
       ]),
@@ -76,6 +89,7 @@ describe('ButtonPermissionPage', () => {
         data: [{ id: 'grant1', subjectType: 'ORG', subjectId: 'org1', resourceType: 'BUTTON', resourceId: 'btn1', effect: 'Deny', scope: 'ALL' }],
         total: 1,
       }),
+      pageButtons: vi.fn().mockResolvedValue({ data: [], total: 0 }),
       createPermissions: vi.fn().mockResolvedValue([]),
       createPermissionItems: vi.fn().mockResolvedValue([]),
       updatePermissions: vi.fn().mockResolvedValue([]),
@@ -85,9 +99,51 @@ describe('ButtonPermissionPage', () => {
 
     render(<ButtonPermissionPage service={service} />);
 
+    expect(await screen.findByText('Parent Menu')).toBeInTheDocument();
+    expect(screen.getByText('Menu 1')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Parent Menu/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Menu 1/ })).not.toBeInTheDocument();
+
     const permissionToggle = await screen.findByRole('checkbox', { name: 'Button 1 auth.buttonPermission.effects.deny' });
 
     expect(permissionToggle).toHaveAttribute('aria-checked', 'mixed');
     expect(permissionToggle).toHaveAttribute('data-permission-effect', 'Deny');
+  });
+
+  it('loads button resources from button pagination when menu tree omits buttons', async () => {
+    const pageButtons = vi.fn().mockResolvedValueOnce({
+      data: [{ id: 'btn-create-user', name: '新增', code: 'CREATE_USER', status: 1 }],
+      total: 1,
+    } as MenuPageResp<ButtonResp>);
+    const service: PermissionService = {
+      listSubjects: vi.fn().mockResolvedValue({
+        orgs: [{ id: 'org1', type: 'ORG', name: 'Org 1', code: 'ORG1' }],
+        roles: [],
+        users: [],
+      }),
+      listMenuTree: vi.fn().mockResolvedValue([
+        {
+          id: 'menu-user',
+          type: 'MENU',
+          name: '用户管理',
+          code: 'USER_MANAGEMENT',
+          path: '/system/users',
+          status: 1,
+        },
+      ]),
+      pageButtons,
+      pageSubjectPermissions: vi.fn().mockResolvedValue({ data: [], total: 0 }),
+      createPermissions: vi.fn().mockResolvedValue([]),
+      createPermissionItems: vi.fn().mockResolvedValue([]),
+      updatePermissions: vi.fn().mockResolvedValue([]),
+      updatePermission: vi.fn().mockResolvedValue('permission-id'),
+      removePermissionsBySubjectAndResources: vi.fn().mockResolvedValue(undefined),
+    };
+
+    render(<ButtonPermissionPage service={service} />);
+
+    expect(await screen.findByText('新增')).toBeInTheDocument();
+    expect(screen.getByText('CREATE_USER')).toBeInTheDocument();
+    expect(pageButtons).toHaveBeenCalledWith({ menuId: 'menu-user', pageNum: 1, pageSize: 500 });
   });
 });
