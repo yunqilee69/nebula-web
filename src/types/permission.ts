@@ -67,6 +67,47 @@ export interface SaveSubjectPermissionsReq {
   permissions: SaveSubjectPermissionItem[];
 }
 
+export interface PermissionResourceReq {
+  resourceType: PermissionResourceType;
+  resourceId: string;
+}
+
+export interface CreatePermissionCommand extends SaveSubjectPermissionItem {
+  subjectType: PermissionSubjectType;
+  subjectId: string;
+}
+
+export interface BatchCreatePermissionReq {
+  subjectType: PermissionSubjectType;
+  subjectId: string;
+  resources: PermissionResourceReq[];
+  effect?: PermissionEffect;
+  scope?: string;
+}
+
+export interface BatchUpdatePermissionReq {
+  subjectType: PermissionSubjectType;
+  subjectId: string;
+  resources: PermissionResourceReq[];
+  effect?: PermissionEffect;
+  scope?: string;
+}
+
+export interface UpdatePermissionReq {
+  subjectType?: PermissionSubjectType;
+  subjectId?: string;
+  resourceType?: PermissionResourceType;
+  resourceId?: string;
+  effect?: PermissionEffect;
+  scope?: string;
+}
+
+export interface DeletePermissionBySubjectResourceReq {
+  subjectType: PermissionSubjectType;
+  subjectId: string;
+  resources: PermissionResourceReq[];
+}
+
 export interface PermissionPageReq {
   pageNo?: number;
   pageSize?: number;

@@ -23,7 +23,7 @@ describe('permissionService', () => {
       url: '/api/auth/permissions/page',
       method: 'POST',
       data: {
-        pageNo: 1,
+        pageNum: 1,
         pageSize: 500,
         subjectType: 'ROLE',
         subjectId: 'role-admin',
@@ -31,28 +31,70 @@ describe('permissionService', () => {
     });
   });
 
-  it('saves all permissions for a subject through one service method', async () => {
-    mockedRequest.mockResolvedValue(undefined);
+  it('creates permissions through the documented batch endpoint', async () => {
+    mockedRequest.mockResolvedValue(['permission-1']);
 
-    await permissionService.saveSubjectPermissions({
+    await permissionService.createPermissions({
       subjectType: 'ORG',
       subjectId: 'org-rd',
-      permissions: [
-        { resourceType: 'MENU', resourceId: 'menu-user', effect: 'Allow', scope: 'ALL' },
-        { resourceType: 'BUTTON', resourceId: 'btn-user-delete', effect: 'Deny', scope: 'ALL' },
+      effect: 'Allow',
+      scope: 'ALL',
+      resources: [
+        { resourceType: 'MENU', resourceId: 'menu-user' },
+        { resourceType: 'BUTTON', resourceId: 'btn-user-delete' },
       ],
     });
 
     expect(mockedRequest).toHaveBeenCalledWith({
-      url: '/api/auth/permissions/batch-save',
+      url: '/api/auth/permissions/batch',
       method: 'POST',
       data: {
         subjectType: 'ORG',
         subjectId: 'org-rd',
-        permissions: [
-          { resourceType: 'MENU', resourceId: 'menu-user', effect: 'Allow', scope: 'ALL' },
-          { resourceType: 'BUTTON', resourceId: 'btn-user-delete', effect: 'Deny', scope: 'ALL' },
+        effect: 'Allow',
+        scope: 'ALL',
+        resources: [
+          { resourceType: 'MENU', resourceId: 'menu-user' },
+          { resourceType: 'BUTTON', resourceId: 'btn-user-delete' },
         ],
+      },
+    });
+  });
+
+  it('batch-updates and deletes permissions through documented endpoints', async () => {
+    mockedRequest.mockResolvedValueOnce(['permission-1']).mockResolvedValueOnce(undefined);
+
+    await permissionService.updatePermissions({
+      subjectType: 'ORG',
+      subjectId: 'org-rd',
+      effect: 'Deny',
+      scope: 'ALL',
+      resources: [{ resourceType: 'MENU', resourceId: 'menu-user' }],
+    });
+    await permissionService.removePermissionsBySubjectAndResources({
+      subjectType: 'ORG',
+      subjectId: 'org-rd',
+      resources: [{ resourceType: 'MENU', resourceId: 'menu-user' }],
+    });
+
+    expect(mockedRequest).toHaveBeenNthCalledWith(1, {
+      url: '/api/auth/permissions/batch',
+      method: 'PUT',
+      data: {
+        subjectType: 'ORG',
+        subjectId: 'org-rd',
+        effect: 'Deny',
+        scope: 'ALL',
+        resources: [{ resourceType: 'MENU', resourceId: 'menu-user' }],
+      },
+    });
+    expect(mockedRequest).toHaveBeenNthCalledWith(2, {
+      url: '/api/auth/permissions/by-subject-resource',
+      method: 'DELETE',
+      data: {
+        subjectType: 'ORG',
+        subjectId: 'org-rd',
+        resources: [{ resourceType: 'MENU', resourceId: 'menu-user' }],
       },
     });
   });
@@ -106,14 +148,14 @@ describe('permissionService', () => {
     expect(result.users[0]).toMatchObject({ id: 'user-1', type: 'USER', name: '云起', code: 'yunqi' });
   });
 
-  it('lists resource groups from the menu tree endpoint', async () => {
-    const groups = [{ key: 'auth', name: '系统权限', menus: [] }];
+  it('lists menu tree records from the menu tree endpoint', async () => {
+    const menus = [{ id: 'menu-auth', name: '系统权限', code: 'AUTH', type: 'MENU', status: 1 }];
 
-    mockedRequest.mockResolvedValue(groups);
+    mockedRequest.mockResolvedValue(menus);
 
-    const result = await permissionService.listResourceGroups();
+    const result = await permissionService.listMenuTree();
 
-    expect(result).toEqual(groups);
+    expect(result).toEqual(menus);
     expect(mockedRequest).toHaveBeenCalledWith({ url: '/api/auth/menus/tree', method: 'GET' });
   });
 });

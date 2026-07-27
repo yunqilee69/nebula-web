@@ -1,12 +1,16 @@
 import { request } from '@/request/request';
 import type { OrgTreeResp, RoleOptionResp, UserResp } from '@/types/auth-management';
+import type { MenuTreeResp } from '@/types/menu';
 import type {
+  BatchCreatePermissionReq,
+  BatchUpdatePermissionReq,
+  CreatePermissionCommand,
+  DeletePermissionBySubjectResourceReq,
   PageResp,
   PermissionGrantResp,
   PermissionPageReq,
-  PermissionResourceGroup,
   PermissionSubject,
-  SaveSubjectPermissionsReq,
+  UpdatePermissionReq,
 } from '@/types/permission';
 
 export interface PermissionSubjectBundle {
@@ -17,9 +21,13 @@ export interface PermissionSubjectBundle {
 
 export interface PermissionService {
   listSubjects: () => Promise<PermissionSubjectBundle>;
-  listResourceGroups: () => Promise<PermissionResourceGroup[]>;
+  listMenuTree: () => Promise<MenuTreeResp[]>;
   pageSubjectPermissions: (params: PermissionPageReq) => Promise<PageResp<PermissionGrantResp>>;
-  saveSubjectPermissions: (data: SaveSubjectPermissionsReq) => Promise<void>;
+  createPermissions: (data: BatchCreatePermissionReq) => Promise<string[]>;
+  createPermissionItems: (data: CreatePermissionCommand[]) => Promise<string[]>;
+  updatePermissions: (data: BatchUpdatePermissionReq) => Promise<string[]>;
+  updatePermission: (id: string, data: UpdatePermissionReq) => Promise<string>;
+  removePermissionsBySubjectAndResources: (data: DeletePermissionBySubjectResourceReq) => Promise<void>;
 }
 
 function mapOrgSubject(org: OrgTreeResp): PermissionSubject {
@@ -72,8 +80,8 @@ export const permissionService: PermissionService = {
     };
   },
 
-  listResourceGroups() {
-    return request<PermissionResourceGroup[]>({ url: '/api/auth/menus/tree', method: 'GET' });
+  listMenuTree() {
+    return request<MenuTreeResp[]>({ url: '/api/auth/menus/tree', method: 'GET' });
   },
 
   pageSubjectPermissions(params) {
@@ -81,17 +89,49 @@ export const permissionService: PermissionService = {
       url: '/api/auth/permissions/page',
       method: 'POST',
       data: {
-        pageNo: params.pageNo ?? 1,
+        pageNum: params.pageNo ?? 1,
         pageSize: params.pageSize ?? 500,
         ...params,
       },
     });
   },
 
-  saveSubjectPermissions(data) {
-    return request<void>({
-      url: '/api/auth/permissions/batch-save',
+  createPermissionItems(data) {
+    return request<string[]>({
+      url: '/api/auth/permissions/batch-items',
       method: 'POST',
+      data,
+    });
+  },
+
+  createPermissions(data) {
+    return request<string[]>({
+      url: '/api/auth/permissions/batch',
+      method: 'POST',
+      data,
+    });
+  },
+
+  updatePermissions(data) {
+    return request<string[]>({
+      url: '/api/auth/permissions/batch',
+      method: 'PUT',
+      data,
+    });
+  },
+
+  updatePermission(id, data) {
+    return request<string>({
+      url: `/api/auth/permissions/${id}`,
+      method: 'PUT',
+      data,
+    });
+  },
+
+  removePermissionsBySubjectAndResources(data) {
+    return request<void>({
+      url: '/api/auth/permissions/by-subject-resource',
+      method: 'DELETE',
       data,
     });
   },
