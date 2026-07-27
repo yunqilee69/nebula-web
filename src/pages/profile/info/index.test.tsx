@@ -2,7 +2,7 @@ import { act, cleanup, render, screen, waitFor, within } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
-import type { ProfileService } from '@/services/profile';
+import type { ProfileService } from '@/api/profile';
 import { useLocaleStore } from '@/stores/locale-store';
 import type { LoginRecordResp, PageResp, ProfileResp } from '@/types/profile';
 import { ProfileInfoPage } from './index';

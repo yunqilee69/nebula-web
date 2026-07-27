@@ -6,8 +6,8 @@ import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns } from '@/components/nebula-pro-table';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
-import { profileService as defaultProfileService } from '@/services/profile';
-import type { ProfileService } from '@/services/profile';
+import { profileService as defaultProfileService } from '@/api/profile';
+import type { ProfileService } from '@/api/profile';
 import type { LoginRecordResp, OAuth2BindingResp, ProfileResp, UpdateProfileReq } from '@/types/profile';
 
 export interface ProfileInfoPageProps {
