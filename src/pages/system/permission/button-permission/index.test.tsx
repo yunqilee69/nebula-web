@@ -85,7 +85,7 @@ describe('ButtonPermissionPage', () => {
 
     render(<ButtonPermissionPage service={service} />);
 
-    const permissionToggle = await screen.findByRole('checkbox', { name: 'Button 1 拒绝权限' });
+    const permissionToggle = await screen.findByRole('checkbox', { name: 'Button 1 auth.buttonPermission.effects.deny' });
 
     expect(permissionToggle).toHaveAttribute('aria-checked', 'mixed');
     expect(permissionToggle).toHaveAttribute('data-permission-effect', 'Deny');

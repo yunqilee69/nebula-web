@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Card, Col, Collapse, Empty, Flex, Input, List, Row, Spin, Tag, Typography } from 'antd';
+import { Button, Card, Col, Collapse, Empty, Flex, Input, Row, Spin, Tag, Typography, theme as antdTheme } from 'antd';
 import type { CollapseProps } from 'antd';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import { permissionService as defaultPermissionService } from '@/api/permission';
 import type { PermissionService } from '@/api/permission';
 import type { MenuTreeResp } from '@/types/menu';
-import type { PermissionButtonResource, PermissionGrantResp, PermissionMenuResource, PermissionResourceGroup, PermissionSubject, PermissionSubjectType } from '@/types/permission';
+import type {
+  PermissionButtonResource,
+  PermissionDraftEffect,
+  PermissionGrantResp,
+  PermissionMenuResource,
+  PermissionResourceGroup,
+  PermissionSubject,
+  PermissionSubjectType,
+  SaveSubjectPermissionItem,
+} from '@/types/permission';
 import { SubjectSelector } from '@/components/subject-selector';
 import { syncSubjectPermissions } from '@/utils/permission-sync';
 
@@ -84,10 +93,27 @@ function toButtonResourceGroups(menus: MenuTreeResp[]): PermissionResourceGroup[
   }];
 }
 
+function getNextPermissionEffect(effect: PermissionDraftEffect): PermissionDraftEffect {
+  if (effect === 'none') return 'Allow';
+  if (effect === 'Allow') return 'Deny';
+  return 'none';
+}
+
+function toPermissionEffects(grants: PermissionGrantResp[]): Record<string, PermissionDraftEffect> {
+  return Object.fromEntries(grants.map((grant) => [grant.resourceId, grant.effect]));
+}
+
+function getPermissionEffectMessageKey(effect: PermissionDraftEffect) {
+  if (effect === 'Allow') return 'auth.buttonPermission.effects.allow' as const;
+  if (effect === 'Deny') return 'auth.buttonPermission.effects.deny' as const;
+  return 'auth.buttonPermission.effects.none' as const;
+}
+
 export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionPageProps) {
   const service = serviceProp ?? defaultPermissionService;
   const { t } = useNebulaI18n();
   const notice = useNotice();
+  const { token } = antdTheme.useToken();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -99,7 +125,7 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
   const [users, setUsers] = useState<PermissionSubject[]>([]);
   const [resources, setResources] = useState<PermissionResourceGroup[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<PermissionSubject>();
-  const [checkedButtonIds, setCheckedButtonIds] = useState<Set<string>>(new Set());
+  const [permissionEffects, setPermissionEffects] = useState<Record<string, PermissionDraftEffect>>({});
   const [loadedPermissions, setLoadedPermissions] = useState<PermissionGrantResp[]>([]);
   const [activeCollapseKeys, setActiveCollapseKeys] = useState<string[]>([]);
 
@@ -115,6 +141,7 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
         setUsers(subjects.users);
         setResources(groups);
         setSelectedSubject(subjects.orgs[0] ?? subjects.roles[0] ?? subjects.users[0]);
+        setActiveCollapseKeys(groups.flatMap((group) => group.menus.map((menu) => menu.id)));
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -134,13 +161,8 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
       .pageSubjectPermissions({ subjectType: selectedSubject.type, subjectId: selectedSubject.id, resourceType: 'BUTTON' })
       .then((page) => {
         if (!mounted) return;
-        const allowedButtonIds = new Set(
-          page.data
-            .filter((g) => g.effect === 'Allow')
-            .map((g) => g.resourceId),
-        );
         setLoadedPermissions(page.data);
-        setCheckedButtonIds(allowedButtonIds);
+        setPermissionEffects(toPermissionEffects(page.data));
       })
       .catch((error: unknown) => {
         if (!mounted) return;
@@ -154,25 +176,26 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
   }, [selectedSubject, service, notice, t]);
 
   const handleToggleButton = useCallback((buttonId: string) => {
-    setCheckedButtonIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(buttonId)) {
-        next.delete(buttonId);
+    setPermissionEffects((prev) => {
+      const next = { ...prev };
+      const nextEffect = getNextPermissionEffect(prev[buttonId] ?? 'none');
+      if (nextEffect === 'none') {
+        delete next[buttonId];
       } else {
-        next.add(buttonId);
+        next[buttonId] = nextEffect;
       }
       return next;
     });
   }, []);
 
-  const handleToggleMenuButtons = useCallback((menu: PermissionMenuResource, selectAll: boolean) => {
-    setCheckedButtonIds((prev) => {
-      const next = new Set(prev);
+  const handleSetMenuButtons = useCallback((menu: PermissionMenuResource, effect: PermissionDraftEffect) => {
+    setPermissionEffects((prev) => {
+      const next = { ...prev };
       menu.buttons.forEach((button) => {
-        if (selectAll) {
-          next.add(button.id);
+        if (effect === 'none') {
+          delete next[button.id];
         } else {
-          next.delete(button.id);
+          next[button.id] = effect;
         }
       });
       return next;
@@ -186,12 +209,16 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
     try {
       const permissions = resources.flatMap((group) =>
         (group.menus ?? []).flatMap((menu) =>
-          (menu.buttons ?? []).map((button) => ({
-            resourceType: 'BUTTON' as const,
-            resourceId: button.id,
-            effect: checkedButtonIds.has(button.id) ? 'Allow' as const : 'Deny' as const,
-            scope: 'ALL',
-          })),
+          (menu.buttons ?? []).flatMap((button) => {
+            const effect = permissionEffects[button.id] ?? 'none';
+            if (effect === 'none') return [];
+            return [{
+              resourceType: 'BUTTON' as const,
+              resourceId: button.id,
+              effect,
+              scope: 'ALL',
+            } satisfies SaveSubjectPermissionItem];
+          }),
         ),
       );
 
@@ -202,11 +229,7 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
         desiredPermissions: permissions,
       });
       setLoadedPermissions(nextPermissions);
-      setCheckedButtonIds(new Set(
-        nextPermissions
-          .filter((g) => g.effect === 'Allow')
-          .map((g) => g.resourceId),
-      ));
+      setPermissionEffects(toPermissionEffects(nextPermissions));
       notice.success(t('auth.buttonPermission.feedback.saveSuccess'));
     } catch (error) {
       notice.error(t('auth.buttonPermission.feedback.saveFailed'));
@@ -214,16 +237,20 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
     } finally {
       setSaving(false);
     }
-  }, [selectedSubject, service, resources, checkedButtonIds, loadedPermissions, notice, t]);
+  }, [selectedSubject, service, resources, permissionEffects, loadedPermissions, notice, t]);
 
-  const handleBulkSelect = useCallback((selectAll: boolean) => {
-    if (selectAll) {
-      const allButtonIds = resources.flatMap((g) => (g.menus ?? []).flatMap((m) => (m.buttons ?? []).map((b) => b.id)));
-      setCheckedButtonIds(new Set(allButtonIds));
-    } else {
-      setCheckedButtonIds(new Set());
+  const allButtons = useMemo(
+    () => resources.flatMap((group) => group.menus.flatMap((menu) => menu.buttons)),
+    [resources],
+  );
+
+  const handleBulkSet = useCallback((effect: PermissionDraftEffect) => {
+    if (effect === 'none') {
+      setPermissionEffects({});
+      return;
     }
-  }, [resources]);
+    setPermissionEffects(Object.fromEntries(allButtons.map((button) => [button.id, effect])));
+  }, [allButtons]);
 
   const filteredGroups = useMemo(() => {
     if (!resources || resources.length === 0) return [];
@@ -260,45 +287,93 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
                 type="link"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleToggleMenuButtons(menu, true);
+                  handleSetMenuButtons(menu, 'Allow');
                 }}
               >
-                {t('auth.buttonPermission.actions.selectAllMenu')}
+                {t('auth.buttonPermission.actions.allowAllMenu')}
               </Button>
               <Button
                 size="small"
                 type="link"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleToggleMenuButtons(menu, false);
+                  handleSetMenuButtons(menu, 'Deny');
                 }}
               >
-                {t('auth.buttonPermission.actions.deselectAllMenu')}
+                {t('auth.buttonPermission.actions.denyAllMenu')}
+              </Button>
+              <Button
+                size="small"
+                type="link"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSetMenuButtons(menu, 'none');
+                }}
+              >
+                {t('auth.buttonPermission.actions.clearAllMenu')}
               </Button>
             </Flex>
           </Flex>
         ),
         children: (
-          <List
-            size="small"
-            dataSource={menu.buttons}
-            renderItem={(button) => (
-              <List.Item
-                style={{ cursor: 'pointer', background: checkedButtonIds.has(button.id) ? '#e6f7ff' : undefined }}
-                onClick={() => handleToggleButton(button.id)}
+          <Flex vertical>
+            {menu.buttons.map((button) => (
+              <Flex
+                key={button.id}
+                align="center"
+                justify="space-between"
+                gap={12}
+                style={{ paddingBlock: token.paddingXS, borderBottom: `1px solid ${token.colorBorderSecondary}` }}
               >
-                <List.Item.Meta
-                  title={button.name}
-                  description={<Typography.Text type="secondary">{button.code}</Typography.Text>}
-                />
-                {checkedButtonIds.has(button.id) && <Tag color="green">{t('auth.buttonPermission.tags.authorized')}</Tag>}
-              </List.Item>
-            )}
-          />
+                <Flex align="center" gap={8}>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={(permissionEffects[button.id] ?? 'none') === 'Allow' ? 'true' : (permissionEffects[button.id] ?? 'none') === 'Deny' ? 'mixed' : 'false'}
+                    aria-label={`${button.name} ${t(getPermissionEffectMessageKey(permissionEffects[button.id] ?? 'none'))}`}
+                    data-permission-effect={permissionEffects[button.id] ?? 'none'}
+                    onClick={() => handleToggleButton(button.id)}
+                    style={{
+                      width: 16,
+                      height: 16,
+                      padding: 0,
+                      borderRadius: token.borderRadiusSM,
+                      border: `1px solid ${(permissionEffects[button.id] ?? 'none') === 'Allow'
+                        ? token.colorPrimary
+                        : (permissionEffects[button.id] ?? 'none') === 'Deny'
+                          ? token.colorError
+                          : token.colorBorder}`,
+                      background: (permissionEffects[button.id] ?? 'none') === 'Allow'
+                        ? token.colorPrimary
+                        : (permissionEffects[button.id] ?? 'none') === 'Deny'
+                          ? token.colorError
+                          : token.colorBgContainer,
+                      color: token.colorTextLightSolid,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 12,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {(permissionEffects[button.id] ?? 'none') === 'Allow' ? '✓' : (permissionEffects[button.id] ?? 'none') === 'Deny' ? '×' : ''}
+                  </button>
+                  <Flex vertical gap={0}>
+                    <Typography.Text>{button.name}</Typography.Text>
+                    <Typography.Text type="secondary">{button.code}</Typography.Text>
+                  </Flex>
+                </Flex>
+                <Tag color={(permissionEffects[button.id] ?? 'none') === 'Allow' ? 'green' : (permissionEffects[button.id] ?? 'none') === 'Deny' ? 'red' : 'default'}>
+                  {t(getPermissionEffectMessageKey(permissionEffects[button.id] ?? 'none'))}
+                </Tag>
+              </Flex>
+            ))}
+          </Flex>
         ),
       })),
     );
-  }, [filteredGroups, checkedButtonIds, handleToggleButton, handleToggleMenuButtons, t]);
+  }, [filteredGroups, handleSetMenuButtons, handleToggleButton, permissionEffects, t, token]);
 
   if (loading) {
     return (
@@ -343,11 +418,14 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
               onChange={(e) => setResourceKeyword(e.target.value)}
               style={{ width: 280 }}
             />
-            <Button disabled={saving} onClick={() => handleBulkSelect(true)}>
-              {t('auth.buttonPermission.actions.selectAll')}
+            <Button disabled={saving} onClick={() => handleBulkSet('Allow')}>
+              {t('auth.buttonPermission.actions.allowAll')}
             </Button>
-            <Button disabled={saving} onClick={() => handleBulkSelect(false)}>
-              {t('auth.buttonPermission.actions.deselectAll')}
+            <Button disabled={saving} onClick={() => handleBulkSet('Deny')}>
+              {t('auth.buttonPermission.actions.denyAll')}
+            </Button>
+            <Button disabled={saving} onClick={() => handleBulkSet('none')}>
+              {t('auth.buttonPermission.actions.clearAll')}
             </Button>
           </Flex>
           {collapseItems.length === 0 ? (
