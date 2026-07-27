@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Card, Col, Empty, Flex, Input, Row, Spin, Tree, Tag } from 'antd';
+import { Button, Card, Col, Empty, Flex, Input, Row, Spin, Switch, Tree, Tag, Typography, theme as antdTheme } from 'antd';
 import type { TreeProps } from 'antd';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
-import { permissionService as defaultPermissionService } from '@/services/permission';
-import type { PermissionService } from '@/services/permission';
+import { permissionService as defaultPermissionService } from '@/api/permission';
+import type { PermissionService } from '@/api/permission';
+import type { MenuTreeResp } from '@/types/menu';
 import type {
+  PermissionDraftEffect,
+  PermissionGrantResp,
   PermissionMenuResource,
   PermissionResourceGroup,
   PermissionSubject,
   PermissionSubjectType,
+  SaveSubjectPermissionItem,
 } from '@/types/permission';
 import { SubjectSelector } from '@/components/subject-selector';
+import { syncSubjectPermissions } from '@/utils/permission-sync';
 
 export interface MenuPermissionPageProps {
   service?: PermissionService;
@@ -65,10 +70,50 @@ function collectExpandableKeys(menus: PermissionMenuResource[]): string[] {
   });
 }
 
+function getNextPermissionEffect(effect: PermissionDraftEffect): PermissionDraftEffect {
+  if (effect === 'none') return 'Allow';
+  if (effect === 'Allow') return 'Deny';
+  return 'none';
+}
+
+function getPermissionStateLabel(effect: PermissionDraftEffect) {
+  if (effect === 'Allow') return '授权权限';
+  if (effect === 'Deny') return '拒绝权限';
+  return '未设置权限';
+}
+
+function toPermissionEffects(grants: PermissionGrantResp[]): Record<string, PermissionDraftEffect> {
+  return Object.fromEntries(grants.map((grant) => [grant.resourceId, grant.effect]));
+}
+
+function mapMenuResource(menu: MenuTreeResp): PermissionMenuResource {
+  return {
+    id: menu.id,
+    parentId: menu.parentId,
+    type: 'MENU',
+    name: menu.name,
+    code: menu.code,
+    path: menu.path,
+    description: menu.remark,
+    status: menu.status,
+    buttons: [],
+    children: menu.children?.map(mapMenuResource),
+  };
+}
+
+function toMenuResourceGroups(menus: MenuTreeResp[]): PermissionResourceGroup[] {
+  return [{
+    key: 'menus',
+    name: '菜单资源',
+    menus: menus.map(mapMenuResource),
+  }];
+}
+
 export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageProps) {
   const service = serviceProp ?? defaultPermissionService;
   const { t } = useNebulaI18n();
   const notice = useNotice();
+  const { token } = antdTheme.useToken();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -80,15 +125,18 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
   const [users, setUsers] = useState<PermissionSubject[]>([]);
   const [resources, setResources] = useState<PermissionResourceGroup[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<PermissionSubject>();
-  const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
+  const [permissionEffects, setPermissionEffects] = useState<Record<string, PermissionDraftEffect>>({});
+  const [loadedPermissions, setLoadedPermissions] = useState<PermissionGrantResp[]>([]);
+  const [associateChildren, setAssociateChildren] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
   useEffect(() => {
     let mounted = true;
 
-    Promise.all([service.listSubjects(), service.listResourceGroups()])
-      .then(([subjects, groups]) => {
+    Promise.all([service.listSubjects(), service.listMenuTree()])
+      .then(([subjects, menus]) => {
         if (!mounted) return;
+        const groups = toMenuResourceGroups(menus);
         setOrgs(subjects.orgs);
         setRoles(subjects.roles);
         setUsers(subjects.users);
@@ -117,10 +165,8 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
       .pageSubjectPermissions({ subjectType: selectedSubject.type, subjectId: selectedSubject.id, resourceType: 'MENU' })
       .then((page) => {
         if (!mounted) return;
-        const allowedMenuIds = page.data
-          .filter((g) => g.effect === 'Allow')
-          .map((g) => g.resourceId);
-        setCheckedKeys(allowedMenuIds);
+        setLoadedPermissions(page.data);
+        setPermissionEffects(toPermissionEffects(page.data));
       })
       .catch((error: unknown) => {
         if (!mounted) return;
@@ -139,19 +185,26 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
     setSaving(true);
     try {
       const permissions = resources.flatMap((group) =>
-        collectMenus(buildMenuTree(group.menus ?? [])).map((menu) => ({
-          resourceType: 'MENU' as const,
-          resourceId: menu.id,
-          effect: checkedKeys.includes(menu.id) ? 'Allow' as const : 'Deny' as const,
-          scope: 'ALL',
-        })),
+        collectMenus(buildMenuTree(group.menus ?? [])).flatMap((menu) => {
+          const effect = permissionEffects[menu.id] ?? 'none';
+          if (effect === 'none') return [];
+          return [{
+            resourceType: 'MENU' as const,
+            resourceId: menu.id,
+            effect,
+            scope: 'ALL',
+          } satisfies SaveSubjectPermissionItem];
+        }),
       );
 
-      await service.saveSubjectPermissions({
-        subjectType: selectedSubject.type,
-        subjectId: selectedSubject.id,
-        permissions,
+      const nextPermissions = await syncSubjectPermissions({
+        service,
+        subject: selectedSubject,
+        existingPermissions: loadedPermissions,
+        desiredPermissions: permissions,
       });
+      setLoadedPermissions(nextPermissions);
+      setPermissionEffects(toPermissionEffects(nextPermissions));
       notice.success(t('auth.permissionConfig.feedback.saveSuccess'));
     } catch (error) {
       notice.error('保存失败');
@@ -159,12 +212,25 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
     } finally {
       setSaving(false);
     }
-  }, [selectedSubject, service, resources, checkedKeys, notice, t]);
+  }, [selectedSubject, service, resources, permissionEffects, loadedPermissions, notice, t]);
 
-  const handleCheck: TreeProps['onCheck'] = (keys) => {
-    const menuIds = new Set(resources.flatMap((group) => collectMenus(buildMenuTree(group.menus ?? [])).map((menu) => menu.id)));
-    setCheckedKeys((keys as React.Key[]).filter((key) => menuIds.has(String(key))));
-  };
+  const handleToggleMenuEffect = useCallback((menu: PermissionMenuResource) => {
+    setPermissionEffects((prev) => {
+      const nextEffect = getNextPermissionEffect(prev[menu.id] ?? 'none');
+      const targetMenuIds = associateChildren
+        ? collectMenus([menu]).map((item) => item.id)
+        : [menu.id];
+      const next = { ...prev };
+      targetMenuIds.forEach((menuId) => {
+        if (nextEffect === 'none') {
+          delete next[menuId];
+        } else {
+          next[menuId] = nextEffect;
+        }
+      });
+      return next;
+    });
+  }, [associateChildren]);
 
   const allMenus = useMemo(
     () => resources.flatMap((group) => collectMenus(buildMenuTree(group.menus ?? []))),
@@ -182,9 +248,47 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
   const treeData = useMemo(() => filteredGroups.map(({ group, menus }) => {
     const toTreeNodes = (items: PermissionMenuResource[]): NonNullable<TreeProps['treeData']> => items.map((menu) => ({
       title: (
-        <span>
-          {menu.name} {menu.path && <Tag color="blue">{menu.path}</Tag>}
-        </span>
+        <Flex align="center" gap={8}>
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={(permissionEffects[menu.id] ?? 'none') === 'Allow' ? 'true' : (permissionEffects[menu.id] ?? 'none') === 'Deny' ? 'mixed' : 'false'}
+            aria-label={`${menu.name} ${getPermissionStateLabel(permissionEffects[menu.id] ?? 'none')}`}
+            data-permission-effect={permissionEffects[menu.id] ?? 'none'}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleToggleMenuEffect(menu);
+            }}
+            style={{
+              width: 16,
+              height: 16,
+              padding: 0,
+              borderRadius: 4,
+              border: `1px solid ${(permissionEffects[menu.id] ?? 'none') === 'Allow'
+                ? token.colorPrimary
+                : (permissionEffects[menu.id] ?? 'none') === 'Deny'
+                  ? token.colorError
+                  : token.colorBorder}`,
+              background: (permissionEffects[menu.id] ?? 'none') === 'Allow'
+                ? token.colorPrimary
+                : (permissionEffects[menu.id] ?? 'none') === 'Deny'
+                  ? token.colorError
+                  : token.colorBgContainer,
+              color: token.colorTextLightSolid,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 12,
+              lineHeight: 1,
+            }}
+          >
+            {(permissionEffects[menu.id] ?? 'none') === 'Allow' ? '✓' : (permissionEffects[menu.id] ?? 'none') === 'Deny' ? '×' : ''}
+          </button>
+          <span>
+            {menu.name} {menu.path && <Tag color="blue">{menu.path}</Tag>}
+          </span>
+        </Flex>
       ),
       key: menu.id,
       children: toTreeNodes(menu.children ?? []),
@@ -196,7 +300,7 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
       selectable: false,
       children: toTreeNodes(menus),
     };
-  }), [filteredGroups]);
+  }), [filteredGroups, handleToggleMenuEffect, permissionEffects, token.colorBgContainer, token.colorBorder, token.colorError, token.colorPrimary, token.colorTextLightSolid]);
 
   useEffect(() => {
     if (!resourceKeyword.trim()) return;
@@ -249,22 +353,34 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
               onChange={(e) => setResourceKeyword(e.target.value)}
               style={{ width: 280 }}
             />
-            <Button disabled={saving} onClick={() => setCheckedKeys([])}>
-              全部取消
+            <Flex align="center" gap={6} style={{ paddingInline: 4 }}>
+              <Switch
+                size="small"
+                aria-label="关联子级"
+                checked={associateChildren}
+                onChange={setAssociateChildren}
+              />
+              <Typography.Text type="secondary">关联子级</Typography.Text>
+            </Flex>
+            <Button disabled={saving} onClick={() => setPermissionEffects(Object.fromEntries(allMenus.map((menu) => [menu.id, 'Allow' as const])))}>
+              全部授权
             </Button>
-            <Button disabled={saving} onClick={() => setCheckedKeys(allMenus.map((menu) => menu.id))}>
-              全部选中
+            <Button
+              disabled={saving}
+              onClick={() => setPermissionEffects(Object.fromEntries(allMenus.map((menu) => [menu.id, 'Deny' as const])))}
+            >
+              全部拒绝
+            </Button>
+            <Button disabled={saving} onClick={() => setPermissionEffects({})}>
+              全部取消
             </Button>
           </Flex>
           {treeData.length === 0 ? (
             <Empty description="暂无菜单资源" />
           ) : (
             <Tree
-              checkable
-              checkedKeys={checkedKeys}
               expandedKeys={expandedKeys}
               onExpand={setExpandedKeys}
-              onCheck={handleCheck}
               treeData={treeData}
               selectable={false}
             />
