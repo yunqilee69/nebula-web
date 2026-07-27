@@ -5,7 +5,7 @@ import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
-import { roleService as defaultRoleService, type RoleService } from '@/services/role';
+import { roleService as defaultRoleService, type RoleService } from '@/api/role';
 import type { CreateRoleReq, RoleDetailResp, RolePageReq, RoleResp, RoleStatus, UpdateRoleReq } from '@/types/role';
 import { RoleFormModal } from './role-form-modal';
 import type { RoleFormMode, RoleFormValues } from './role-form-modal';

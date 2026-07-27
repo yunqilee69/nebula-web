@@ -1,9 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NebulaProvider } from '@/providers/nebula-provider';
-import { roleService as defaultRoleService } from '@/services/role';
+import { roleService as defaultRoleService } from '@/api/role';
 import { useLocaleStore } from '@/stores/locale-store';
-import type { RoleService } from '@/services/role';
+import type { RoleService } from '@/api/role';
 import type { PageResp, RoleResp } from '@/types/role';
 import { RoleManagementPage } from './index';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
