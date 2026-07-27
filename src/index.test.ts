@@ -10,7 +10,7 @@ describe('public package exports', () => {
     const bundle: PermissionSubjectBundle = { orgs: [], roles: [], users: [] };
 
     expect(typeof service.listSubjects).toBe('function');
-    expect(typeof service.listResourceGroups).toBe('function');
+    expect(typeof service.listMenuTree).toBe('function');
     expect(bundle.orgs).toEqual([]);
   });
 });

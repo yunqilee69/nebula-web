@@ -8,13 +8,13 @@ export { createPermissionCode, hasPermission } from './utils/permissions';
 export { useAuthStore, useAuthStore as useNebulaAuth } from './stores/auth-store';
 export { useNebulaLoginBadge, NebulaLoginBadgeProvider } from './providers/login-badge-provider';
 export { getBuiltInLoginMethods, mergeLoginBadges } from './utils/auth/auth-methods';
-export { authService } from './services/auth';
-export { roleService } from './services/role';
-export { authManagementService } from './services/auth-management';
-export { profileService } from './services/profile';
-export { menuService } from './services/menu';
-export { createStorageService } from './services/storage';
-export { permissionService } from './services/permission';
+export { authService } from './api/auth';
+export { roleService } from './api/role';
+export { authManagementService } from './api/auth-management';
+export { profileService } from './api/profile';
+export { menuService } from './api/menu';
+export { createStorageService } from './api/storage';
+export { permissionService } from './api/permission';
 export { EmptyModule } from './layouts/empty-module';
 export { ExceptionResult } from './layouts/exception-result';
 export { ExternalIframePage } from './layouts/external-iframe-page';
@@ -80,12 +80,12 @@ export type {
   WechatWebQrCodeCreateReq,
   WechatWebQrCodeResp,
 } from './types/auth';
-export type { AuthService } from './services/auth';
-export type { AuthManagementService } from './services/auth-management';
-export type { ProfileService } from './services/profile';
-export type { RoleService } from './services/role';
-export type { MenuService } from './services/menu';
-export type { PermissionService, PermissionSubjectBundle } from './services/permission';
+export type { AuthService } from './api/auth';
+export type { AuthManagementService } from './api/auth-management';
+export type { ProfileService } from './api/profile';
+export type { RoleService } from './api/role';
+export type { MenuService } from './api/menu';
+export type { PermissionService, PermissionSubjectBundle } from './api/permission';
 export type { RoleManagementPageProps } from './pages/system/operation/role';
 export type { UserManagementPageProps } from './pages/system/operation/user';
 export type { OrgManagementPageProps } from './pages/system/operation/org';
@@ -101,7 +101,11 @@ export type {
   PermissionResourceGroup,
   PermissionGrantResp,
   PermissionPageReq,
+  PermissionResourceReq,
   SaveSubjectPermissionsReq,
+  CreatePermissionCommand,
+  UpdatePermissionReq,
+  DeletePermissionBySubjectResourceReq,
 } from './types/permission';
 export type {
   BasePageReq,
@@ -197,4 +201,4 @@ export type {
   UploadTaskDetailResp,
   UploadTaskStatus,
 } from './types/storage';
-export type { StorageRequestConfig, StorageRequestFn, StorageService, UploadSimpleFileOptions } from './services/storage';
+export type { StorageRequestConfig, StorageRequestFn, StorageService, UploadSimpleFileOptions } from './api/storage';
