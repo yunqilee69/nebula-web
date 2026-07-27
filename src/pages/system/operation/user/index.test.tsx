@@ -2,7 +2,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
-import type { AuthManagementService } from '@/services/auth-management';
+import type { AuthManagementService } from '@/api/auth-management';
 import { useLocaleStore } from '@/stores/locale-store';
 import type { PageResp, UserResp } from '@/types/auth-management';
 import { UserManagementPage } from './index';

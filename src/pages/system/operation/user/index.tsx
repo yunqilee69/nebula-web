@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
-import { authManagementService as defaultAuthManagementService } from '@/services/auth-management';
-import type { AuthManagementService } from '@/services/auth-management';
+import { authManagementService as defaultAuthManagementService } from '@/api/auth-management';
+import type { AuthManagementService } from '@/api/auth-management';
 import type { CreateUserReq, OrgOptionResp, RoleOptionResp, UpdateUserReq, UserResp } from '@/types/auth-management';
 import { UserFormDrawer } from './components/user-form-drawer';
 import { UserTable, type UserTableHandle } from './components/user-table';
