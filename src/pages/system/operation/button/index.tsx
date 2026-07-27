@@ -2,7 +2,7 @@ import { Flex, Form } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
-import { menuService as defaultMenuService, type MenuService } from '@/services/menu';
+import { menuService as defaultMenuService, type MenuService } from '@/api/menu';
 import type { ButtonDetailResp, ButtonResp, CreateButtonReq, MenuTreeResp, UpdateButtonReq } from '@/types/menu';
 import { ButtonFormModal, type ButtonFormValues } from './components/button-form-modal';
 import { ButtonTable, type ButtonTableHandle } from './components/button-table';

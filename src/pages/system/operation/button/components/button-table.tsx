@@ -5,7 +5,7 @@ import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
-import type { MenuService } from '@/services/menu';
+import type { MenuService } from '@/api/menu';
 import type { ButtonResp, ButtonStatus } from '@/types/menu';
 
 export interface ButtonTableHandle {

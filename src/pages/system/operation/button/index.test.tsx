@@ -15,7 +15,7 @@ vi.mock('@/hooks/use-notice', () => ({
   }),
 }));
 
-vi.mock('@/services/menu', () => ({
+vi.mock('@/api/menu', () => ({
   menuService: {
     getMenuTree: vi.fn().mockResolvedValue([]),
     pageButtons: vi.fn().mockResolvedValue({ data: [], total: 0 }),
