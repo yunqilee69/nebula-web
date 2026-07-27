@@ -197,6 +197,31 @@ describe('global request instance', () => {
     expect(saveAuthTokens).not.toHaveBeenCalled();
   });
 
+  it('clears tokens and notifies session expired when refresh returns auth-expired business code', async () => {
+    vi.mocked(getStoredAccessToken).mockReturnValue('old-access-token');
+    vi.mocked(getStoredRefreshToken).mockReturnValue('stale-refresh-token');
+
+    requestClient.defaults.adapter = mockAdapter((config) => {
+      const url = config.url ?? '';
+
+      if (url === '/api/auth/refresh') {
+        return makeResponse(config, 200, {
+          code: '10006',
+          message: '未登录或登录已过期',
+          data: null,
+        });
+      }
+
+      return Promise.reject(make401Error(config));
+    });
+
+    await expect(request({ method: 'GET', url: '/protected' })).rejects.toThrow('Unauthorized');
+
+    expect(clearAuthTokens).toHaveBeenCalledTimes(1);
+    expect(notifySessionExpired).toHaveBeenCalledTimes(1);
+    expect(notice.error).not.toHaveBeenCalled();
+  });
+
   it('skips session-expired notification when no access or refresh token is stored', async () => {
     vi.mocked(getStoredAccessToken).mockReturnValue(null);
     vi.mocked(getStoredRefreshToken).mockReturnValue(null);
