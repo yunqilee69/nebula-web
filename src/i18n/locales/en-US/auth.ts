@@ -315,9 +315,6 @@ export const auth: NebulaAuthMessages = {
       allowAll: 'Allow All',
       denyAll: 'Deny All',
       clearAll: 'Clear All',
-      allowAllMenu: 'Allow',
-      denyAllMenu: 'Deny',
-      clearAllMenu: 'Clear',
     },
     effects: {
       none: 'No permission set',

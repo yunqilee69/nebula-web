@@ -558,9 +558,6 @@ export interface NebulaButtonPermissionMessages {
     allowAll: string;
     denyAll: string;
     clearAll: string;
-    allowAllMenu: string;
-    denyAllMenu: string;
-    clearAllMenu: string;
   };
   effects: {
     none: string;

@@ -315,9 +315,6 @@ export const auth: NebulaAuthMessages = {
       allowAll: '全部授权',
       denyAll: '全部拒绝',
       clearAll: '全部取消',
-      allowAllMenu: '授权',
-      denyAllMenu: '拒绝',
-      clearAllMenu: '取消',
     },
     effects: {
       none: '未设置权限',
