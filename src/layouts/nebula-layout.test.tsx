@@ -540,6 +540,73 @@ describe('NebulaLayout', () => {
     expect(screen.getByRole('menuitem', { name: /用户管理/ })).toHaveClass('ant-menu-item-selected');
   });
 
+  it('highlights only the active page menu and does not highlight its catalog group', async () => {
+    const catalogItems: NebulaMenuItem[] = [
+      {
+        key: '/system',
+        path: '/system',
+        name: '系统管理',
+        type: 'CATALOG',
+        children: [
+          {
+            key: '/system/users',
+            path: '/system/users',
+            name: '用户管理',
+            type: 'MENU',
+            activeMenuPath: '/system',
+          },
+          { key: '/system/roles', path: '/system/roles', name: '角色管理', type: 'MENU' },
+        ],
+      },
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/system/users']}>
+        <NebulaLayout title="Test" menuItems={catalogItems}>
+          <Routes>
+            <Route path="/system/users" element={<h1>用户内容</h1>} />
+            <Route path="/system/roles" element={<h1>角色内容</h1>} />
+          </Routes>
+        </NebulaLayout>
+      </MemoryRouter>,
+    );
+
+    const navigation = await screen.findByRole('navigation', { name: '主导航' });
+    expect(within(navigation).getByRole('menuitem', { name: /用户管理/ })).toHaveClass('ant-menu-item-selected');
+    expect(within(navigation).getByRole('menuitem', { name: /角色管理/ })).not.toHaveClass('ant-menu-item-selected');
+    expect(within(navigation).getByRole('menuitem', { name: /系统管理/ })).not.toHaveClass('ant-menu-item-selected');
+    expect(within(navigation).getByRole('menuitem', { name: /系统管理/ })).not.toHaveClass('ant-menu-submenu-selected');
+    expect(within(navigation).queryByRole('link', { name: '系统管理' })).not.toBeInTheDocument();
+  });
+
+  it('renders catalog breadcrumb ancestors as text instead of links', async () => {
+    const catalogItems: NebulaMenuItem[] = [
+      {
+        key: '/system',
+        path: '/system',
+        name: '系统管理',
+        type: 'CATALOG',
+        children: [{ key: '/system/users', path: '/system/users', name: '用户管理', type: 'MENU' }],
+      },
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/system/users']}>
+        <NebulaLayout title="Test" menuItems={catalogItems}>
+          <Routes>
+            <Route path="/system/users" element={<h1>用户内容</h1>} />
+          </Routes>
+        </NebulaLayout>
+      </MemoryRouter>,
+    );
+
+    const breadcrumb = await screen.findByRole('navigation', { name: '面包屑' });
+    expect(within(breadcrumb).queryByRole('link', { name: '系统管理' })).not.toBeInTheDocument();
+    expect(within(breadcrumb).getByText('系统管理')).toBeInTheDocument();
+    expect(within(breadcrumb).getByText('用户管理')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveTextContent('用户内容');
+  });
+
   it('degrades safely when activeMenuPath points to a missing menu item', async () => {
     const runtimeItems: NebulaMenuItem[] = [
       {

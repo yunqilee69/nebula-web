@@ -5,11 +5,64 @@ import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import { permissionService as defaultPermissionService } from '@/services/permission';
 import type { PermissionService } from '@/services/permission';
-import type { PermissionResourceGroup, PermissionSubject, PermissionSubjectType } from '@/types/permission';
+import type {
+  PermissionMenuResource,
+  PermissionResourceGroup,
+  PermissionSubject,
+  PermissionSubjectType,
+} from '@/types/permission';
 import { SubjectSelector } from '@/components/subject-selector';
 
 export interface MenuPermissionPageProps {
   service?: PermissionService;
+}
+
+function collectMenus(menus: PermissionMenuResource[]): PermissionMenuResource[] {
+  return menus.flatMap((menu) => [menu, ...collectMenus(menu.children ?? [])]);
+}
+
+function buildMenuTree(menus: PermissionMenuResource[]): PermissionMenuResource[] {
+  if (menus.some((menu) => (menu.children ?? []).length > 0)) {
+    return menus.map((menu) => ({
+      ...menu,
+      children: buildMenuTree(menu.children ?? []),
+    }));
+  }
+
+  const nodes = new Map<string, PermissionMenuResource>();
+  menus.forEach((menu) => nodes.set(menu.id, { ...menu, children: [] }));
+  const roots: PermissionMenuResource[] = [];
+
+  menus.forEach((menu) => {
+    const node = nodes.get(menu.id);
+    const parent = menu.parentId ? nodes.get(menu.parentId) : undefined;
+    if (!node || !parent) {
+      if (node) roots.push(node);
+      return;
+    }
+    parent.children = [...(parent.children ?? []), node];
+  });
+
+  return roots;
+}
+
+function filterMenuTree(menus: PermissionMenuResource[], keyword: string): PermissionMenuResource[] {
+  const normalized = keyword.trim().toLowerCase();
+  if (!normalized) return menus;
+
+  return menus.flatMap((menu) => {
+    const children = filterMenuTree(menu.children ?? [], keyword);
+    const matches = `${menu.name} ${menu.code} ${menu.path ?? ''}`.toLowerCase().includes(normalized);
+    if (!matches && children.length === 0) return [];
+    return [{ ...menu, children: matches ? menu.children : children }];
+  });
+}
+
+function collectExpandableKeys(menus: PermissionMenuResource[]): string[] {
+  return menus.flatMap((menu) => {
+    const children = menu.children ?? [];
+    return children.length > 0 ? [menu.id, ...collectExpandableKeys(children)] : [];
+  });
 }
 
 export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageProps) {
@@ -41,8 +94,10 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
         setUsers(subjects.users);
         setResources(groups);
         setSelectedSubject(subjects.orgs[0] ?? subjects.roles[0] ?? subjects.users[0]);
-        const allGroupKeys = groups.map((g) => `group-${g.key}`);
-        setExpandedKeys(allGroupKeys);
+        setExpandedKeys(groups.flatMap((group) => [
+          `group-${group.key}`,
+          ...collectExpandableKeys(buildMenuTree(group.menus ?? [])),
+        ]));
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -84,7 +139,7 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
     setSaving(true);
     try {
       const permissions = resources.flatMap((group) =>
-        (group.menus ?? []).map((menu) => ({
+        collectMenus(buildMenuTree(group.menus ?? [])).map((menu) => ({
           resourceType: 'MENU' as const,
           resourceId: menu.id,
           effect: checkedKeys.includes(menu.id) ? 'Allow' as const : 'Deny' as const,
@@ -107,36 +162,49 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
   }, [selectedSubject, service, resources, checkedKeys, notice, t]);
 
   const handleCheck: TreeProps['onCheck'] = (keys) => {
-    setCheckedKeys(keys as React.Key[]);
+    const menuIds = new Set(resources.flatMap((group) => collectMenus(buildMenuTree(group.menus ?? [])).map((menu) => menu.id)));
+    setCheckedKeys((keys as React.Key[]).filter((key) => menuIds.has(String(key))));
   };
 
-  const treeData = useMemo(() => {
-    if (!resources || resources.length === 0) return [];
-    const normalized = resourceKeyword.trim().toLowerCase();
-    return resources
-      .map((group) => {
-        const menus = group.menus ?? [];
-        const filteredMenus = menus.filter((menu) => {
-          if (!normalized) return true;
-          return `${menu.name} ${menu.code} ${menu.path ?? ''}`.toLowerCase().includes(normalized);
-        });
-        if (filteredMenus.length === 0 && normalized) return null;
-        return {
-          title: group.name,
-          key: `group-${group.key}`,
-          selectable: false,
-          children: filteredMenus.map((menu) => ({
-            title: (
-              <span>
-                {menu.name} {menu.path && <Tag color="blue">{menu.path}</Tag>}
-              </span>
-            ),
-            key: menu.id,
-          })),
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null);
-  }, [resources, resourceKeyword]);
+  const allMenus = useMemo(
+    () => resources.flatMap((group) => collectMenus(buildMenuTree(group.menus ?? []))),
+    [resources],
+  );
+
+  const filteredGroups = useMemo(
+    () => resources.flatMap((group) => {
+      const menus = filterMenuTree(buildMenuTree(group.menus ?? []), resourceKeyword);
+      return menus.length > 0 ? [{ group, menus }] : [];
+    }),
+    [resources, resourceKeyword],
+  );
+
+  const treeData = useMemo(() => filteredGroups.map(({ group, menus }) => {
+    const toTreeNodes = (items: PermissionMenuResource[]): NonNullable<TreeProps['treeData']> => items.map((menu) => ({
+      title: (
+        <span>
+          {menu.name} {menu.path && <Tag color="blue">{menu.path}</Tag>}
+        </span>
+      ),
+      key: menu.id,
+      children: toTreeNodes(menu.children ?? []),
+    }));
+
+    return {
+      title: group.name,
+      key: `group-${group.key}`,
+      selectable: false,
+      children: toTreeNodes(menus),
+    };
+  }), [filteredGroups]);
+
+  useEffect(() => {
+    if (!resourceKeyword.trim()) return;
+    setExpandedKeys(filteredGroups.flatMap(({ group, menus }) => [
+      `group-${group.key}`,
+      ...collectExpandableKeys(menus),
+    ]));
+  }, [filteredGroups, resourceKeyword]);
 
   if (loading) {
     return (
@@ -184,7 +252,7 @@ export function MenuPermissionPage({ service: serviceProp }: MenuPermissionPageP
             <Button disabled={saving} onClick={() => setCheckedKeys([])}>
               全部取消
             </Button>
-            <Button disabled={saving} onClick={() => setCheckedKeys(resources.flatMap((g) => g.menus.map((m) => m.id)))}>
+            <Button disabled={saving} onClick={() => setCheckedKeys(allMenus.map((menu) => menu.id))}>
               全部选中
             </Button>
           </Flex>

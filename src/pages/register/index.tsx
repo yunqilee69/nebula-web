@@ -136,15 +136,6 @@ export function RegisterPage() {
         >
           <Input.Password />
         </Form.Item>
-        <Form.Item label="昵称" name="nickname">
-          <Input />
-        </Form.Item>
-        <Form.Item label="邮箱" name="email">
-          <Input />
-        </Form.Item>
-        <Form.Item label="手机号" name="phone">
-          <Input />
-        </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit" loading={submitting} block>
             注册

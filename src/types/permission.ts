@@ -26,6 +26,7 @@ export interface PermissionButtonResource {
 
 export interface PermissionMenuResource {
   id: string;
+  parentId?: string;
   type: 'MENU';
   name: string;
   code: string;
@@ -33,6 +34,7 @@ export interface PermissionMenuResource {
   description?: string;
   status?: number;
   buttons: PermissionButtonResource[];
+  children?: PermissionMenuResource[];
 }
 
 export interface PermissionResourceGroup {

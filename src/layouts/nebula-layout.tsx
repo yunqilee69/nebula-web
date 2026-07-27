@@ -159,13 +159,20 @@ function findMenuPath(items: NebulaMenuItem[], path: string, parents: NebulaMenu
   return [];
 }
 
+function isNavigableMenuItem(item: NebulaMenuItem): boolean {
+  if (item.children?.length) return false;
+
+  const type = item.type?.toUpperCase();
+  return type === undefined || type === 'MENU' || type === 'IFRAME' || type === 'EXTERNAL';
+}
+
 function toMenuItems(items: NebulaMenuItem[]): MenuProps['items'] {
   return items
     .filter((item) => !item.hidden)
     .map((item) => ({
       key: toTabKey(item.path),
       icon: item.iconNode ?? resolveNebulaIcon(item.icon),
-      label: <Link to={item.path}>{item.name}</Link>,
+      label: isNavigableMenuItem(item) ? <Link to={item.path}>{item.name}</Link> : item.name,
       title: item.name,
       children: item.children?.length ? toMenuItems(item.children) : undefined,
     }));
@@ -326,10 +333,16 @@ export function NebulaLayout({
   );
   const currentMenuItem = currentMenuPath.at(-1) ?? findMenuItem(menuItems, location.pathname);
   const currentTitle = currentMenuItem?.name ?? brandTitle;
-  const selectedMenuPath = currentMenuItem?.activeMenuPath ?? location.pathname;
+  const requestedSelectedPath = currentMenuItem?.activeMenuPath ?? location.pathname;
+  const selectedMenuItem = findMenuItem(menuItems, requestedSelectedPath);
+  const selectedMenuPath = selectedMenuItem && isNavigableMenuItem(selectedMenuItem)
+    ? selectedMenuItem.path
+    : selectedMenuItem && currentMenuItem && isNavigableMenuItem(currentMenuItem)
+      ? currentMenuItem.path
+      : undefined;
   const selectedMenuHierarchy = useMemo(
-    () => findMenuPath(menuItems, selectedMenuPath),
-    [menuItems, selectedMenuPath],
+    () => findMenuPath(menuItems, selectedMenuPath ?? location.pathname),
+    [location.pathname, menuItems, selectedMenuPath],
   );
   const openMenuKeys = selectedMenuHierarchy.slice(0, -1).map((item) => toTabKey(item.path));
 
@@ -401,7 +414,7 @@ export function NebulaLayout({
   const breadcrumbItems: BreadcrumbProps['items'] = currentMenuPath.length
     ? currentMenuPath.map((item, index) => ({
         title:
-          index === currentMenuPath.length - 1 ? (
+          index === currentMenuPath.length - 1 || !isNavigableMenuItem(item) ? (
             item.name
           ) : (
             <Link to={item.path}>{item.name}</Link>
@@ -433,7 +446,7 @@ export function NebulaLayout({
 
   function openMenuKey(key: string) {
     const item = flattenMenuItems(menuItems).find((menuItem) => toTabKey(menuItem.path) === key);
-    if (item) {
+    if (item && isNavigableMenuItem(item)) {
       openRoute(item.path);
     }
   }
@@ -659,7 +672,7 @@ export function NebulaLayout({
         </div>
         <Menu
           mode="inline"
-          selectedKeys={[toTabKey(selectedMenuPath)]}
+          selectedKeys={selectedMenuPath ? [toTabKey(selectedMenuPath)] : []}
           defaultOpenKeys={openMenuKeys}
           items={toMenuItems(menuItems)}
           onClick={({ key }) => openMenuKey(String(key))}

@@ -12,9 +12,16 @@ const defaultHttpErrorMessage = '接口请求出错，请稍后重试';
 function getHttpErrorMessage(error: AxiosError) {
   const data = error.response?.data;
 
-  if (data && typeof data === 'object' && 'message' in data) {
-    const message = data.message;
-    if (typeof message === 'string' && message.trim()) return message.trim();
+  if (data && typeof data === 'object') {
+    const messageFields = ['message', 'error', 'msg'] as const;
+    for (const field of messageFields) {
+      if (field in data) {
+        const value = (data as Record<string, unknown>)[field];
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim();
+        }
+      }
+    }
   }
 
   return error.message.trim() || defaultHttpErrorMessage;

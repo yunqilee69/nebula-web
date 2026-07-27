@@ -140,18 +140,12 @@ describe('RegisterPage', () => {
     await user.type(screen.getByLabelText('用户名'), 'newuser');
     await user.type(screen.getByLabelText('密码'), 'password123');
     await user.type(screen.getByLabelText('确认密码'), 'password123');
-    await user.type(screen.getByLabelText('昵称'), 'New User');
-    await user.type(screen.getByLabelText('邮箱'), 'user@example.com');
-    await user.type(screen.getByLabelText('手机号'), '13800000000');
     await user.click(screen.getByRole('button', { name: /注\s*册/ }));
 
     await waitFor(() => {
       expect(authService.register).toHaveBeenCalledWith({
         username: 'newuser',
         password: 'password123',
-        nickname: 'New User',
-        email: 'user@example.com',
-        phone: '13800000000',
       });
     });
 
