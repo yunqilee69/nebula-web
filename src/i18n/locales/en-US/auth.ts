@@ -312,13 +312,17 @@ export const auth: NebulaAuthMessages = {
     emptyText: 'No button resources',
     actions: {
       save: 'Save',
-      selectAll: 'Select All',
-      deselectAll: 'Deselect All',
-      selectAllMenu: 'Select All',
-      deselectAllMenu: 'Deselect',
+      allowAll: 'Allow All',
+      denyAll: 'Deny All',
+      clearAll: 'Clear All',
+      allowAllMenu: 'Allow',
+      denyAllMenu: 'Deny',
+      clearAllMenu: 'Clear',
     },
-    tags: {
-      authorized: 'Authorized',
+    effects: {
+      none: 'No permission set',
+      allow: 'Permission allowed',
+      deny: 'Permission denied',
     },
     feedback: {
       saveSuccess: 'Permissions saved',

@@ -312,13 +312,17 @@ export const auth: NebulaAuthMessages = {
     emptyText: '暂无按钮资源',
     actions: {
       save: '保存',
-      selectAll: '全部选中',
-      deselectAll: '全部取消',
-      selectAllMenu: '全选',
-      deselectAllMenu: '取消',
+      allowAll: '全部授权',
+      denyAll: '全部拒绝',
+      clearAll: '全部取消',
+      allowAllMenu: '授权',
+      denyAllMenu: '拒绝',
+      clearAllMenu: '取消',
     },
-    tags: {
-      authorized: '已授权',
+    effects: {
+      none: '未设置权限',
+      allow: '授权权限',
+      deny: '拒绝权限',
     },
     feedback: {
       saveSuccess: '权限配置已保存',
