@@ -555,13 +555,17 @@ export interface NebulaButtonPermissionMessages {
   emptyText: string;
   actions: {
     save: string;
-    selectAll: string;
-    deselectAll: string;
-    selectAllMenu: string;
-    deselectAllMenu: string;
+    allowAll: string;
+    denyAll: string;
+    clearAll: string;
+    allowAllMenu: string;
+    denyAllMenu: string;
+    clearAllMenu: string;
   };
-  tags: {
-    authorized: string;
+  effects: {
+    none: string;
+    allow: string;
+    deny: string;
   };
   feedback: {
     saveSuccess: string;
