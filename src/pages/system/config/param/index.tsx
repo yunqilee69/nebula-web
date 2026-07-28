@@ -1,6 +1,8 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Popconfirm } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { DictLabel } from '@/components/dict-select';
+import { useDictItems } from '@/components/dict-select';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
@@ -21,6 +23,8 @@ import type { ParamFormState, ParamFormValues } from './param-page-helpers';
 import { buildParamPageReq } from './param-page-shared';
 import type { ParamTableParams } from './param-page-shared';
 import { useParamValueRenderer } from './param-value-reveal';
+
+const PARAM_MODULE_DICT_CODE = 'param_module';
 
 function useParamPageI18n(): (key: string) => string {
   const { t } = useNebulaI18n();
@@ -44,6 +48,12 @@ export function ParamManagementPage({ service = defaultParamService }: { readonl
   const dataTypeValueEnum = useMemo(
     () => Object.fromEntries(dataTypeOptions.map((option) => [option.value, { text: option.label }])),
     [dataTypeOptions],
+  );
+
+  const { options: moduleOptions } = useDictItems(PARAM_MODULE_DICT_CODE);
+  const moduleSelectOptions = useMemo(
+    () => moduleOptions.map((opt) => ({ label: opt.label, value: opt.value, disabled: opt.disabled })),
+    [moduleOptions],
   );
 
   const requestParams = useCallback(
@@ -123,7 +133,24 @@ export function ParamManagementPage({ service = defaultParamService }: { readonl
   const renderParamValue = useParamValueRenderer({ service, notice, translate });
 
   const columns = useMemo<NebulaProColumns<SystemParamResp>[]>(() => [
-    { title: translate(paramI18n.columns.moduleCode), dataIndex: 'moduleCode', fixed: 'left', width: 160 },
+    {
+      title: translate(paramI18n.columns.moduleCode),
+      dataIndex: 'moduleCode',
+      fixed: 'left',
+      width: 160,
+      valueType: 'select',
+      fieldProps: {
+        allowClear: true,
+        showSearch: true,
+        optionFilterProp: 'label',
+        options: moduleSelectOptions,
+        placeholder: translate(paramI18n.placeholders.moduleCode),
+      },
+      render: (_, record) => {
+        if (!record.moduleCode) return '-';
+        return <DictLabel dictCode={PARAM_MODULE_DICT_CODE} value={record.moduleCode} />;
+      },
+    },
     { title: translate(paramI18n.columns.paramKey), dataIndex: 'paramKey', fixed: 'left', width: 220, sorter: true },
     { title: translate(paramI18n.columns.paramName), dataIndex: 'paramName', width: 180, sorter: true },
     {
@@ -166,7 +193,7 @@ export function ParamManagementPage({ service = defaultParamService }: { readonl
         </Popconfirm>,
       ],
     },
-  ], [dataTypeOptions, dataTypeValueEnum, openEditModal, removeParam, renderParamValue, translate]);
+  ], [dataTypeOptions, dataTypeValueEnum, moduleSelectOptions, openEditModal, removeParam, renderParamValue, translate]);
 
   return (
     <>

@@ -90,7 +90,7 @@ export const system: NebulaSystemMessages = {
         paramName: '参数名',
         paramValue: '参数值',
         dataType: '数据类型',
-        moduleCode: '模块编码',
+        moduleCode: '模块',
         actions: '操作',
       },
       fields: {
@@ -100,7 +100,7 @@ export const system: NebulaSystemMessages = {
         paramValue: '参数值',
         dataType: '数据类型',
         optionCode: '字典编码',
-        moduleCode: '模块编码',
+        moduleCode: '模块',
       },
       placeholders: {
         paramKey: '请输入参数键',
@@ -108,7 +108,7 @@ export const system: NebulaSystemMessages = {
         description: '请输入描述',
         dataType: '请选择数据类型',
         optionCode: '请选择字典编码',
-        moduleCode: '请选择模块编码',
+        moduleCode: '请选择模块',
         value: '请输入参数值',
       },
       empty: {

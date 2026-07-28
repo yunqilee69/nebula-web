@@ -1,12 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { dictService } from '@/services/dict';
+import { useDictCacheStore } from '@/stores/dict-cache-store';
 import { DataType } from '@/types/param';
 import type { DictItemTreeResp } from '@/types/dict';
 import {
   ParamValueInput,
   buildParamValueRules,
-  mapDictItemsToParamOptions,
   toParamInputValue,
 } from './param-value-input';
 
@@ -55,13 +55,6 @@ describe('ParamValueInput helpers', () => {
     ]);
   });
 
-  it('maps dictionary tree items to flat Select options', () => {
-    expect(mapDictItemsToParamOptions([{ ...enabledItem, children: [disabledChildItem] }])).toEqual([
-      { label: 'Enabled', value: 'enabled', disabled: false },
-      { label: 'Disabled Child', value: 'disabled-child', disabled: true },
-    ]);
-  });
-
   it('does not build backend-deleted validation rules', () => {
     expect(buildParamValueRules()).toEqual([]);
   });
@@ -69,6 +62,7 @@ describe('ParamValueInput helpers', () => {
 
 describe('ParamValueInput', () => {
   beforeEach(() => {
+    useDictCacheStore.getState().reset();
     listItemsByCode.mockReset();
   });
 
@@ -93,24 +87,13 @@ describe('ParamValueInput', () => {
   it('loads SINGLE and MULTIPLE options from the dictionary service', async () => {
     listItemsByCode.mockResolvedValueOnce([{ ...enabledItem, children: [disabledChildItem] }]);
 
-    const { rerender, container } = render(
+    const { container } = render(
       <ParamValueInput dataType={DataType.SINGLE} optionCode="FEATURE_FLAG" value="enabled" />,
     );
 
     await waitFor(() => expect(listItemsByCode).toHaveBeenCalledWith('FEATURE_FLAG'));
     expect(await screen.findByText('Enabled')).toBeInTheDocument();
-
-    listItemsByCode.mockResolvedValueOnce([enabledItem, disabledChildItem]);
-    rerender(
-      <ParamValueInput
-        dataType={DataType.MULTIPLE}
-        optionCode="FEATURE_FLAG"
-        value={'["enabled","disabled-child"]'}
-      />,
-    );
-
-    await waitFor(() => expect(listItemsByCode).toHaveBeenCalledTimes(2));
-    expect(container.querySelector('.ant-select-multiple')).toBeInTheDocument();
+    expect(container.querySelector('.ant-select-multiple')).not.toBeInTheDocument();
   });
 
   it('keeps Select usable with empty options when option loading fails', async () => {

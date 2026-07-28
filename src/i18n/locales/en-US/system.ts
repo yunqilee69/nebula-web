@@ -90,7 +90,7 @@ export const system: NebulaSystemMessages = {
         paramName: 'Parameter Name',
         paramValue: 'Parameter Value',
         dataType: 'Data Type',
-        moduleCode: 'Module Code',
+        moduleCode: 'Module',
         actions: 'Actions',
       },
       fields: {
@@ -100,7 +100,7 @@ export const system: NebulaSystemMessages = {
         paramValue: 'Parameter Value',
         dataType: 'Data Type',
         optionCode: 'Dictionary Code',
-        moduleCode: 'Module Code',
+        moduleCode: 'Module',
       },
       placeholders: {
         paramKey: 'Enter parameter key',
@@ -108,7 +108,7 @@ export const system: NebulaSystemMessages = {
         description: 'Enter description',
         dataType: 'Select data type',
         optionCode: 'Select dictionary code',
-        moduleCode: 'Select module code',
+        moduleCode: 'Select module',
         value: 'Enter parameter value',
       },
       empty: {

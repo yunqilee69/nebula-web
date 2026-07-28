@@ -2,6 +2,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dictService } from '@/services/dict';
+import { useDictCacheStore } from '@/stores/dict-cache-store';
 import { DataType, type SystemParamDetailResp, type SystemParamResp } from '@/types/param';
 import { createParamPage, createParamService, enabledFeatureItem, featureFlagDictType, getModalByTitle, getPopoverActionButton, getSelectTrigger, getSelectTriggerByName, getTableRowByText, paramDetailRecord, paramRecord, renderParamManagementPage, systemModuleItem } from './index.test-helpers';
 
@@ -18,6 +19,7 @@ const PARAM_MODULE_DICT_CODE = 'param_module';
 
 describe('ParamManagementPage', () => {
   beforeEach(() => {
+    useDictCacheStore.getState().reset();
     pageTypes.mockResolvedValue({ data: [featureFlagDictType], total: 1 });
     listItemsByCode.mockImplementation((dictCode) => {
       if (dictCode === PARAM_MODULE_DICT_CODE) return Promise.resolve([systemModuleItem]);
@@ -42,7 +44,7 @@ describe('ParamManagementPage', () => {
       .map((header) => header.textContent?.replace(/\s+/g, '') ?? '')
       .filter(Boolean);
 
-    expect(headerTexts.slice(0, 2)).toEqual(['模块编码', '参数键']);
+    expect(headerTexts.slice(0, 2)).toEqual(['模块', '参数键']);
   });
 
   it('loads parameters, submits search filters, and fetches detail before revealing a value', async () => {
@@ -57,7 +59,6 @@ describe('ParamManagementPage', () => {
 
     const proTable = screen.getByTestId('pro-table');
     await user.type(within(proTable).getByLabelText('参数键'), ' security ');
-    await user.type(within(proTable).getByLabelText('模块编码'), ' system ');
     await user.click(getSelectTrigger(proTable, 'dataType'));
     await user.click(await screen.findByText('整数'));
     await user.click(screen.getByRole('button', { name: /查\s*询/ }));
@@ -68,7 +69,6 @@ describe('ParamManagementPage', () => {
         pageSize: 10,
         paramKey: 'security',
         dataType: DataType.INT,
-        moduleCode: 'system',
       });
     });
 
@@ -171,9 +171,6 @@ describe('ParamManagementPage', () => {
     await user.click(getSelectTrigger(modal, 'dataType'));
     await user.click(await screen.findByText('整数'));
     await user.type(await within(modal).findByRole('spinbutton', { name: '参数值' }), '5');
-    await waitFor(() => expect(listItemsByCode).toHaveBeenCalledWith(PARAM_MODULE_DICT_CODE));
-    await user.click(getSelectTrigger(modal, 'moduleCode'));
-    await user.click(await screen.findByText('System Module'));
     await user.click(within(modal).getByRole('button', { name: /保\s*存/ }));
 
     await waitFor(() => {
@@ -182,7 +179,6 @@ describe('ParamManagementPage', () => {
         paramName: 'Retry Count',
         dataType: DataType.INT,
         paramValue: '5',
-        moduleCode: 'system',
       });
     });
   });

@@ -1,8 +1,9 @@
 import { Form, Input, Modal, Select } from 'antd';
 import type { FormInstance } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
+import { DictSelect } from '@/components/dict-select';
 import { dictService } from '@/services/dict';
-import type { DictItemTreeResp, DictTypeDetailResp } from '@/types/dict';
+import type { DictTypeDetailResp } from '@/types/dict';
 import { DataType } from '@/types/param';
 import { buildParamValueRules, ParamValueInput } from './components/param-value-input';
 import { PARAM_DATA_TYPE_VALUES, assertNever, paramI18n, usesDictionaryOptions } from './param-page-helpers';
@@ -12,9 +13,6 @@ const DICT_TYPE_SELECT_PAGE_SIZE = 500;
 const PARAM_MODULE_DICT_CODE = 'param_module';
 
 type ParamSelectOption = Readonly<{ label: string; value: string; disabled?: boolean }>;
-type ModuleOptionsLoadResult =
-  | Readonly<{ kind: 'loaded'; options: ParamSelectOption[] }>
-  | Readonly<{ kind: 'failed' }>;
 
 interface ParamFormModalProps {
   readonly form: FormInstance<ParamFormValues>;
@@ -45,41 +43,9 @@ function mapDictTypesToOptionCodeOptions(types: readonly DictTypeDetailResp[]): 
   }));
 }
 
-function normalizeModuleOptionValue(value: string): string | undefined {
-  const normalized = value.trim();
-  return normalized || undefined;
-}
-
-function mapDictItemsToModuleOptions(items: readonly DictItemTreeResp[]): ParamSelectOption[] {
-  return items.flatMap((item) => {
-    const children = mapDictItemsToModuleOptions(item.children ?? []);
-    const value = normalizeModuleOptionValue(item.itemValue);
-    if (!value) return children;
-    return [
-      {
-        label: normalizeModuleOptionValue(item.name) ?? value,
-        value,
-        disabled: item.enabled === false,
-      },
-      ...children,
-    ];
-  });
-}
-
-function hasSelectableOption(options: readonly ParamSelectOption[]): boolean {
-  return options.some((option) => option.disabled !== true);
-}
-
 function withSelectedOption(options: readonly ParamSelectOption[], selectedValue: string | undefined): ParamSelectOption[] {
   if (!selectedValue || options.some((option) => option.value === selectedValue)) return [...options];
   return [{ label: selectedValue, value: selectedValue }, ...options];
-}
-
-function showModuleOptionsError(translate: (key: string) => string): void {
-  Modal.error({
-    title: translate(paramI18n.feedback.moduleOptionsLoadFailedTitle),
-    content: translate(paramI18n.feedback.moduleOptionsLoadFailed),
-  });
 }
 
 export function ParamFormModal({
@@ -95,14 +61,10 @@ export function ParamFormModal({
   const dataType = Form.useWatch('dataType', form) ?? DataType.STRING;
   const optionCode = Form.useWatch('optionCode', form);
   const selectedOptionCode = typeof optionCode === 'string' ? optionCode : undefined;
-  const moduleCode = Form.useWatch('moduleCode', form);
-  const selectedModuleCode = typeof moduleCode === 'string' ? moduleCode : undefined;
   const disabled = submitting || detailLoading;
   const showOptionCode = usesDictionaryOptions(dataType);
   const [optionCodeOptions, setOptionCodeOptions] = useState<ParamSelectOption[]>([]);
   const [optionCodeLoading, setOptionCodeLoading] = useState(false);
-  const [moduleOptions, setModuleOptions] = useState<ParamSelectOption[]>([]);
-  const [moduleOptionsLoading, setModuleOptionsLoading] = useState(false);
 
   const dataTypeOptions = useMemo(
     () => PARAM_DATA_TYPE_VALUES.map((value) => ({ label: translate(paramI18n.dataTypes[value]), value })),
@@ -111,50 +73,11 @@ export function ParamFormModal({
   const displayedOptionCodeOptions = useMemo(() => {
     return withSelectedOption(optionCodeOptions, selectedOptionCode);
   }, [optionCodeOptions, selectedOptionCode]);
-  const displayedModuleOptions = useMemo(() => {
-    return withSelectedOption(moduleOptions, selectedModuleCode);
-  }, [moduleOptions, selectedModuleCode]);
   const valueRules = useMemo(() => buildParamValueRules(), []);
 
   useEffect(() => {
     if (!showOptionCode) form.setFieldValue('optionCode', undefined);
   }, [form, showOptionCode]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    let active = true;
-    setModuleOptions([]);
-    setModuleOptionsLoading(true);
-
-    void dictService.listItemsByCode(PARAM_MODULE_DICT_CODE)
-      .then(
-        (items): ModuleOptionsLoadResult => ({ kind: 'loaded', options: mapDictItemsToModuleOptions(items) }),
-        (): ModuleOptionsLoadResult => ({ kind: 'failed' }),
-      )
-      .then((result) => {
-        if (!active) return;
-        switch (result.kind) {
-          case 'loaded':
-            setModuleOptions(result.options);
-            if (!hasSelectableOption(result.options)) showModuleOptionsError(translate);
-            break;
-          case 'failed':
-            setModuleOptions([]);
-            showModuleOptionsError(translate);
-            break;
-          default:
-            assertNever(result);
-        }
-      })
-      .finally(() => {
-        if (active) setModuleOptionsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [open, translate]);
 
   useEffect(() => {
     if (!open) return;
@@ -210,13 +133,11 @@ export function ParamFormModal({
           />
         </Form.Item>
         <Form.Item name="moduleCode" label={translate(paramI18n.fields.moduleCode)}>
-          <Select
+          <DictSelect
+            dictCode={PARAM_MODULE_DICT_CODE}
             allowClear
             disabled={disabled}
-            loading={moduleOptionsLoading}
-            options={displayedModuleOptions}
             placeholder={translate(paramI18n.placeholders.moduleCode)}
-            showSearch={{ optionFilterProp: 'label' }}
           />
         </Form.Item>
         <Form.Item name="description" label={translate(paramI18n.fields.description)}>
