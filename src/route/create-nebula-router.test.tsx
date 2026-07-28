@@ -212,7 +212,7 @@ describe('createNebulaRouter backend menus', () => {
     });
     render(<RouterProvider router={router} />);
 
-    expect(await screen.findByText('当前还没有注册业务模块')).toBeInTheDocument();
+    expect(await screen.findByText('暂无模块')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Runtime users page' })).not.toBeInTheDocument();
   });
 
@@ -224,7 +224,7 @@ describe('createNebulaRouter backend menus', () => {
     renderWithAnonymousAuth(router);
 
     expect(await screen.findByText('暂无可用登录方式')).toBeInTheDocument();
-    expect(screen.queryByText('当前还没有注册业务模块')).not.toBeInTheDocument();
+    expect(screen.queryByText('暂无模块')).not.toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: '主导航' })).not.toBeInTheDocument();
   });
 
