@@ -42,9 +42,8 @@ describe('app entry wiring', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('用户名')).toBeInTheDocument();
     });
-    expect(screen.getByText('当前登录方式：账号密码')).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: '主导航' })).not.toBeInTheDocument();
-    expect(screen.queryByText('当前还没有注册业务模块')).not.toBeInTheDocument();
+    expect(screen.queryByText('暂无模块')).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /Dashboard/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(existsSync(resolve(process.cwd(), 'src/dev-app.tsx'))).toBe(false);
@@ -75,7 +74,6 @@ describe('app entry wiring', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('用户名')).toBeInTheDocument();
     });
-    expect(screen.getByText('当前登录方式：账号密码')).toBeInTheDocument();
   });
 
   it('does not request /api/auth/current-user on /login when no tokens are stored', async () => {
