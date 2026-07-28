@@ -98,7 +98,17 @@ describe('OrgManagementPage', () => {
       expect(service.pageOrgs).toHaveBeenCalledWith({ pageNum: 1, pageSize: 10 });
     });
 
-    await user.click(await screen.findByRole('treeitem', { name: /研发中心/ }));
+    const tree = await screen.findByRole('tree');
+    expect(tree).toBeInTheDocument();
+
+    const rootNode = await screen.findByRole('treeitem', { name: /Cludix Nebula/ });
+    expect(rootNode).toBeInTheDocument();
+
+    const expandButton = await screen.findByRole('button', { name: /展开.*Cludix Nebula/ });
+    await user.click(expandButton);
+
+    const childNode = await screen.findByRole('treeitem', { name: /研发中心/ });
+    await user.click(childNode);
 
     await waitFor(() => {
       expect(service.pageOrgs).toHaveBeenLastCalledWith({
