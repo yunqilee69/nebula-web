@@ -7,14 +7,14 @@ describe('builtInMenuComponentRegistry', () => {
       component: 'UserManagementPage',
       defaultName: '用户管理',
       defaultCode: 'USER_MANAGEMENT',
-      defaultPath: '/auth/user',
+      defaultPath: '/system/operation/user',
       defaultIcon: 'UserOutlined',
     });
     expect(builtInMenuComponentRegistry.MenuManagementPage).toMatchObject({
       component: 'MenuManagementPage',
       defaultName: '菜单管理',
       defaultCode: 'MENU_MANAGEMENT',
-      defaultPath: '/auth/menu',
+      defaultPath: '/system/operation/menu',
     });
 
     await expect(builtInMenuComponentRegistry.UserManagementPage.loader()).resolves.toHaveProperty('default');
