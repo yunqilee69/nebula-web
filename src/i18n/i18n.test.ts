@@ -37,7 +37,7 @@ describe('i18n', () => {
       expect(messages.layout.tabRenameAriaLabel).toBe('重命名标签页');
       expect(messages.layout.tabReorderHandleAriaLabel).toBe('拖拽标签页');
       expect(messages.common.languageZh).toBe('中文');
-      expect(messages.common.languageEn).toBe('EN');
+      expect(messages.common.languageEn).toBe('English');
       expect(messages.auth.roleManagement.title).toBe('角色管理');
       expect(messages.auth.roleManagement.actions.create).toBe('新增角色');
       expect(messages.auth.roleManagement.fields.name).toBe('角色名称');
@@ -45,6 +45,16 @@ describe('i18n', () => {
       expect(messages.auth.userManagement.title).toBe('用户管理');
       expect(messages.auth.orgManagement.title).toBe('组织管理');
       expect(messages.auth.permissionConfig.title).toBe('权限配置');
+      expect(messages.system.config.dict.actions.createType).toBe('新增字典类型');
+      expect(messages.system.config.dict.modal.createTypeTitle).toBe('新增字典类型');
+      expect(messages.system.config.dict.columns.code).toBe('字典编码');
+      expect(messages.system.config.dict.status.enabled).toBe('启用');
+      expect(messages.system.config.param.actions.create).toBe('新增参数');
+      expect(messages.system.config.param.modal.createTitle).toBe('新增参数');
+      expect(messages.system.config.param.dataTypes.string).toBe('字符串');
+      expect(messages.system.config.param.inputs.value).toBe('参数值');
+      expect(messages.system.config.param.placeholders.value).toBe('请输入参数值');
+      expect(messages.system.config.param.empty.options).toBe('暂无选项');
     });
 
     it('returns English messages for en-US locale', () => {
@@ -78,7 +88,7 @@ describe('i18n', () => {
       expect(messages.layout.tabRenameAriaLabel).toBe('Rename tab');
       expect(messages.layout.tabReorderHandleAriaLabel).toBe('Move tab');
       expect(messages.common.languageZh).toBe('中文');
-      expect(messages.common.languageEn).toBe('EN');
+      expect(messages.common.languageEn).toBe('English');
       expect(messages.auth.roleManagement.title).toBe('Role Management');
       expect(messages.auth.roleManagement.actions.create).toBe('New Role');
       expect(messages.auth.roleManagement.fields.name).toBe('Role Name');
@@ -86,6 +96,9 @@ describe('i18n', () => {
       expect(messages.auth.userManagement.title).toBe('User Management');
       expect(messages.auth.orgManagement.title).toBe('Organization Management');
       expect(messages.auth.permissionConfig.title).toBe('Permission Configuration');
+      expect(messages.system.config.param.inputs.value).toBe('Parameter Value');
+      expect(messages.system.config.param.placeholders.value).toBe('Enter parameter value');
+      expect(messages.system.config.param.empty.options).toBe('No options available');
     });
   });
 
