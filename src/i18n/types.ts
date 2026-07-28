@@ -570,6 +570,159 @@ export interface NebulaButtonPermissionMessages {
   };
 }
 
+export interface NebulaDictMessages {
+  actions: {
+    createType: string;
+    createItem: string;
+    items: string;
+    edit: string;
+    delete: string;
+    save: string;
+    cancel: string;
+  };
+  columns: {
+    code: string;
+    name: string;
+    remark: string;
+    itemValue: string;
+    parentId: string;
+    sort: string;
+    status: string;
+    actions: string;
+  };
+  fields: {
+    code: string;
+    name: string;
+    remark: string;
+    itemValue: string;
+    parentId: string;
+    sort: string;
+    status: string;
+    tagColor: string;
+  };
+  modal: {
+    createTypeTitle: string;
+    editTypeTitle: string;
+    itemTitle: string;
+    createItemTitle: string;
+    editItemTitle: string;
+  };
+  placeholders: {
+    code: string;
+    name: string;
+    remark: string;
+    itemValue: string;
+    parentId: string;
+    tagColor: string;
+  };
+  validation: {
+    codeRequired: string;
+    nameRequired: string;
+    itemValueRequired: string;
+  };
+  status: {
+    enabled: string;
+    disabled: string;
+  };
+  feedback: {
+    typeListLoadFailed: string;
+    typeCreateSuccess: string;
+    typeUpdateSuccess: string;
+    typeDeleteSuccess: string;
+    itemOptionsLoadFailed: string;
+    itemListLoadFailed: string;
+    itemCreateSuccess: string;
+    itemUpdateSuccess: string;
+    itemDeleteSuccess: string;
+  };
+  confirm: {
+    typeDeleteTitle: string;
+    itemDeleteTitle: string;
+  };
+}
+
+export interface NebulaParamMessages {
+  actions: {
+    create: string;
+    edit: string;
+    delete: string;
+    save: string;
+    cancel: string;
+    revealValue: string;
+    hideValue: string;
+  };
+  inputs: {
+    value: string;
+  };
+  columns: {
+    paramKey: string;
+    paramName: string;
+    paramValue: string;
+    dataType: string;
+    moduleCode: string;
+    actions: string;
+  };
+  fields: {
+    paramKey: string;
+    paramName: string;
+    description: string;
+    paramValue: string;
+    dataType: string;
+    optionCode: string;
+    moduleCode: string;
+  };
+  placeholders: {
+    paramKey: string;
+    paramName: string;
+    description: string;
+    dataType: string;
+    optionCode: string;
+    moduleCode: string;
+    value: string;
+  };
+  empty: {
+    options: string;
+  };
+  validation: {
+    paramKeyRequired: string;
+    paramNameRequired: string;
+    dataTypeRequired: string;
+  };
+  modal: {
+    createTitle: string;
+    editTitle: string;
+  };
+  dataTypes: {
+    string: string;
+    int: string;
+    double: string;
+    boolean: string;
+    single: string;
+    multiple: string;
+  };
+  feedback: {
+    listLoadFailed: string;
+    detailLoadFailed: string;
+    moduleOptionsLoadFailedTitle: string;
+    moduleOptionsLoadFailed: string;
+    createSuccess: string;
+    updateSuccess: string;
+    deleteSuccess: string;
+  };
+  confirm: {
+    deleteTitle: string;
+  };
+}
+
+export interface NebulaSystemConfigMessages {
+  dict: NebulaDictMessages;
+  param: NebulaParamMessages;
+}
+
+export interface NebulaSystemMessages {
+  config: NebulaSystemConfigMessages;
+}
+
 export interface NebulaAuthMessages {
   roleManagement: NebulaRoleManagementMessages;
   menuManagement: NebulaMenuManagementMessages;
@@ -593,6 +746,7 @@ export interface NebulaMessages {
   common: NebulaCommonMessages;
   layout: NebulaLayoutMessages;
   auth: NebulaAuthMessages;
+  system: NebulaSystemMessages;
 }
 
 /** Recursive type that generates all dot-notation paths to string leaves. */
