@@ -723,6 +723,189 @@ export interface NebulaSystemMessages {
   config: NebulaSystemConfigMessages;
 }
 
+export interface NebulaSchedulerJobMessages {
+  columns: {
+    jobCode: string;
+    jobName: string;
+    cronExpr: string;
+    enabled: string;
+    executorApp: string;
+    description: string;
+    engineJobRef: string;
+    paramClassName: string;
+    manualTriggerEnabled: string;
+    paramOverrideEnabled: string;
+    actions: string;
+  };
+  actions: {
+    sync: string;
+    refresh: string;
+    edit: string;
+    trigger: string;
+    enable: string;
+    disable: string;
+    delete: string;
+    detail: string;
+  };
+  fields: {
+    jobCode: string;
+    jobName: string;
+    cronExpr: string;
+    enabled: string;
+    executorApp: string;
+    defaultParamJson: string;
+    description: string;
+    engineJobRef: string;
+    paramClassName: string;
+    manualTriggerEnabled: string;
+    paramOverrideEnabled: string;
+    reason: string;
+    param: string;
+  };
+  search: {
+    jobCode: string;
+    jobName: string;
+    enabled: string;
+    executorApp: string;
+  };
+  placeholders: {
+    jobCode: string;
+    jobName: string;
+    enabled: string;
+    executorApp: string;
+    cronExpr: string;
+    defaultParamJson: string;
+    description: string;
+    reason: string;
+    param: string;
+  };
+  modal: {
+    editTitle: string;
+    triggerTitle: string;
+    detailTitle: string;
+    paramSchemaTitle: string;
+    manualTriggerDisabled: string;
+  };
+  validation: {
+    cronFormat: string;
+    paramJsonFormat: string;
+  };
+  feedback: {
+    syncSuccess: string;
+    syncFailed: string;
+    updateSuccess: string;
+    updateFailed: string;
+    triggerSuccess: string;
+    triggerFailed: string;
+    enableSuccess: string;
+    enableFailed: string;
+    disableSuccess: string;
+    disableFailed: string;
+    deleteSuccess: string;
+    deleteFailed: string;
+    listLoadFailed: string;
+    detailLoadFailed: string;
+    actionSuccess: string;
+    actionFailed: string;
+  };
+  confirm: {
+    deleteTitle: string;
+  };
+  empty: {
+    paramSchema: string;
+  };
+}
+
+export interface NebulaSchedulerRunMessages {
+  columns: {
+    requestId: string;
+    jobCode: string;
+    runStatus: string;
+    triggerSource: string;
+    finalParamJson: string;
+    resultMessage: string;
+    resultJson: string;
+    manualReason: string;
+    operatorName: string;
+    triggerTime: string;
+    startTime: string;
+    finishTime: string;
+    logSource: string;
+    content: string;
+    truncated: string;
+    actions: string;
+  };
+  actions: {
+    detail: string;
+    logs: string;
+    terminate: string;
+    retry: string;
+    rerun: string;
+  };
+  search: {
+    jobCode: string;
+    runStatus: string;
+    triggerSource: string;
+    startTimeRange: string;
+  };
+  placeholders: {
+    jobCode: string;
+    runStatus: string;
+    triggerSource: string;
+    startTimeRange: string;
+    reason: string;
+  };
+  modal: {
+    detailTitle: string;
+    logTitle: string;
+    terminateTitle: string;
+    retryTitle: string;
+    rerunTitle: string;
+    terminateConfirm: string;
+    reasonLabel: string;
+    logTruncated: string;
+  };
+  feedback: {
+    listLoadFailed: string;
+    detailLoadFailed: string;
+    logLoadFailed: string;
+    terminateSuccess: string;
+    terminateFailed: string;
+    retrySuccess: string;
+    retryFailed: string;
+    rerunSuccess: string;
+    rerunFailed: string;
+    actionSuccess: string;
+    actionFailed: string;
+  };
+}
+
+export interface NebulaSchedulerMessages {
+  tabs: {
+    jobs: string;
+    runs: string;
+  };
+  pagination: {
+    total: string;
+  };
+  job: NebulaSchedulerJobMessages;
+  run: NebulaSchedulerRunMessages;
+  runStatus: {
+    pending: string;
+    running: string;
+    terminating: string;
+    terminated: string;
+    timeout: string;
+    success: string;
+    failed: string;
+  };
+  triggerSource: {
+    scheduled: string;
+    manual: string;
+    retry: string;
+  };
+}
+
 export interface NebulaAuthMessages {
   roleManagement: NebulaRoleManagementMessages;
   menuManagement: NebulaMenuManagementMessages;
@@ -747,6 +930,7 @@ export interface NebulaMessages {
   layout: NebulaLayoutMessages;
   auth: NebulaAuthMessages;
   system: NebulaSystemMessages;
+  scheduler: NebulaSchedulerMessages;
 }
 
 /** Recursive type that generates all dot-notation paths to string leaves. */
