@@ -906,6 +906,51 @@ export interface NebulaSchedulerMessages {
   };
 }
 
+export interface NebulaAuditMessages {
+  columns: {
+    id: string;
+    traceId: string;
+    bizNo: string;
+    module: string;
+    action: string;
+    resource: string;
+    resourceId: string;
+    category: string;
+    consistency: string;
+    operatorId: string;
+    operatorName: string;
+    success: string;
+    errorCode: string;
+    errorMessage: string;
+    createTime: string;
+    actions: string;
+  };
+  category: {
+    business: string;
+    security: string;
+  };
+  consistency: {
+    eventual: string;
+    strong: string;
+  };
+  status: {
+    success: string;
+    failed: string;
+  };
+  modal: {
+    detailTitle: string;
+    basicInfo: string;
+    requestInfo: string;
+    argsSnapshot: string;
+    resultSnapshot: string;
+    extraInfo: string;
+    noData: string;
+  };
+  pagination: {
+    total: string;
+  };
+}
+
 export interface NebulaAuthMessages {
   roleManagement: NebulaRoleManagementMessages;
   menuManagement: NebulaMenuManagementMessages;
@@ -931,6 +976,7 @@ export interface NebulaMessages {
   auth: NebulaAuthMessages;
   system: NebulaSystemMessages;
   scheduler: NebulaSchedulerMessages;
+  audit: NebulaAuditMessages;
 }
 
 /** Recursive type that generates all dot-notation paths to string leaves. */

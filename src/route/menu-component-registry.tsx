@@ -11,7 +11,6 @@ import { ParamManagementPage } from '@/pages/system/config/param';
 import { GeneralConfigPage } from '@/pages/system/config/general';
 import { AuditLogPage } from '@/pages/system/monitor/audit-log';
 import { ScheduledTaskPage } from '@/pages/system/monitor/scheduled-task';
-import { EventLogPage } from '@/pages/system/monitor/event-log';
 import type { MenuComponentRegistry } from './types';
 
 export function createMenuComponentRegistry(registry: MenuComponentRegistry): MenuComponentRegistry {
@@ -122,12 +121,5 @@ export const builtInMenuComponentRegistry = createMenuComponentRegistry({
     defaultCode: 'SCHEDULED_TASK',
     defaultPath: '/system/monitor/scheduled-task',
     loader: () => Promise.resolve({ default: ScheduledTaskPage }),
-  },
-  EventLogPage: {
-    component: 'EventLogPage',
-    defaultName: '事件记录',
-    defaultCode: 'EVENT_LOG',
-    defaultPath: '/system/monitor/event-log',
-    loader: () => Promise.resolve({ default: EventLogPage }),
   },
 });

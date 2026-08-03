@@ -1,21 +1,55 @@
-import { Empty, Typography } from 'antd';
+import { useCallback, useState } from 'react';
+import { auditService, type AuditService } from '@/services/audit';
+import type { AuditRecordDetailResp, AuditRecordResp } from '@/types/audit';
+import { AuditRecordDetailModal } from './components/audit-record-detail-modal';
+import { AuditRecordTable } from './components/audit-record-table';
 
-const { Title, Text } = Typography;
+export interface AuditLogPageProps {
+  readonly service?: AuditService;
+}
 
-/**
- * 审计日志页面 - 占位页面
- * TODO: 实现审计日志功能
- */
-export function AuditLogPage() {
+interface DetailState {
+  open: boolean;
+  loading: boolean;
+  data?: AuditRecordDetailResp;
+}
+
+const EMPTY_DETAIL_STATE: DetailState = { open: false, loading: false };
+
+export function AuditLogPage({ service: serviceProp }: AuditLogPageProps) {
+  const service = serviceProp ?? auditService;
+  const [detailState, setDetailState] = useState<DetailState>(EMPTY_DETAIL_STATE);
+
+  const handleDetail = useCallback(
+    async (record: AuditRecordResp) => {
+      setDetailState({ open: true, loading: true });
+
+      try {
+        const detail = await service.getRecordDetail(record.id);
+        setDetailState({ open: true, loading: false, data: detail });
+      } catch (error) {
+        console.error('Failed to load audit record detail:', error);
+        setDetailState({ open: false, loading: false });
+      }
+    },
+    [service],
+  );
+
+  const handleDetailClose = useCallback(() => {
+    setDetailState(EMPTY_DETAIL_STATE);
+  }, []);
+
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <Empty
-        description={
-          <div className="text-center">
-            <Title level={4}>审计日志</Title>
-            <Text type="secondary">功能开发中，敬请期待...</Text>
-          </div>
-        }
+    <div className="h-full flex flex-col">
+      <div className="flex-1 min-h-0">
+        <AuditRecordTable service={service} onDetail={handleDetail} />
+      </div>
+
+      <AuditRecordDetailModal
+        open={detailState.open}
+        loading={detailState.loading}
+        detail={detailState.data}
+        onClose={handleDetailClose}
       />
     </div>
   );
