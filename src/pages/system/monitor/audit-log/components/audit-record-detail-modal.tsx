@@ -3,6 +3,7 @@ import type { DescriptionsProps } from 'antd';
 import { useMemo } from 'react';
 import { AUDIT_CATEGORY_TAG_COLOR, AUDIT_CONSISTENCY_TAG_COLOR, SUCCESS_TAG_COLOR } from '@/enums/audit';
 import type { AuditRecordDetailResp } from '@/types/audit';
+import { JsonViewer } from './json-viewer';
 
 interface AuditRecordDetailModalProps {
   readonly open: boolean;
@@ -25,34 +26,6 @@ function formatDateTime(dateStr: string): string {
   } catch {
     return dateStr;
   }
-}
-
-function formatJson(jsonStr: string | undefined): string {
-  if (!jsonStr) return '';
-  try {
-    const parsed = JSON.parse(jsonStr);
-    return JSON.stringify(parsed, null, 2);
-  } catch {
-    return jsonStr;
-  }
-}
-
-function JsonViewer({ json, label }: { readonly json?: string; readonly label: string }) {
-  const formattedJson = useMemo(() => formatJson(json), [json]);
-
-  if (!formattedJson) {
-    return (
-      <div className="text-gray-400 italic py-4 text-center">
-        暂无{label}
-      </div>
-    );
-  }
-
-  return (
-    <pre className="bg-gray-50 dark:bg-gray-800 p-4 rounded overflow-auto max-h-96 text-xs font-mono">
-      {formattedJson}
-    </pre>
-  );
 }
 
 export function AuditRecordDetailModal({

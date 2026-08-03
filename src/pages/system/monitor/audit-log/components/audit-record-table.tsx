@@ -5,7 +5,7 @@ import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { AUDIT_CATEGORY_TAG_COLOR, AUDIT_CONSISTENCY_TAG_COLOR, SUCCESS_TAG_COLOR } from '@/enums/audit';
 import type { AuditService } from '@/services/audit';
-import type { AuditRecordPageReq, AuditRecordResp } from '@/types/audit';
+import type { AuditCategory, AuditRecordPageReq, AuditRecordResp } from '@/types/audit';
 
 export interface AuditRecordTableHandle {
   reload: () => Promise<void>;
@@ -14,6 +14,17 @@ export interface AuditRecordTableHandle {
 interface AuditRecordTableProps {
   readonly service: AuditService;
   readonly onDetail: (record: AuditRecordResp) => void;
+  readonly filters?: {
+    module?: string;
+    action?: string;
+    category?: AuditCategory | '';
+    operatorId?: string;
+    resource?: string;
+    resourceId?: string;
+    success?: boolean | '';
+    bizNo?: string;
+    traceId?: string;
+  };
 }
 
 function formatDateTime(dateStr: string): string {
@@ -38,7 +49,7 @@ function truncateId(id: string, maxLength: number = 12): string {
 }
 
 export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTableProps>(
-  function AuditRecordTable({ service, onDetail }, ref) {
+  function AuditRecordTable({ service, onDetail, filters }, ref) {
     const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
     
     const reloadTable = useCallback(
@@ -53,10 +64,19 @@ export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTa
         const pageReq: AuditRecordPageReq = {
           pageNum: params.pageNum,
           pageSize: params.pageSize,
+          ...(filters?.module ? { module: filters.module } : {}),
+          ...(filters?.action ? { action: filters.action } : {}),
+          ...(filters?.category ? { category: filters.category } : {}),
+          ...(filters?.operatorId ? { operatorId: filters.operatorId } : {}),
+          ...(filters?.resource ? { resource: filters.resource } : {}),
+          ...(filters?.resourceId ? { resourceId: filters.resourceId } : {}),
+          ...(filters?.success !== undefined && filters.success !== '' ? { success: filters.success } : {}),
+          ...(filters?.bizNo ? { bizNo: filters.bizNo } : {}),
+          ...(filters?.traceId ? { traceId: filters.traceId } : {}),
         };
         return service.pageRecords(pageReq);
       },
-      [service],
+      [service, filters],
     );
 
     const columns = useMemo<NebulaProColumns<AuditRecordResp>[]>(
