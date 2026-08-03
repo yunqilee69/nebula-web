@@ -14,17 +14,6 @@ export interface AuditRecordTableHandle {
 interface AuditRecordTableProps {
   readonly service: AuditService;
   readonly onDetail: (record: AuditRecordResp) => void;
-  readonly filters?: {
-    module?: string;
-    action?: string;
-    category?: AuditCategory | '';
-    operatorId?: string;
-    resource?: string;
-    resourceId?: string;
-    success?: boolean | '';
-    bizNo?: string;
-    traceId?: string;
-  };
 }
 
 function formatDateTime(dateStr: string): string {
@@ -48,8 +37,57 @@ function truncateId(id: string, maxLength: number = 12): string {
   return `${id.substring(0, maxLength)}...`;
 }
 
+interface AuditRecordQuery {
+  module?: string;
+  action?: string;
+  category?: AuditCategory | '';
+  operatorId?: string;
+  resource?: string;
+  resourceId?: string;
+  success?: boolean | 'true' | 'false';
+  bizNo?: string;
+  traceId?: string;
+}
+
+function normalizeOptionalText(value: string | undefined) {
+  const normalized = value?.trim();
+  return normalized || undefined;
+}
+
+function normalizeOptionalBoolean(value: boolean | 'true' | 'false' | undefined) {
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return undefined;
+}
+
+function buildPageReq(params: AuditRecordQuery & NebulaPageReq): AuditRecordPageReq {
+  const module = normalizeOptionalText(params.module);
+  const action = normalizeOptionalText(params.action);
+  const operatorId = normalizeOptionalText(params.operatorId);
+  const resource = normalizeOptionalText(params.resource);
+  const resourceId = normalizeOptionalText(params.resourceId);
+  const bizNo = normalizeOptionalText(params.bizNo);
+  const traceId = normalizeOptionalText(params.traceId);
+  const success = normalizeOptionalBoolean(params.success);
+
+  return {
+    pageNum: params.pageNum,
+    pageSize: params.pageSize,
+    ...(module ? { module } : {}),
+    ...(action ? { action } : {}),
+    ...(params.category ? { category: params.category } : {}),
+    ...(operatorId ? { operatorId } : {}),
+    ...(resource ? { resource } : {}),
+    ...(resourceId ? { resourceId } : {}),
+    ...(success !== undefined ? { success } : {}),
+    ...(bizNo ? { bizNo } : {}),
+    ...(traceId ? { traceId } : {}),
+  };
+}
+
 export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTableProps>(
-  function AuditRecordTable({ service, onDetail, filters }, ref) {
+  function AuditRecordTable({ service, onDetail }, ref) {
     const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
     
     const reloadTable = useCallback(
@@ -60,23 +98,8 @@ export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTa
     useImperativeHandle(ref, () => ({ reload: reloadTable }), [reloadTable]);
 
     const requestRecords = useCallback(
-      (params: NebulaPageReq) => {
-        const pageReq: AuditRecordPageReq = {
-          pageNum: params.pageNum,
-          pageSize: params.pageSize,
-          ...(filters?.module ? { module: filters.module } : {}),
-          ...(filters?.action ? { action: filters.action } : {}),
-          ...(filters?.category ? { category: filters.category } : {}),
-          ...(filters?.operatorId ? { operatorId: filters.operatorId } : {}),
-          ...(filters?.resource ? { resource: filters.resource } : {}),
-          ...(filters?.resourceId ? { resourceId: filters.resourceId } : {}),
-          ...(filters?.success !== undefined && filters.success !== '' ? { success: filters.success } : {}),
-          ...(filters?.bizNo ? { bizNo: filters.bizNo } : {}),
-          ...(filters?.traceId ? { traceId: filters.traceId } : {}),
-        };
-        return service.pageRecords(pageReq);
-      },
-      [service, filters],
+      (params: AuditRecordQuery & NebulaPageReq) => service.pageRecords(buildPageReq(params)),
+      [service],
     );
 
     const columns = useMemo<NebulaProColumns<AuditRecordResp>[]>(
@@ -87,6 +110,7 @@ export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTa
           key: 'id',
           width: 160,
           ellipsis: true,
+          search: false,
           render: (_, record) => (
             <span title={record.id} className="font-mono text-xs">
               {truncateId(record.id)}
@@ -120,6 +144,7 @@ export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTa
           key: 'resourceId',
           width: 140,
           ellipsis: true,
+          search: false,
           render: (_, record) => record.resourceId || '-',
         },
         {
@@ -127,6 +152,11 @@ export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTa
           dataIndex: 'category',
           key: 'category',
           width: 100,
+          valueType: 'select',
+          valueEnum: {
+            BUSINESS: { text: '业务操作' },
+            SECURITY: { text: '安全审计' },
+          },
           render: (_, record) => (
             <Tag color={AUDIT_CATEGORY_TAG_COLOR[record.category]}>
               {record.category === 'BUSINESS' ? '业务操作' : '安全审计'}
@@ -134,11 +164,20 @@ export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTa
           ),
         },
         {
+          title: '操作人ID',
+          dataIndex: 'operatorId',
+          key: 'operatorId',
+          width: 120,
+          ellipsis: true,
+          search: false,
+        },
+        {
           title: '操作人',
           dataIndex: 'operatorName',
           key: 'operatorName',
           width: 120,
           ellipsis: true,
+          search: false,
           render: (_, record) => record.operatorName || '-',
         },
         {
@@ -146,6 +185,11 @@ export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTa
           dataIndex: 'success',
           key: 'success',
           width: 100,
+          valueType: 'select',
+          valueEnum: {
+            true: { text: '成功', status: 'Success' },
+            false: { text: '失败', status: 'Error' },
+          },
           render: (_, record) => (
             <Tag color={SUCCESS_TAG_COLOR[String(record.success) as 'true' | 'false']}>
               {record.success ? '成功' : '失败'}
@@ -158,13 +202,32 @@ export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTa
           key: 'errorMessage',
           width: 200,
           ellipsis: true,
+          search: false,
           render: (_, record) => record.errorMessage || '-',
+        },
+        {
+          title: '业务编号',
+          dataIndex: 'bizNo',
+          key: 'bizNo',
+          width: 150,
+          ellipsis: true,
+          search: true,
+        },
+        {
+          title: '链路追踪ID',
+          dataIndex: 'traceId',
+          key: 'traceId',
+          width: 180,
+          ellipsis: true,
+          search: true,
         },
         {
           title: '创建时间',
           dataIndex: 'createTime',
           key: 'createTime',
           width: 180,
+          valueType: 'dateTime',
+          search: false,
           render: (_, record) => formatDateTime(record.createTime),
         },
         {
@@ -172,6 +235,7 @@ export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTa
           key: 'actions',
           width: 80,
           fixed: 'right',
+          search: false,
           render: (_, record) => (
             <Button
               type="link"
