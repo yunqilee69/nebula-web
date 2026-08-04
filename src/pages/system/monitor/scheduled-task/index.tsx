@@ -105,7 +105,7 @@ export function ScheduledTaskPage({ service: serviceProp }: ScheduledTaskPagePro
     setJobFormState({ open: true, submitting: false, detailLoading: true, jobCode: record.jobCode });
     try {
       const detail = await service.getJobDetail(record.jobCode);
-      jobForm.setFieldsValue({ cronExpr: detail.cronExpr ?? '', enabled: detail.enabled, executorApp: detail.executorApp ?? '', defaultParamJson: detail.defaultParamJson ?? '', description: detail.description ?? '' });
+      jobForm.setFieldsValue({ jobName: detail.jobName ?? '', cronExpr: detail.cronExpr ?? '', enabled: detail.enabled, defaultParamJson: detail.defaultParamJson ?? '', description: detail.description ?? '' });
       setJobFormState({ open: true, submitting: false, detailLoading: false, jobCode: record.jobCode, detail });
     } catch (error: unknown) {
       notice.error(t('scheduler.job.feedback.detailLoadFailed'));
@@ -129,7 +129,7 @@ export function ScheduledTaskPage({ service: serviceProp }: ScheduledTaskPagePro
     });
     if (!values) return;
 
-    const payload: UpdateSchedulerJobReq = { cronExpr: trimText(values.cronExpr), enabled: values.enabled, executorApp: trimText(values.executorApp), defaultParamJson: trimText(values.defaultParamJson), description: trimText(values.description) };
+    const payload: UpdateSchedulerJobReq = { jobName: trimText(values.jobName), description: trimText(values.description), cronExpr: trimText(values.cronExpr), enabled: values.enabled, defaultParamJson: trimText(values.defaultParamJson) };
     setJobFormState((state) => ({ ...state, submitting: true }));
     try {
       await service.updateJob(jobFormState.jobCode, payload);

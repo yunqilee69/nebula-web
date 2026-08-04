@@ -1,10 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { FormInstance } from 'antd';
 import type { Ref } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import type { SchedulerService } from '@/services/scheduler';
-import type { SchedulerJobResp, SchedulerJobRunResp, SchedulerJobRunStatus, SchedulerPageResp, SchedulerTriggerSource } from '@/types/scheduler';
+import type { SchedulerJobResp, SchedulerJobRunResp, SchedulerJobRunStatus, SchedulerPageResp, SchedulerTriggerSource, UpdateSchedulerJobReq } from '@/types/scheduler';
 import type { JobRunActionType } from './components/job-run-action-modal';
 import type { JobRunTableHandle } from './components/job-run-table';
 import type { JobTableHandle } from './components/job-table';
@@ -20,6 +21,26 @@ interface MockTriggerModalProps {
   readonly open: boolean;
   readonly onTriggered?: () => void;
 }
+
+interface MockJobFormModalProps {
+  readonly form: FormInstance<MockJobFormValues>;
+  readonly open: boolean;
+  readonly submitting: boolean;
+  readonly detailLoading: boolean;
+  readonly onSubmit: () => void;
+}
+
+interface MockJobFormValues extends UpdateSchedulerJobReq {
+  readonly enabled: boolean;
+}
+
+const INITIAL_JOB_FORM_VALUES = {
+  jobName: '',
+  description: '',
+  cronExpr: '',
+  enabled: false,
+  defaultParamJson: '',
+} as const satisfies MockJobFormValues;
 
 interface MockRunTableProps {
   readonly onDetail: (record: SchedulerJobRunResp) => void;
@@ -100,9 +121,26 @@ vi.mock('./components/job-run-action-modal', async () => {
 
 vi.mock('./components/job-form-modal', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
+  const { Form } = await vi.importActual<typeof import('antd')>('antd');
+  const TypedForm = Form<MockJobFormValues>;
 
   return {
-    JobFormModal: ({ open }: { readonly open: boolean }) => open ? React.createElement('span', null, 'job form modal') : null,
+    JobFormModal: ({ form, open, submitting, detailLoading, onSubmit }: MockJobFormModalProps) => open
+      ? React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(
+          TypedForm,
+          { form, component: false, initialValues: INITIAL_JOB_FORM_VALUES },
+          React.createElement(TypedForm.Item, { name: 'jobName', hidden: true }, React.createElement('input')),
+          React.createElement(TypedForm.Item, { name: 'description', hidden: true }, React.createElement('input')),
+          React.createElement(TypedForm.Item, { name: 'cronExpr', hidden: true }, React.createElement('input')),
+          React.createElement(TypedForm.Item, { name: 'enabled', valuePropName: 'checked', hidden: true }, React.createElement('input', { type: 'checkbox' })),
+          React.createElement(TypedForm.Item, { name: 'defaultParamJson', hidden: true }, React.createElement('input')),
+        ),
+        React.createElement('button', { disabled: submitting || detailLoading, onClick: onSubmit }, 'submit job form'),
+      )
+      : null,
   };
 });
 
@@ -136,10 +174,8 @@ function createService(): SchedulerService {
 
   return {
     pageJobs: vi.fn().mockResolvedValue(emptyJobs),
-    getJobDetail: vi.fn().mockResolvedValue({ id: 'job-1', jobCode: 'demoJob', jobName: 'Demo Job', enabled: true }),
+    getJobDetail: vi.fn().mockResolvedValue({ id: 'job-1', jobCode: 'demoJob', jobName: ' Detail Job ', cronExpr: ' 0 0 * * * ? ', enabled: true, defaultParamJson: ' {"limit":1} ', description: ' Detail description ' }),
     updateJob: vi.fn().mockResolvedValue({ id: 'job-1', jobCode: 'demoJob', jobName: 'Demo Job', enabled: true }),
-    deleteJob: vi.fn().mockResolvedValue(undefined),
-    syncJobs: vi.fn().mockResolvedValue(0),
     triggerJob: vi.fn().mockResolvedValue({ requestId: 'req-1', jobCode: 'demoJob', runStatus: 'PENDING' satisfies SchedulerJobRunStatus, triggerSource: 'MANUAL' satisfies SchedulerTriggerSource }),
     enableJob: vi.fn().mockResolvedValue({ id: 'job-1', jobCode: 'demoJob', jobName: 'Demo Job', enabled: true }),
     disableJob: vi.fn().mockResolvedValue({ id: 'job-1', jobCode: 'demoJob', jobName: 'Demo Job', enabled: false }),
@@ -186,5 +222,30 @@ describe('ScheduledTaskPage', () => {
       expect(mockState.runReload).toHaveBeenCalledTimes(1);
     });
     expect(screen.getByRole('tab', { name: '执行记录' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('submits job edits with only the scheduler override payload', async () => {
+    const user = userEvent.setup();
+    const service = renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'open job edit' }));
+    await waitFor(() => {
+      expect(service.getJobDetail).toHaveBeenCalledWith('demoJob');
+    });
+    const submitButton = screen.getByRole('button', { name: 'submit job form' });
+    await waitFor(() => {
+      expect(submitButton).not.toBeDisabled();
+    });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(service.updateJob).toHaveBeenCalledWith('demoJob', {
+        jobName: 'Detail Job',
+        description: 'Detail description',
+        cronExpr: '0 0 * * * ?',
+        enabled: true,
+        defaultParamJson: '{"limit":1}',
+      });
+    });
   });
 });

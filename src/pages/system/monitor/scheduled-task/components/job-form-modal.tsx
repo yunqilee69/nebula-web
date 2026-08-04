@@ -61,6 +61,9 @@ export function JobFormModal({ form, open, submitting, detailLoading, job, onSub
         <Descriptions.Item label={t('scheduler.job.fields.paramClassName')}>{renderText(job?.paramClassName)}</Descriptions.Item>
       </Descriptions>
       <Form form={form} layout="vertical" disabled={detailLoading || submitting} initialValues={{ enabled: true }}>
+        <Form.Item name="jobName" label={t('scheduler.job.fields.jobName')}>
+          <Input allowClear placeholder={t('scheduler.job.placeholders.jobName')} />
+        </Form.Item>
         <Form.Item
           name="cronExpr"
           label={t('scheduler.job.fields.cronExpr')}
@@ -75,9 +78,6 @@ export function JobFormModal({ form, open, submitting, detailLoading, job, onSub
         </Form.Item>
         <Form.Item name="enabled" label={t('scheduler.job.fields.enabled')} valuePropName="checked">
           <Switch checkedChildren={t('scheduler.job.actions.enable')} unCheckedChildren={t('scheduler.job.actions.disable')} />
-        </Form.Item>
-        <Form.Item name="executorApp" label={t('scheduler.job.fields.executorApp')}>
-          <Input allowClear placeholder={t('scheduler.job.placeholders.executorApp')} />
         </Form.Item>
         <Form.Item
           name="defaultParamJson"

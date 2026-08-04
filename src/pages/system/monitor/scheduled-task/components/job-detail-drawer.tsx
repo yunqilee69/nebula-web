@@ -60,7 +60,6 @@ export function JobDetailDrawer({ open, detail, loading, onClose }: JobDetailDra
                   label: t('scheduler.job.fields.enabled'),
                   value: <Tag color={detail.enabled ? 'success' : 'default'}>{detail.enabled ? t('scheduler.job.actions.enable') : t('scheduler.job.actions.disable')}</Tag>,
                 },
-                { label: t('scheduler.job.fields.executorApp'), value: renderText(detail.executorApp) },
                 { label: t('scheduler.job.fields.engineJobRef'), value: renderText(detail.engineJobRef) },
                 { label: t('scheduler.job.fields.paramClassName'), value: renderText(detail.paramClassName) },
                 {

@@ -1,5 +1,5 @@
-import { DeleteOutlined, EditOutlined, EyeOutlined, PauseCircleOutlined, PlayCircleOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
-import { Button, Popconfirm, Tag } from 'antd';
+import { EditOutlined, EyeOutlined, PauseCircleOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Button, Tag } from 'antd';
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
@@ -18,7 +18,6 @@ interface JobQuery {
   jobCode?: string;
   jobName?: string;
   enabled?: JobEnabledSearchValue;
-  executorApp?: string;
 }
 
 interface JobTableProps {
@@ -43,7 +42,6 @@ function normalizeOptionalBoolean(value: JobEnabledSearchValue | undefined) {
 function buildJobPageReq(params: JobQuery & NebulaPageReq): SchedulerJobPageReq {
   const jobCode = normalizeOptionalText(params.jobCode);
   const jobName = normalizeOptionalText(params.jobName);
-  const executorApp = normalizeOptionalText(params.executorApp);
   const enabled = normalizeOptionalBoolean(params.enabled);
 
   return {
@@ -54,7 +52,6 @@ function buildJobPageReq(params: JobQuery & NebulaPageReq): SchedulerJobPageReq 
     ...(jobCode ? { jobCode } : {}),
     ...(jobName ? { jobName } : {}),
     ...(enabled !== undefined ? { enabled } : {}),
-    ...(executorApp ? { executorApp } : {}),
   };
 }
 
@@ -63,9 +60,7 @@ export const JobTable = forwardRef<JobTableHandle, JobTableProps>(function JobTa
   ref,
 ) {
   const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
-  const [syncing, setSyncing] = useState(false);
   const [togglingJobCode, setTogglingJobCode] = useState<string>();
-  const [deletingJobCode, setDeletingJobCode] = useState<string>();
   const { t } = useNebulaI18n();
   const notice = useNotice();
 
@@ -77,21 +72,6 @@ export const JobTable = forwardRef<JobTableHandle, JobTableProps>(function JobTa
     (params: JobQuery & NebulaPageReq) => service.pageJobs(buildJobPageReq(params)),
     [service],
   );
-
-  const syncJobs = useCallback(async () => {
-    setSyncing(true);
-    try {
-      await service.syncJobs();
-      notice.success(t('scheduler.job.feedback.syncSuccess'));
-      await reloadTable();
-    } catch (error: unknown) {
-      notice.error(t('scheduler.job.feedback.syncFailed'));
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Failed to sync scheduler jobs', message);
-    } finally {
-      setSyncing(false);
-    }
-  }, [notice, reloadTable, service, t]);
 
   const toggleJob = useCallback(
     async (record: SchedulerJobResp) => {
@@ -111,24 +91,6 @@ export const JobTable = forwardRef<JobTableHandle, JobTableProps>(function JobTa
         console.error('Failed to toggle scheduler job', message);
       } finally {
         setTogglingJobCode(undefined);
-      }
-    },
-    [notice, reloadTable, service, t],
-  );
-
-  const deleteJob = useCallback(
-    async (record: SchedulerJobResp) => {
-      setDeletingJobCode(record.jobCode);
-      try {
-        await service.deleteJob(record.jobCode);
-        notice.success(t('scheduler.job.feedback.deleteSuccess'));
-        await reloadTable();
-      } catch (error: unknown) {
-        notice.error(t('scheduler.job.feedback.deleteFailed'));
-        const message = error instanceof Error ? error.message : String(error);
-        console.error('Failed to delete scheduler job', message);
-      } finally {
-        setDeletingJobCode(undefined);
       }
     },
     [notice, reloadTable, service, t],
@@ -159,12 +121,11 @@ export const JobTable = forwardRef<JobTableHandle, JobTableProps>(function JobTa
         </Tag>
       ),
     },
-    { title: t('scheduler.job.columns.executorApp'), dataIndex: 'executorApp', width: 180, renderText: (value?: string) => value || '-' },
     {
       title: t('scheduler.job.columns.actions'),
       key: 'actions',
       fixed: 'right',
-      width: 360,
+      width: 300,
       valueType: 'option',
       search: false,
       render: (_, record) => [
@@ -180,18 +141,9 @@ export const JobTable = forwardRef<JobTableHandle, JobTableProps>(function JobTa
         >
           {record.enabled ? t('scheduler.job.actions.disable') : t('scheduler.job.actions.enable')}
         </Button>,
-        <Popconfirm
-          key="delete"
-          title={t('scheduler.job.confirm.deleteTitle')}
-          okText={t('scheduler.job.actions.delete')}
-          cancelText={t('common.actions.cancel')}
-          onConfirm={() => void deleteJob(record)}
-        >
-          <Button type="link" danger loading={deletingJobCode === record.jobCode} icon={<DeleteOutlined />}>{t('scheduler.job.actions.delete')}</Button>
-        </Popconfirm>,
       ],
     },
-  ], [deleteJob, deletingJobCode, enabledValueEnum, onDetail, onEdit, onTrigger, t, toggleJob, togglingJobCode]);
+  ], [enabledValueEnum, onDetail, onEdit, onTrigger, t, toggleJob, togglingJobCode]);
 
   return (
     <NebulaProTable<SchedulerJobResp, JobQuery>
@@ -201,9 +153,8 @@ export const JobTable = forwardRef<JobTableHandle, JobTableProps>(function JobTa
       onRequestError={() => notice.error(t('scheduler.job.feedback.listLoadFailed'))}
       search={{ labelWidth: 'auto', defaultCollapsed: false }}
       size="middle"
-      scroll={{ x: 1180 }}
+      scroll={{ x: 980 }}
       toolBarRender={() => [
-        <Button key="sync" type="primary" icon={<SyncOutlined />} loading={syncing} onClick={() => void syncJobs()}>{t('scheduler.job.actions.sync')}</Button>,
         <Button key="refresh" icon={<ReloadOutlined />} onClick={() => void reloadTable()}>{t('scheduler.job.actions.refresh')}</Button>,
       ]}
     />
