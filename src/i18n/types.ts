@@ -729,7 +729,6 @@ export interface NebulaSchedulerJobMessages {
     jobName: string;
     cronExpr: string;
     enabled: string;
-    executorApp: string;
     description: string;
     engineJobRef: string;
     paramClassName: string;
@@ -738,13 +737,11 @@ export interface NebulaSchedulerJobMessages {
     actions: string;
   };
   actions: {
-    sync: string;
     refresh: string;
     edit: string;
     trigger: string;
     enable: string;
     disable: string;
-    delete: string;
     detail: string;
   };
   fields: {
@@ -752,7 +749,6 @@ export interface NebulaSchedulerJobMessages {
     jobName: string;
     cronExpr: string;
     enabled: string;
-    executorApp: string;
     defaultParamJson: string;
     description: string;
     engineJobRef: string;
@@ -766,13 +762,11 @@ export interface NebulaSchedulerJobMessages {
     jobCode: string;
     jobName: string;
     enabled: string;
-    executorApp: string;
   };
   placeholders: {
     jobCode: string;
     jobName: string;
     enabled: string;
-    executorApp: string;
     cronExpr: string;
     defaultParamJson: string;
     description: string;
@@ -791,8 +785,6 @@ export interface NebulaSchedulerJobMessages {
     paramJsonFormat: string;
   };
   feedback: {
-    syncSuccess: string;
-    syncFailed: string;
     updateSuccess: string;
     updateFailed: string;
     triggerSuccess: string;
@@ -801,15 +793,10 @@ export interface NebulaSchedulerJobMessages {
     enableFailed: string;
     disableSuccess: string;
     disableFailed: string;
-    deleteSuccess: string;
-    deleteFailed: string;
     listLoadFailed: string;
     detailLoadFailed: string;
     actionSuccess: string;
     actionFailed: string;
-  };
-  confirm: {
-    deleteTitle: string;
   };
   empty: {
     paramSchema: string;
