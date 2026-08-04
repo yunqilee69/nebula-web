@@ -18,7 +18,6 @@ export interface SchedulerJobPageReq extends SchedulerBasePageReq {
   jobCode?: string;
   jobName?: string;
   enabled?: boolean;
-  executorApp?: string;
 }
 
 export interface SchedulerJobResp {
@@ -27,7 +26,6 @@ export interface SchedulerJobResp {
   jobName: string;
   cronExpr?: string;
   enabled: boolean;
-  executorApp?: string;
 }
 
 export interface SchedulerJobParamSchemaResp {
@@ -51,9 +49,9 @@ export interface SchedulerJobDetailResp extends SchedulerJobResp {
 }
 
 export interface UpdateSchedulerJobReq {
+  jobName?: string;
   cronExpr?: string;
   enabled?: boolean;
-  executorApp?: string;
   defaultParamJson?: string;
   description?: string;
 }

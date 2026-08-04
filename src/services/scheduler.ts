@@ -19,8 +19,6 @@ export interface SchedulerService {
   pageJobs: (data: SchedulerJobPageReq) => Promise<SchedulerPageResp<SchedulerJobResp>>;
   getJobDetail: (jobCode: string) => Promise<SchedulerJobDetailResp>;
   updateJob: (jobCode: string, data: UpdateSchedulerJobReq) => Promise<SchedulerJobDetailResp>;
-  deleteJob: (jobCode: string) => Promise<void>;
-  syncJobs: () => Promise<number>;
   triggerJob: (jobCode: string, data?: TriggerSchedulerJobReq) => Promise<SchedulerJobTriggerResultResp>;
   enableJob: (jobCode: string) => Promise<SchedulerJobDetailResp>;
   disableJob: (jobCode: string) => Promise<SchedulerJobDetailResp>;
@@ -36,8 +34,6 @@ export const schedulerService: SchedulerService = {
   pageJobs: (data) => request<SchedulerPageResp<SchedulerJobResp>>({ method: 'POST', url: '/api/scheduler/jobs/page', data }),
   getJobDetail: (jobCode) => request<SchedulerJobDetailResp>({ method: 'GET', url: `/api/scheduler/jobs/${jobCode}` }),
   updateJob: (jobCode, data) => request<SchedulerJobDetailResp>({ method: 'PUT', url: `/api/scheduler/jobs/${jobCode}`, data }),
-  deleteJob: (jobCode) => request<void>({ method: 'DELETE', url: `/api/scheduler/jobs/${jobCode}` }),
-  syncJobs: () => request<number>({ method: 'POST', url: '/api/scheduler/jobs/sync' }),
   triggerJob: (jobCode, data) => request<SchedulerJobTriggerResultResp>({ method: 'POST', url: `/api/scheduler/jobs/${jobCode}/trigger`, data }),
   enableJob: (jobCode) => request<SchedulerJobDetailResp>({ method: 'POST', url: `/api/scheduler/jobs/${jobCode}/enable` }),
   disableJob: (jobCode) => request<SchedulerJobDetailResp>({ method: 'POST', url: `/api/scheduler/jobs/${jobCode}/disable` }),
