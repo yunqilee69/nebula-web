@@ -37,9 +37,15 @@ describe('token session storage', () => {
 
   it('supports optional tokens returned by WeChat login status', () => {
     const response: WechatWebLoginStatusResp = {
-      status: 'success',
-      accessToken: 'wechat-access',
-      refreshToken: 'wechat-refresh',
+      loginId: 'wechat-login-id',
+      status: 'SUCCESS',
+      state: 'wechat-state',
+      loginResult: {
+        accessToken: 'wechat-access',
+        refreshToken: 'wechat-refresh',
+        accessTokenExpiresIn: 7200,
+        refreshTokenExpiresIn: 604800,
+      },
     };
 
     saveAuthTokens(response);

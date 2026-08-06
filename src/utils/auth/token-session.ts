@@ -33,6 +33,10 @@ function resolveTokenSource(response: unknown): Record<string, unknown> | null {
     return response.data;
   }
 
+  if (isRecord(response.loginResult)) {
+    return response.loginResult;
+  }
+
   return response;
 }
 
