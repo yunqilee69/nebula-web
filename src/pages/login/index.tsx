@@ -1,4 +1,4 @@
-import { KeyOutlined, LoginOutlined, MailOutlined, MobileOutlined, WechatOutlined } from '@ant-design/icons';
+import { GithubOutlined, KeyOutlined, LoginOutlined, MailOutlined, MobileOutlined, WechatOutlined } from '@ant-design/icons';
 import { Alert, Button, Flex, Form, Input, Spin, Tabs, Typography, theme } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -16,14 +16,15 @@ import type {
 import type { AuthService } from '@/api/auth';
 import { AuthShell } from '@/layouts/auth-shell';
 import { useAuthStore } from '@/stores/auth-store';
+import { OAuthRedirectPanel } from './oauth-redirect-panel';
 import { WechatQrPanel } from './wechat-qr-panel';
-import { redirectToAuthorizeUrl } from './wechat-redirect-navigation';
 
 const builtInLabels: Record<BuiltInLoginMethodKey, string> = {
   password: '账号密码',
   phone: '手机验证码',
   email: '邮箱验证码',
   'wechat-web': '微信扫码',
+  github: 'GitHub',
 };
 
 type LoginResult = LoginResp | WechatWebLoginStatusResp;
@@ -69,6 +70,8 @@ function getLoginMethodIcon(method: LoginMethodDescriptor): ReactNode {
       return <MailOutlined aria-hidden />;
     case 'wechat-web':
       return <WechatOutlined aria-hidden />;
+    case 'github':
+      return <GithubOutlined aria-hidden />;
   }
 }
 
@@ -303,47 +306,12 @@ function LoginMethodPanel({ method, authService, onSuccess, config }: LoginMetho
       return <EmailPanel authService={authService} onSuccess={onSuccess} sendInterval={config?.emailSendIntervalSeconds ?? 60} />;
     case 'wechat-web':
       if (config?.wechatWebType === 'redirect') {
-        return <WechatRedirectPanel authService={authService} />;
+        return <OAuthRedirectPanel authService={authService} provider="wechat-web" />;
       }
       return <WechatQrPanel authService={authService} onSuccess={onSuccess} />;
+    case 'github':
+      return <OAuthRedirectPanel authService={authService} provider="github" />;
   }
-}
-
-interface WechatRedirectPanelProps {
-  readonly authService: AuthService;
-}
-
-function getCurrentReturnPath(): string {
-  if (typeof window === 'undefined') return '/';
-  return `${window.location.pathname}${window.location.search}` || '/';
-}
-
-function WechatRedirectPanel({ authService }: WechatRedirectPanelProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleRedirectLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await authService.prepareWechatWebRedirect({ redirectAfterLogin: getCurrentReturnPath() });
-      redirectToAuthorizeUrl(result.authorizeUrl);
-    } catch (error: unknown) {
-      if (!(error instanceof Error)) throw error;
-      setError('微信跳转登录发起失败，请稍后重试。');
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Flex vertical align="center" gap={12}>
-      <Typography.Text type="secondary">使用微信授权页面完成登录。</Typography.Text>
-      {error ? <Typography.Text type="danger" data-testid="wechat-redirect-error">{error}</Typography.Text> : null}
-      <Button type="primary" block loading={loading} onClick={handleRedirectLogin} data-testid="wechat-redirect-login">
-        跳转微信授权
-      </Button>
-    </Flex>
-  );
 }
 
 interface PasswordPanelProps {

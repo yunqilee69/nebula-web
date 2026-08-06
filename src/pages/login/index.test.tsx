@@ -52,6 +52,9 @@ function createMockAuthService(partial?: Partial<AuthService>): AuthService {
     getWechatWebLoginStatus: partial?.getWechatWebLoginStatus ?? vi.fn(),
     prepareWechatWebRedirect: partial?.prepareWechatWebRedirect ?? vi.fn(),
     completeWechatWebRedirectCallback: partial?.completeWechatWebRedirectCallback ?? vi.fn(),
+    prepareGitHubRedirect: partial?.prepareGitHubRedirect ?? vi.fn(),
+    getGitHubLoginStatus: partial?.getGitHubLoginStatus ?? vi.fn(),
+    completeGitHubRedirectCallback: partial?.completeGitHubRedirectCallback ?? vi.fn(),
   };
 }
 
@@ -61,6 +64,7 @@ const fullConfig: AuthInitResp = {
   emailEnabled: true,
   wechatWebEnabled: true,
   wechatWebType: 'qr',
+  githubEnabled: true,
   phoneSendIntervalSeconds: 60,
   emailSendIntervalSeconds: 60,
 };
@@ -138,10 +142,12 @@ describe('LoginPage', () => {
     const phoneTab = screen.getByRole('tab', { name: '手机验证码' });
     const emailTab = screen.getByRole('tab', { name: '邮箱验证码' });
     const wechatTab = screen.getByRole('tab', { name: '微信扫码' });
+    const githubTab = screen.getByRole('tab', { name: 'GitHub' });
     expect(passwordTab).toHaveAttribute('aria-selected', 'true');
     expect(phoneTab.querySelector('.anticon-mobile')).toBeInTheDocument();
     expect(emailTab.querySelector('.anticon-mail')).toBeInTheDocument();
     expect(wechatTab.querySelector('.anticon-wechat')).toBeInTheDocument();
+    expect(githubTab.querySelector('.anticon-github')).toBeInTheDocument();
 
     await user.click(phoneTab);
 
@@ -806,6 +812,29 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(authService.prepareWechatWebRedirect).toHaveBeenCalledWith({ redirectAfterLogin: '/' });
       expect(redirectToAuthorizeUrlMock).toHaveBeenCalledWith('https://open.weixin.qq.com/connect/qrconnect?appid=wx-app-id&state=redirect-state');
+    });
+  });
+
+  it('starts GitHub redirect login with the backend authorize URL when GitHub is enabled', async () => {
+    const user = userEvent.setup();
+    const authService = createMockAuthService({
+      getAuthConfig: vi.fn().mockResolvedValue({ ...passwordOnlyConfig, githubEnabled: true }),
+      prepareGitHubRedirect: vi.fn().mockResolvedValue({
+        loginId: 'github-login',
+        state: 'github-state',
+        status: 'WAITING',
+        authorizeUrl: 'https://github.com/login/oauth/authorize?client_id=github-client&state=github-state',
+      }),
+    });
+
+    renderLoginPage({ authService });
+
+    await user.click(await screen.findByRole('tab', { name: 'GitHub' }));
+    await user.click(screen.getByTestId('github-redirect-login'));
+
+    await waitFor(() => {
+      expect(authService.prepareGitHubRedirect).toHaveBeenCalledWith({ redirectAfterLogin: '/' });
+      expect(redirectToAuthorizeUrlMock).toHaveBeenCalledWith('https://github.com/login/oauth/authorize?client_id=github-client&state=github-state');
     });
   });
 });

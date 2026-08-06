@@ -15,6 +15,9 @@ export function getBuiltInLoginMethods(config: Partial<AuthInitResp>): BuiltInLo
   if (config.wechatWebEnabled) {
     methods.push('wechat-web');
   }
+  if (config.githubEnabled) {
+    methods.push('github');
+  }
 
   return methods;
 }
