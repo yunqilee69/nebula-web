@@ -6,6 +6,13 @@ import { buildNebulaTableRequestParams, NEBULA_TABLE_DEFAULT_PAGE_SIZE } from '.
 import type { NebulaPageReq, NebulaPageResp, ProTableRawParams } from './params';
 import './toolbar.css';
 
+const DEFAULT_TABLE_OPTIONS: ProTableProps<Record<string, any>, Record<string, any>, any>['options'] = {
+  density: true,
+  fullScreen: true,
+  reload: true,
+  setting: true,
+};
+
 export type NebulaProTableRequest<RecordType, Query extends object> = (
   params: Query & NebulaPageReq,
 ) => Promise<NebulaPageResp<RecordType>>;
@@ -14,15 +21,16 @@ export interface NebulaProTableProps<
   RecordType extends Record<string, any>,
   Query extends object = Record<string, any>,
   ValueType = 'text',
-> extends Omit<ProTableProps<RecordType, Query & Record<string, any>, ValueType>, 'request'> {
+> extends Omit<ProTableProps<RecordType, Query & Record<string, any>, ValueType>, 'request' | 'toolbar'> {
   request?: NebulaProTableRequest<RecordType, Query>;
+  toolbar?: ProTableProps<RecordType, Query & Record<string, any>, ValueType>['toolbar'] | false;
 }
 
 export function NebulaProTable<
   RecordType extends Record<string, any>,
   Query extends object = Record<string, any>,
   ValueType = 'text',
->({ request, pagination, className, ...props }: NebulaProTableProps<RecordType, Query, ValueType>): ReactElement {
+>({ request, pagination, className, toolbar, toolBarRender, options, ...props }: NebulaProTableProps<RecordType, Query, ValueType>): ReactElement {
   const wrappedRequest: ProTableProps<RecordType, Query & Record<string, any>, ValueType>['request'] = request
     ? async (params, sort) => {
         const page = await request(
@@ -49,16 +57,22 @@ export function NebulaProTable<
       };
 
   const mergedClassName = `nebula-pro-table-toolbar${className ? ` ${className}` : ''}`;
+  const hideToolbar = toolbar === false;
+  const mergedOptions = hideToolbar ? false : (options ?? DEFAULT_TABLE_OPTIONS);
+  const mergedToolBarRender = hideToolbar ? false : toolBarRender;
+  const mergedToolbar = hideToolbar ? undefined : toolbar;
 
   return (
     <ProTable<RecordType, Query & Record<string, any>, ValueType>
       rowKey="id"
       search={{ labelWidth: 'auto' }}
-      options={{ density: true, fullScreen: true, reload: true, setting: true }}
+      options={mergedOptions}
       pagination={mergedPagination}
       {...props}
       className={mergedClassName}
       request={wrappedRequest}
+      toolbar={mergedToolbar}
+      toolBarRender={mergedToolBarRender}
     />
   );
 }
