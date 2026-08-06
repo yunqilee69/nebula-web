@@ -178,19 +178,55 @@ export interface WechatWebQrCodeCreateReq {
   redirectAfterLogin?: string;
 }
 
+export type WechatWebLoginStatus = 'WAITING' | 'SCANNED' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CONSUMED';
+
+export type WechatWebCallbackErrorCode =
+  | 'missing_callback_parameter'
+  | 'invalid_state'
+  | 'expired_state'
+  | 'replayed_state'
+  | 'provider_error';
+
 export interface WechatWebQrCodeResp {
   loginId: string;
   state: string;
+  appId: string;
+  scope: string;
+  redirectUri: string;
+  status: WechatWebLoginStatus;
   qrCodeUrl: string;
-  expireSeconds: number;
+  expiresInSeconds: number;
 }
 
 export interface WechatWebLoginStatusResp {
-  status: string;
-  loginId?: string;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
+  loginId: string;
+  status: WechatWebLoginStatus;
+  state: string;
+  loginResult?: LoginResp;
+  returnPath?: string;
+}
+
+export interface WechatWebRedirectPrepareReq {
+  redirectAfterLogin?: string;
+}
+
+export interface WechatWebRedirectPrepareResp {
+  loginId: string;
+  state: string;
+  status: WechatWebLoginStatus;
+  authorizeUrl: string;
+}
+
+export interface WechatWebCallbackReq {
+  code: string;
+  state: string;
+}
+
+export interface WechatWebCallbackResp {
+  loginId: string;
+  status: WechatWebLoginStatus;
+  returnPath?: string;
+  errorCode?: WechatWebCallbackErrorCode;
 }
 
 export type BuiltInLoginMethodKey = 'password' | 'phone' | 'email' | 'wechat-web';

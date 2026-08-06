@@ -11,9 +11,13 @@ import type {
   SendEmailCodeReq,
   RefreshTokenReq,
   CurrentUserResp,
+  WechatWebCallbackReq,
+  WechatWebCallbackResp,
   WechatWebQrCodeCreateReq,
   WechatWebQrCodeResp,
   WechatWebLoginStatusResp,
+  WechatWebRedirectPrepareReq,
+  WechatWebRedirectPrepareResp,
 } from '@/types/auth';
 
 export interface AuthService {
@@ -29,6 +33,8 @@ export interface AuthService {
   getCurrentUser: () => Promise<CurrentUserResp>;
   createWechatWebQrCode: (data: WechatWebQrCodeCreateReq) => Promise<WechatWebQrCodeResp>;
   getWechatWebLoginStatus: (loginId: string) => Promise<WechatWebLoginStatusResp>;
+  prepareWechatWebRedirect: (data: WechatWebRedirectPrepareReq) => Promise<WechatWebRedirectPrepareResp>;
+  completeWechatWebRedirectCallback: (data: WechatWebCallbackReq) => Promise<WechatWebCallbackResp>;
 }
 
 export const authService: AuthService = {
@@ -114,5 +120,19 @@ export const authService: AuthService = {
       method: 'GET',
       url: '/api/auth/wechat/web/status',
       params: { loginId },
+    }),
+
+  prepareWechatWebRedirect: (data: WechatWebRedirectPrepareReq) =>
+    request<WechatWebRedirectPrepareResp>({
+      method: 'POST',
+      url: '/api/auth/wechat/web/redirect/prepare',
+      data,
+    }),
+
+  completeWechatWebRedirectCallback: (data: WechatWebCallbackReq) =>
+    request<WechatWebCallbackResp>({
+      method: 'POST',
+      url: '/api/auth/wechat/web/redirect/callback',
+      data,
     }),
 };

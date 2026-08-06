@@ -18,8 +18,10 @@ import type {
   SendEmailCodeReq,
   RefreshTokenReq,
   CurrentUserResp,
+  WechatWebCallbackResp,
   WechatWebQrCodeResp,
   WechatWebLoginStatusResp,
+  WechatWebRedirectPrepareResp,
 } from '@/types/auth';
 
 const mockedRequest = vi.mocked(request);
@@ -210,8 +212,12 @@ describe('authService', () => {
     const mockResp: WechatWebQrCodeResp = {
       loginId: 'lid',
       state: 'random-state',
+      appId: 'wx-app-id',
+      scope: 'snsapi_login',
+      redirectUri: 'https://auth.example.com/api/auth/wechat/web/callback',
+      status: 'WAITING',
       qrCodeUrl: 'https://qr.example.com/abc',
-      expireSeconds: 300,
+      expiresInSeconds: 300,
     };
     mockedRequest.mockResolvedValueOnce(mockResp);
 
@@ -220,7 +226,8 @@ describe('authService', () => {
     expect(result).toBe(mockResp);
     expect(result.loginId).toBe('lid');
     expect(result.state).toBe('random-state');
-    expect(result.expireSeconds).toBe(300);
+    expect(result.appId).toBe('wx-app-id');
+    expect(result.expiresInSeconds).toBe(300);
     expect(mockedRequest).toHaveBeenCalledWith({
       method: 'POST',
       url: '/api/auth/wechat/web/qrcode',
@@ -230,23 +237,67 @@ describe('authService', () => {
 
   it('getWechatWebLoginStatus calls GET /api/auth/wechat/web/status with loginId param', async () => {
     const mockResp: WechatWebLoginStatusResp = {
-      status: 'success',
       loginId: 'test-login-id',
-      accessToken: 'wechat-access',
-      refreshToken: 'wechat-refresh',
-      expiresIn: 7200,
+      status: 'SUCCESS',
+      state: 'state-value',
+      loginResult: {
+        accessToken: 'wechat-access',
+        refreshToken: 'wechat-refresh',
+        accessTokenExpiresIn: 7200,
+        refreshTokenExpiresIn: 604800,
+      },
+      returnPath: '/dashboard',
     };
     mockedRequest.mockResolvedValueOnce(mockResp);
 
     const result = await authService.getWechatWebLoginStatus('test-login-id');
 
     expect(result).toBe(mockResp);
-    expect(result.accessToken).toBe('wechat-access');
+    expect(result.loginResult?.accessToken).toBe('wechat-access');
     expect(result.loginId).toBe('test-login-id');
     expect(mockedRequest).toHaveBeenCalledWith({
       method: 'GET',
       url: '/api/auth/wechat/web/status',
       params: { loginId: 'test-login-id' },
+    });
+  });
+
+  it('prepareWechatWebRedirect calls POST /api/auth/wechat/web/redirect/prepare with redirectAfterLogin body', async () => {
+    const mockResp: WechatWebRedirectPrepareResp = {
+      loginId: 'redirect-login-id',
+      state: 'redirect-state',
+      status: 'WAITING',
+      authorizeUrl: 'https://open.weixin.qq.com/connect/qrconnect?state=redirect-state',
+    };
+    mockedRequest.mockResolvedValueOnce(mockResp);
+
+    const result = await authService.prepareWechatWebRedirect({ redirectAfterLogin: '/workspace' });
+
+    expect(result).toBe(mockResp);
+    expect(result.authorizeUrl).toContain('redirect-state');
+    expect(mockedRequest).toHaveBeenCalledWith({
+      method: 'POST',
+      url: '/api/auth/wechat/web/redirect/prepare',
+      data: { redirectAfterLogin: '/workspace' },
+    });
+  });
+
+  it('completeWechatWebRedirectCallback calls POST /api/auth/wechat/web/redirect/callback without token fields', async () => {
+    const mockResp: WechatWebCallbackResp = {
+      loginId: 'redirect-login-id',
+      status: 'SUCCESS',
+      returnPath: '/workspace',
+    };
+    mockedRequest.mockResolvedValueOnce(mockResp);
+
+    const result = await authService.completeWechatWebRedirectCallback({ code: 'wechat-code', state: 'redirect-state' });
+
+    expect(result).toBe(mockResp);
+    expect(result.returnPath).toBe('/workspace');
+    expect(mockedRequest).toHaveBeenCalledWith({
+      method: 'POST',
+      url: '/api/auth/wechat/web/redirect/callback',
+      data: { code: 'wechat-code', state: 'redirect-state' },
     });
   });
 });
