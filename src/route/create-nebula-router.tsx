@@ -3,13 +3,14 @@ import { EmptyModule } from '@/layouts/empty-module';
 import { ExceptionResult } from '@/layouts/exception-result';
 import { NebulaLayout } from '@/layouts/nebula-layout';
 import { LoginPage } from '@/pages/login';
+import { WechatCallbackPage } from '@/pages/login/wechat-callback';
 import { ProfileInfoPage } from '@/pages/profile/info';
 import { RegisterPage } from '@/pages/register';
 import { buildMenuRoutes } from './build-menu-routes';
 import { RouteGuard } from './route-guard';
 import type { CreateNebulaRouterOptions, NebulaRouteObject } from './types';
 
-const authPagePaths = new Set(['/login', '/register']);
+const authPagePaths = new Set(['/login', '/login/wechat-callback', '/register']);
 const redirectPathPrefix = '/redirect';
 
 function RedirectRoute() {
@@ -78,6 +79,9 @@ export function createNebulaRouter(options: CreateNebulaRouterOptions) {
   const builtInLayoutRoutes: RouteObject[] = [];
   if (!sourceRoutePaths.has('/login')) {
     builtInAuthRoutes.push({ path: '/login', element: <LoginPage /> });
+  }
+  if (!sourceRoutePaths.has('/login/wechat-callback')) {
+    builtInAuthRoutes.push({ path: '/login/wechat-callback', element: <WechatCallbackPage /> });
   }
   if (!sourceRoutePaths.has('/register')) {
     builtInAuthRoutes.push({ path: '/register', element: <RegisterPage /> });

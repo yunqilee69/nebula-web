@@ -21,6 +21,8 @@ function createMockAuthService(partial?: Partial<AuthService>): AuthService {
     getCurrentUser: partial?.getCurrentUser ?? vi.fn(),
     createWechatWebQrCode: partial?.createWechatWebQrCode ?? vi.fn(),
     getWechatWebLoginStatus: partial?.getWechatWebLoginStatus ?? vi.fn(),
+    prepareWechatWebRedirect: partial?.prepareWechatWebRedirect ?? vi.fn(),
+    completeWechatWebRedirectCallback: partial?.completeWechatWebRedirectCallback ?? vi.fn(),
   };
 }
 
