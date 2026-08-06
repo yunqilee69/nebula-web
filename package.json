@@ -22,6 +22,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.build.json --pretty false",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -31,15 +32,16 @@
     "@ant-design/icons": "^6.3.1",
     "@ant-design/pro-components": "^3.1.12-0",
     "antd": "^6.5.0",
+    "antd-style": "^4.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.6.0",
-    "zustand": "^5.0.3",
-    "antd-style": "^4.1.0"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@ant-design/icons": "^6.3.2",
     "@ant-design/pro-components": "3.1.14-4",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
