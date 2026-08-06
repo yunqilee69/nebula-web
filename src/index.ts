@@ -33,6 +33,7 @@ export { RouteLoading } from './route/route-loading';
 export { NebulaContentOnlyLayout } from './layouts/nebula-content-only-layout';
 export { NebulaLayout } from './layouts/nebula-layout';
 export { LoginPage } from './pages/login';
+export { GitHubCallbackPage } from './pages/login/github-callback';
 export { WechatCallbackPage } from './pages/login/wechat-callback';
 export { RegisterPage } from './pages/register';
 export { DashboardPage } from './pages/dashboard';
@@ -64,6 +65,13 @@ export type {
   FrontendInitResp,
   FrontendPreferenceResp,
   FrontendThemeResp,
+  GitHubCallbackErrorCode,
+  GitHubCallbackReq,
+  GitHubCallbackResp,
+  GitHubLoginStatus,
+  GitHubLoginStatusResp,
+  GitHubRedirectPrepareReq,
+  GitHubRedirectPrepareResp,
   LoginBadgeOptions,
   LoginReq,
   LoginResp,
