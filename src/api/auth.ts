@@ -11,6 +11,11 @@ import type {
   SendEmailCodeReq,
   RefreshTokenReq,
   CurrentUserResp,
+  GitHubCallbackReq,
+  GitHubCallbackResp,
+  GitHubLoginStatusResp,
+  GitHubRedirectPrepareReq,
+  GitHubRedirectPrepareResp,
   WechatWebCallbackReq,
   WechatWebCallbackResp,
   WechatWebQrCodeCreateReq,
@@ -35,6 +40,9 @@ export interface AuthService {
   getWechatWebLoginStatus: (loginId: string) => Promise<WechatWebLoginStatusResp>;
   prepareWechatWebRedirect: (data: WechatWebRedirectPrepareReq) => Promise<WechatWebRedirectPrepareResp>;
   completeWechatWebRedirectCallback: (data: WechatWebCallbackReq) => Promise<WechatWebCallbackResp>;
+  prepareGitHubRedirect: (data: GitHubRedirectPrepareReq) => Promise<GitHubRedirectPrepareResp>;
+  getGitHubLoginStatus: (loginId: string) => Promise<GitHubLoginStatusResp>;
+  completeGitHubRedirectCallback: (data: GitHubCallbackReq) => Promise<GitHubCallbackResp>;
 }
 
 export const authService: AuthService = {
@@ -133,6 +141,27 @@ export const authService: AuthService = {
     request<WechatWebCallbackResp>({
       method: 'POST',
       url: '/api/auth/wechat/web/redirect/callback',
+      data,
+    }),
+
+  prepareGitHubRedirect: (data: GitHubRedirectPrepareReq) =>
+    request<GitHubRedirectPrepareResp>({
+      method: 'POST',
+      url: '/api/auth/github/redirect/prepare',
+      data,
+    }),
+
+  getGitHubLoginStatus: (loginId: string) =>
+    request<GitHubLoginStatusResp>({
+      method: 'GET',
+      url: '/api/auth/github/status',
+      params: { loginId },
+    }),
+
+  completeGitHubRedirectCallback: (data: GitHubCallbackReq) =>
+    request<GitHubCallbackResp>({
+      method: 'POST',
+      url: '/api/auth/github/redirect/callback',
       data,
     }),
 };

@@ -37,13 +37,13 @@ export interface NebulaLoginBadgeContextValue {
   defaultLoginMethods: BuiltInLoginMethodKey[];
   extraLoginBadges: NebulaExtraLoginBadge[];
   authService?: AuthService;
-  onLoginSuccess?: (response: LoginResp | WechatWebLoginStatusResp) => void | Promise<void>;
+  onLoginSuccess?: (response: LoginResp | WechatWebLoginStatusResp | GitHubLoginStatusResp) => void | Promise<void>;
   onLogoutSuccess?: () => void | Promise<void>;
   onRegisterSuccess?: () => void | Promise<void>;
 }
 
 export interface NebulaExtraLoginBadgeRenderContext {
-  onSuccess: (response?: LoginResp | WechatWebLoginStatusResp) => void | Promise<void>;
+  onSuccess: (response?: LoginResp | WechatWebLoginStatusResp | GitHubLoginStatusResp) => void | Promise<void>;
   loginBadge: NebulaLoginBadgeContextValue;
 }
 
@@ -59,7 +59,7 @@ export interface LoginBadgeOptions {
   defaultLoginMethods?: BuiltInLoginMethodKey[];
   extraLoginBadges?: NebulaExtraLoginBadge[];
   authService?: AuthService;
-  onLoginSuccess?: (response: LoginResp | WechatWebLoginStatusResp) => void | Promise<void>;
+  onLoginSuccess?: (response: LoginResp | WechatWebLoginStatusResp | GitHubLoginStatusResp) => void | Promise<void>;
   onLogoutSuccess?: () => void | Promise<void>;
   onRegisterSuccess?: () => void | Promise<void>;
 }
@@ -88,6 +88,7 @@ export interface AuthInitResp {
   oauth2Enabled?: boolean;
   oauth2RegisterAllowed?: boolean;
   wechatMiniProgramEnabled?: boolean;
+  githubEnabled?: boolean;
 }
 
 export interface FrontendConfigResp {
@@ -229,4 +230,44 @@ export interface WechatWebCallbackResp {
   errorCode?: WechatWebCallbackErrorCode;
 }
 
-export type BuiltInLoginMethodKey = 'password' | 'phone' | 'email' | 'wechat-web';
+export type GitHubLoginStatus = 'WAITING' | 'SCANNED' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CONSUMED';
+
+export type GitHubCallbackErrorCode =
+  | 'missing_callback_parameter'
+  | 'invalid_state'
+  | 'expired_state'
+  | 'replayed_state'
+  | 'provider_error';
+
+export interface GitHubRedirectPrepareReq {
+  redirectAfterLogin?: string;
+}
+
+export interface GitHubRedirectPrepareResp {
+  loginId: string;
+  state: string;
+  status: GitHubLoginStatus;
+  authorizeUrl: string;
+}
+
+export interface GitHubLoginStatusResp {
+  loginId: string;
+  status: GitHubLoginStatus;
+  state: string;
+  loginResult?: LoginResp;
+  returnPath?: string;
+}
+
+export interface GitHubCallbackReq {
+  code: string;
+  state: string;
+}
+
+export interface GitHubCallbackResp {
+  loginId: string;
+  status: GitHubLoginStatus;
+  returnPath?: string;
+  errorCode?: GitHubCallbackErrorCode;
+}
+
+export type BuiltInLoginMethodKey = 'password' | 'phone' | 'email' | 'wechat-web' | 'github';
