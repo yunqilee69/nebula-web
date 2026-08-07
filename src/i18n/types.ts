@@ -896,42 +896,32 @@ export interface NebulaSchedulerMessages {
 export interface NebulaAuditMessages {
   columns: {
     id: string;
-    traceId: string;
-    bizNo: string;
-    module: string;
-    action: string;
-    resource: string;
-    resourceId: string;
-    category: string;
-    consistency: string;
     operatorId: string;
     operatorName: string;
-    success: string;
-    errorCode: string;
-    errorMessage: string;
+    module: string;
+    action: string;
+    resourceType: string;
+    resourceId: string;
+    resourceName: string;
+    requestParams: string;
+    responseData: string;
+    requestIp: string;
+    resultStatus: string;
+    resultMessage: string;
     createTime: string;
+    updateTime: string;
     actions: string;
   };
-  category: {
-    business: string;
-    security: string;
-  };
-  consistency: {
-    eventual: string;
-    strong: string;
+  actions: {
+    detail: string;
   };
   status: {
     success: string;
-    failed: string;
+    failure: string;
   };
   modal: {
     detailTitle: string;
     basicInfo: string;
-    requestInfo: string;
-    argsSnapshot: string;
-    resultSnapshot: string;
-    extraInfo: string;
-    noData: string;
   };
   pagination: {
     total: string;

@@ -7,10 +7,8 @@ import type {
 } from '@/types/audit';
 
 export interface AuditService {
-  pageRecords: (data: AuditRecordPageReq) => Promise<PageResp<AuditRecordResp>>;
-  getRecordDetail: (id: string) => Promise<AuditRecordDetailResp>;
-  listByBizNo: (bizNo: string) => Promise<AuditRecordResp[]>;
-  listByTraceId: (traceId: string) => Promise<AuditRecordResp[]>;
+  readonly pageRecords: (data: AuditRecordPageReq) => Promise<PageResp<AuditRecordResp>>;
+  readonly getRecordDetail: (id: string) => Promise<AuditRecordDetailResp>;
 }
 
 export const auditService: AuditService = {
@@ -24,15 +22,5 @@ export const auditService: AuditService = {
     request<AuditRecordDetailResp>({
       method: 'GET',
       url: `/api/audit/records/${id}`,
-    }),
-  listByBizNo: (bizNo) =>
-    request<AuditRecordResp[]>({
-      method: 'GET',
-      url: `/api/audit/records/biz/${bizNo}`,
-    }),
-  listByTraceId: (traceId) =>
-    request<AuditRecordResp[]>({
-      method: 'GET',
-      url: `/api/audit/records/trace/${traceId}`,
     }),
 };
