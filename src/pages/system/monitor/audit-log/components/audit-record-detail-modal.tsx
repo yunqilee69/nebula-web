@@ -1,224 +1,93 @@
-import { Collapse, Descriptions, Modal, Tag } from 'antd';
-import type { DescriptionsProps } from 'antd';
-import { useMemo } from 'react';
-import { AUDIT_CATEGORY_TAG_COLOR, AUDIT_CONSISTENCY_TAG_COLOR, SUCCESS_TAG_COLOR } from '@/enums/audit';
+import { Collapse, Descriptions, Modal, Tag, Typography } from 'antd';
+import {
+  AUDIT_RESULT_STATUS_LABEL_KEY,
+  AUDIT_RESULT_STATUS_TAG_COLOR,
+} from '@/enums/audit';
+import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { AuditRecordDetailResp } from '@/types/audit';
+import type { AuditActionDictionary } from '../use-audit-action-dictionary';
 import { JsonViewer } from './json-viewer';
 
 interface AuditRecordDetailModalProps {
   readonly open: boolean;
   readonly loading: boolean;
   readonly detail?: AuditRecordDetailResp;
+  readonly actionDictionary: AuditActionDictionary;
   readonly onClose: () => void;
 }
 
-function formatDateTime(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  } catch {
-    return dateStr;
-  }
+function formatText(value: string | undefined): string {
+  return value?.trim() ? value : '-';
+}
+
+function formatDateTime(value: string | undefined): string {
+  return value ? value.replace('T', ' ') : '-';
 }
 
 export function AuditRecordDetailModal({
   open,
   loading,
   detail,
+  actionDictionary,
   onClose,
 }: AuditRecordDetailModalProps) {
-  const basicItems: DescriptionsProps['items'] = useMemo(() => {
-    if (!detail) return [];
-
-    return [
-      {
-        label: '审计记录ID',
-        children: <span className="font-mono text-xs">{detail.id}</span>,
-        span: 2,
-      },
-      {
-        label: '链路追踪ID',
-        children: detail.traceId ? (
-          <span className="font-mono text-xs">{detail.traceId}</span>
-        ) : (
-          '-'
-        ),
-        span: 2,
-      },
-      {
-        label: '业务编号',
-        children: detail.bizNo || '-',
-        span: 2,
-      },
-      {
-        label: '模块',
-        children: detail.module,
-        span: 1,
-      },
-      {
-        label: '操作',
-        children: detail.action,
-        span: 1,
-      },
-      {
-        label: '资源类型',
-        children: detail.resource,
-        span: 1,
-      },
-      {
-        label: '资源ID',
-        children: detail.resourceId || '-',
-        span: 1,
-      },
-      {
-        label: '审计分类',
-        children: (
-          <Tag color={AUDIT_CATEGORY_TAG_COLOR[detail.category]}>
-            {detail.category === 'BUSINESS' ? '业务操作' : '安全审计'}
-          </Tag>
-        ),
-        span: 1,
-      },
-      {
-        label: '一致性级别',
-        children: (
-          <Tag color={AUDIT_CONSISTENCY_TAG_COLOR[detail.consistency]}>
-            {detail.consistency === 'EVENTUAL' ? '最终一致性' : '强一致性'}
-          </Tag>
-        ),
-        span: 1,
-      },
-      {
-        label: '操作人ID',
-        children: detail.operatorId || '-',
-        span: 1,
-      },
-      {
-        label: '操作人名称',
-        children: detail.operatorName || '-',
-        span: 1,
-      },
-      {
-        label: '执行状态',
-        children: (
-          <Tag color={SUCCESS_TAG_COLOR[String(detail.success) as 'true' | 'false']}>
-            {detail.success ? '成功' : '失败'}
-          </Tag>
-        ),
-        span: 1,
-      },
-      {
-        label: '错误码',
-        children: detail.errorCode || '-',
-        span: 1,
-      },
-      {
-        label: '错误信息',
-        children: detail.errorMessage || '-',
-        span: 2,
-      },
-      {
-        label: '创建时间',
-        children: formatDateTime(detail.createTime),
-        span: 2,
-      },
-    ];
-  }, [detail]);
-
-  const requestItems: DescriptionsProps['items'] = useMemo(() => {
-    if (!detail) return [];
-
-    return [
-      {
-        label: '请求URI',
-        children: detail.requestUri || '-',
-        span: 2,
-      },
-      {
-        label: 'HTTP方法',
-        children: detail.httpMethod || '-',
-        span: 1,
-      },
-      {
-        label: '客户端IP',
-        children: detail.clientIp || '-',
-        span: 1,
-      },
-      {
-        label: '用户代理',
-        children: (
-          <div className="max-w-md truncate" title={detail.userAgent}>
-            {detail.userAgent || '-'}
-          </div>
-        ),
-        span: 2,
-      },
-      {
-        label: '耗时(ms)',
-        children: detail.durationMs !== undefined ? `${detail.durationMs}ms` : '-',
-        span: 2,
-      },
-    ];
-  }, [detail]);
-
-  const collapseItems = useMemo(
-    () => [
-      {
-        key: 'args',
-        label: '参数快照',
-        children: <JsonViewer json={detail?.argsSnapshot} label="参数快照" />,
-      },
-      {
-        key: 'result',
-        label: '结果快照',
-        children: <JsonViewer json={detail?.resultSnapshot} label="结果快照" />,
-      },
-      {
-        key: 'extra',
-        label: '扩展信息',
-        children: <JsonViewer json={detail?.extraJson} label="扩展信息" />,
-      },
-    ],
-    [detail],
-  );
+  const { t } = useNebulaI18n();
 
   return (
     <Modal
-      title="审计记录详情"
+      title={t('audit.modal.detailTitle')}
       open={open}
       onCancel={onClose}
       width={900}
       footer={null}
       loading={loading}
-      destroyOnClose
+      destroyOnHidden
     >
       <div className="space-y-4">
-        <Descriptions
-          title="基本信息"
-          bordered
-          size="small"
-          column={2}
-          items={basicItems}
-        />
-
-        <Descriptions
-          title="请求信息"
-          bordered
-          size="small"
-          column={2}
-          items={requestItems}
-        />
+        <Descriptions title={t('audit.modal.basicInfo')} bordered size="small" column={2}>
+          <Descriptions.Item label={t('audit.columns.id')} span={2}>
+            <Typography.Text copyable={detail?.id ? { text: detail.id } : false}>
+              {formatText(detail?.id)}
+            </Typography.Text>
+          </Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.module')}>{formatText(detail?.module)}</Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.action')}>
+            {detail ? actionDictionary.getLabel(detail.action) : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.operatorId')}>{formatText(detail?.operatorId)}</Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.operatorName')}>{formatText(detail?.operatorName)}</Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.resourceType')}>{formatText(detail?.resourceType)}</Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.resourceId')}>{formatText(detail?.resourceId)}</Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.resourceName')}>{formatText(detail?.resourceName)}</Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.requestIp')}>{formatText(detail?.requestIp)}</Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.resultStatus')} span={2}>
+            {detail ? (
+              <Tag color={AUDIT_RESULT_STATUS_TAG_COLOR[detail.resultStatus]}>
+                {t(AUDIT_RESULT_STATUS_LABEL_KEY[detail.resultStatus])}
+              </Tag>
+            ) : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.resultMessage')} span={2}>
+            {formatText(detail?.resultMessage)}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.createTime')}>{formatDateTime(detail?.createTime)}</Descriptions.Item>
+          <Descriptions.Item label={t('audit.columns.updateTime')}>{formatDateTime(detail?.updateTime)}</Descriptions.Item>
+        </Descriptions>
 
         <Collapse
-          items={collapseItems}
-          defaultActiveKey={['args', 'result', 'extra']}
+          defaultActiveKey={['requestParams', 'responseData']}
+          items={[
+            {
+              key: 'requestParams',
+              label: t('audit.columns.requestParams'),
+              children: <JsonViewer json={detail?.requestParams} label={t('audit.columns.requestParams')} />,
+            },
+            {
+              key: 'responseData',
+              label: t('audit.columns.responseData'),
+              children: <JsonViewer json={detail?.responseData} label={t('audit.columns.responseData')} />,
+            },
+          ]}
         />
       </div>
     </Modal>

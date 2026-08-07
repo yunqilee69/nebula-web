@@ -1,268 +1,184 @@
 import { EyeOutlined } from '@ant-design/icons';
-import { Button, Tag } from 'antd';
+import { Button, Tag, Typography } from 'antd';
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
-import { AUDIT_CATEGORY_TAG_COLOR, AUDIT_CONSISTENCY_TAG_COLOR, SUCCESS_TAG_COLOR } from '@/enums/audit';
+import {
+  AUDIT_RESULT_STATUS_LABEL_KEY,
+  AUDIT_RESULT_STATUS_TAG_COLOR,
+  AUDIT_RESULT_STATUS_VALUES,
+} from '@/enums/audit';
+import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { AuditService } from '@/services/audit';
-import type { AuditCategory, AuditRecordPageReq, AuditRecordResp } from '@/types/audit';
+import type { AuditRecordPageReq, AuditRecordResp, AuditResultStatus } from '@/types/audit';
+import type { AuditActionDictionary } from '../use-audit-action-dictionary';
 
 export interface AuditRecordTableHandle {
-  reload: () => Promise<void>;
+  readonly reload: () => Promise<void>;
 }
 
 interface AuditRecordTableProps {
   readonly service: AuditService;
+  readonly actionDictionary: AuditActionDictionary;
   readonly onDetail: (record: AuditRecordResp) => void;
 }
 
-function formatDateTime(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  } catch {
-    return dateStr;
-  }
+export interface AuditRecordQuery {
+  readonly module?: string;
+  readonly action?: string;
+  readonly operatorId?: string;
+  readonly operatorName?: string;
+  readonly resourceType?: string;
+  readonly resourceId?: string;
+  readonly resourceName?: string;
+  readonly requestIp?: string;
+  readonly resultStatus?: AuditResultStatus;
 }
 
-function truncateId(id: string, maxLength: number = 12): string {
-  if (id.length <= maxLength) return id;
-  return `${id.substring(0, maxLength)}...`;
-}
-
-interface AuditRecordQuery {
-  module?: string;
-  action?: string;
-  category?: AuditCategory | '';
-  operatorId?: string;
-  resource?: string;
-  resourceId?: string;
-  success?: boolean | 'true' | 'false';
-  bizNo?: string;
-  traceId?: string;
-}
-
-function normalizeOptionalText(value: string | undefined) {
+function normalizeOptionalText(value: string | undefined): string | undefined {
   const normalized = value?.trim();
-  return normalized || undefined;
+  return normalized ? normalized : undefined;
 }
 
-function normalizeOptionalBoolean(value: boolean | 'true' | 'false' | undefined) {
-  if (typeof value === 'boolean') return value;
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  return undefined;
-}
-
-function buildPageReq(params: AuditRecordQuery & NebulaPageReq): AuditRecordPageReq {
+export function buildAuditRecordPageReq(params: AuditRecordQuery & NebulaPageReq): AuditRecordPageReq {
   const module = normalizeOptionalText(params.module);
   const action = normalizeOptionalText(params.action);
   const operatorId = normalizeOptionalText(params.operatorId);
-  const resource = normalizeOptionalText(params.resource);
+  const operatorName = normalizeOptionalText(params.operatorName);
+  const resourceType = normalizeOptionalText(params.resourceType);
   const resourceId = normalizeOptionalText(params.resourceId);
-  const bizNo = normalizeOptionalText(params.bizNo);
-  const traceId = normalizeOptionalText(params.traceId);
-  const success = normalizeOptionalBoolean(params.success);
+  const resourceName = normalizeOptionalText(params.resourceName);
+  const requestIp = normalizeOptionalText(params.requestIp);
 
   return {
     pageNum: params.pageNum,
     pageSize: params.pageSize,
+    ...(params.orderName ? { orderName: params.orderName } : {}),
+    ...(params.orderType ? { orderType: params.orderType } : {}),
     ...(module ? { module } : {}),
     ...(action ? { action } : {}),
-    ...(params.category ? { category: params.category } : {}),
     ...(operatorId ? { operatorId } : {}),
-    ...(resource ? { resource } : {}),
+    ...(operatorName ? { operatorName } : {}),
+    ...(resourceType ? { resourceType } : {}),
     ...(resourceId ? { resourceId } : {}),
-    ...(success !== undefined ? { success } : {}),
-    ...(bizNo ? { bizNo } : {}),
-    ...(traceId ? { traceId } : {}),
+    ...(resourceName ? { resourceName } : {}),
+    ...(requestIp ? { requestIp } : {}),
+    ...(params.resultStatus ? { resultStatus: params.resultStatus } : {}),
   };
 }
 
+function formatText(value: string | undefined): string {
+  return value?.trim() ? value : '-';
+}
+
+function formatDateTime(value: string): string {
+  return value.replace('T', ' ');
+}
+
 export const AuditRecordTable = forwardRef<AuditRecordTableHandle, AuditRecordTableProps>(
-  function AuditRecordTable({ service, onDetail }, ref) {
+  function AuditRecordTable({ service, actionDictionary, onDetail }, ref) {
     const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
-    
-    const reloadTable = useCallback(
-      () => actionRef.current?.reload() ?? Promise.resolve(),
+    const { t } = useNebulaI18n();
+
+    useImperativeHandle(
+      ref,
+      () => ({ reload: () => actionRef.current?.reload() ?? Promise.resolve() }),
       [],
     );
 
-    useImperativeHandle(ref, () => ({ reload: reloadTable }), [reloadTable]);
-
     const requestRecords = useCallback(
-      (params: AuditRecordQuery & NebulaPageReq) => service.pageRecords(buildPageReq(params)),
+      (params: AuditRecordQuery & NebulaPageReq) => service.pageRecords(buildAuditRecordPageReq(params)),
       [service],
     );
 
-    const columns = useMemo<NebulaProColumns<AuditRecordResp>[]>(
-      () => [
-        {
-          title: '审计记录ID',
-          dataIndex: 'id',
-          key: 'id',
-          width: 160,
-          ellipsis: true,
-          search: false,
-          render: (_, record) => (
-            <span title={record.id} className="font-mono text-xs">
-              {truncateId(record.id)}
-            </span>
-          ),
-        },
-        {
-          title: '模块',
-          dataIndex: 'module',
-          key: 'module',
-          width: 120,
-          ellipsis: true,
-        },
-        {
-          title: '操作',
-          dataIndex: 'action',
-          key: 'action',
-          width: 120,
-          ellipsis: true,
-        },
-        {
-          title: '资源类型',
-          dataIndex: 'resource',
-          key: 'resource',
-          width: 120,
-          ellipsis: true,
-        },
-        {
-          title: '资源ID',
-          dataIndex: 'resourceId',
-          key: 'resourceId',
-          width: 140,
-          ellipsis: true,
-          search: false,
-          render: (_, record) => record.resourceId || '-',
-        },
-        {
-          title: '审计分类',
-          dataIndex: 'category',
-          key: 'category',
-          width: 100,
-          valueType: 'select',
-          valueEnum: {
-            BUSINESS: { text: '业务操作' },
-            SECURITY: { text: '安全审计' },
-          },
-          render: (_, record) => (
-            <Tag color={AUDIT_CATEGORY_TAG_COLOR[record.category]}>
-              {record.category === 'BUSINESS' ? '业务操作' : '安全审计'}
-            </Tag>
-          ),
-        },
-        {
-          title: '操作人ID',
-          dataIndex: 'operatorId',
-          key: 'operatorId',
-          width: 120,
-          ellipsis: true,
-          search: false,
-        },
-        {
-          title: '操作人',
-          dataIndex: 'operatorName',
-          key: 'operatorName',
-          width: 120,
-          ellipsis: true,
-          search: false,
-          render: (_, record) => record.operatorName || '-',
-        },
-        {
-          title: '执行状态',
-          dataIndex: 'success',
-          key: 'success',
-          width: 100,
-          valueType: 'select',
-          valueEnum: {
-            true: { text: '成功', status: 'Success' },
-            false: { text: '失败', status: 'Error' },
-          },
-          render: (_, record) => (
-            <Tag color={SUCCESS_TAG_COLOR[String(record.success) as 'true' | 'false']}>
-              {record.success ? '成功' : '失败'}
-            </Tag>
-          ),
-        },
-        {
-          title: '错误信息',
-          dataIndex: 'errorMessage',
-          key: 'errorMessage',
-          width: 200,
-          ellipsis: true,
-          search: false,
-          render: (_, record) => record.errorMessage || '-',
-        },
-        {
-          title: '业务编号',
-          dataIndex: 'bizNo',
-          key: 'bizNo',
-          width: 150,
-          ellipsis: true,
-          search: true,
-        },
-        {
-          title: '链路追踪ID',
-          dataIndex: 'traceId',
-          key: 'traceId',
-          width: 180,
-          ellipsis: true,
-          search: true,
-        },
-        {
-          title: '创建时间',
-          dataIndex: 'createTime',
-          key: 'createTime',
-          width: 180,
-          valueType: 'dateTime',
-          search: false,
-          render: (_, record) => formatDateTime(record.createTime),
-        },
-        {
-          title: '操作',
-          key: 'actions',
-          width: 80,
-          fixed: 'right',
-          search: false,
-          render: (_, record) => (
-            <Button
-              type="link"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => onDetail(record)}
-            >
-              详情
-            </Button>
-          ),
-        },
-      ],
-      [onDetail],
+    const resultStatusValueEnum = useMemo(
+      () => Object.fromEntries(
+        AUDIT_RESULT_STATUS_VALUES.map((status) => [status, { text: t(AUDIT_RESULT_STATUS_LABEL_KEY[status]) }]),
+      ),
+      [t],
     );
 
+    const columns = useMemo<NebulaProColumns<AuditRecordResp>[]>(() => [
+      {
+        title: t('audit.columns.id'), dataIndex: 'id', width: 220, search: false,
+        render: (_, record) => (
+          <Typography.Text copyable={{ text: record.id }} ellipsis={{ tooltip: record.id }}>
+            {record.id}
+          </Typography.Text>
+        ),
+      },
+      { title: t('audit.columns.module'), dataIndex: 'module', width: 140, ellipsis: true },
+      {
+        title: t('audit.columns.action'), dataIndex: 'action', width: 140, valueType: 'select',
+        valueEnum: Object.fromEntries(
+          actionDictionary.options.map((option) => [option.value, { text: option.label }]),
+        ),
+        fieldProps: {
+          'aria-label': t('audit.columns.action'),
+          allowClear: true,
+          loading: actionDictionary.loading,
+          optionFilterProp: 'label',
+          showSearch: true,
+        },
+        render: (_, record) => (
+          <Typography.Text ellipsis={{ tooltip: record.action }}>
+            {actionDictionary.getLabel(record.action)}
+          </Typography.Text>
+        ),
+      },
+      { title: t('audit.columns.operatorId'), dataIndex: 'operatorId', width: 160, render: (_, record) => formatText(record.operatorId) },
+      { title: t('audit.columns.operatorName'), dataIndex: 'operatorName', width: 140, render: (_, record) => formatText(record.operatorName) },
+      { title: t('audit.columns.resourceType'), dataIndex: 'resourceType', width: 140, render: (_, record) => formatText(record.resourceType) },
+      { title: t('audit.columns.resourceId'), dataIndex: 'resourceId', width: 180, render: (_, record) => formatText(record.resourceId) },
+      { title: t('audit.columns.resourceName'), dataIndex: 'resourceName', width: 160, render: (_, record) => formatText(record.resourceName) },
+      { title: t('audit.columns.requestIp'), dataIndex: 'requestIp', width: 150, render: (_, record) => formatText(record.requestIp) },
+      {
+        title: t('audit.columns.resultStatus'), dataIndex: 'resultStatus', width: 120, valueType: 'select',
+        valueEnum: resultStatusValueEnum,
+        fieldProps: { 'aria-label': t('audit.columns.resultStatus'), allowClear: true },
+        render: (_, record) => (
+          <Tag color={AUDIT_RESULT_STATUS_TAG_COLOR[record.resultStatus]}>
+            {t(AUDIT_RESULT_STATUS_LABEL_KEY[record.resultStatus])}
+          </Tag>
+        ),
+      },
+      {
+        title: t('audit.columns.resultMessage'), dataIndex: 'resultMessage', width: 240, search: false,
+        render: (_, record) => (
+          <Typography.Text className="block max-w-[240px]" ellipsis={{ tooltip: record.resultMessage }}>
+            {formatText(record.resultMessage)}
+          </Typography.Text>
+        ),
+      },
+      { title: t('audit.columns.createTime'), dataIndex: 'createTime', width: 180, search: false, sorter: true, render: (_, record) => formatDateTime(record.createTime) },
+      { title: t('audit.columns.updateTime'), dataIndex: 'updateTime', width: 180, search: false, sorter: true, render: (_, record) => formatDateTime(record.updateTime) },
+      {
+        title: t('audit.columns.actions'), key: 'actions', fixed: 'right', width: 100, valueType: 'option', search: false,
+        render: (_, record) => (
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            aria-label={`${t('audit.actions.detail')} ${record.id}`}
+            onClick={() => onDetail(record)}
+          >
+            {t('audit.actions.detail')}
+          </Button>
+        ),
+      },
+    ], [actionDictionary, onDetail, resultStatusValueEnum, t]);
+
     return (
-      <NebulaProTable<AuditRecordResp>
+      <NebulaProTable<AuditRecordResp, AuditRecordQuery>
         actionRef={actionRef}
         columns={columns}
         request={requestRecords}
         rowKey="id"
-        scroll={{ x: 1500 }}
+        scroll={{ x: 2240 }}
         pagination={{
           defaultPageSize: 20,
           showSizeChanger: true,
           showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 条记录`,
+          showTotal: (total) => t('audit.pagination.total').replace('{count}', String(total)),
         }}
       />
     );
