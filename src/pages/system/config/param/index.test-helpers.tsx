@@ -53,6 +53,8 @@ export function createParamService(overrides: Partial<ParamService> = {}): Param
     getBooleanValue: overrides.getBooleanValue ?? vi.fn(),
     listByModule: overrides.listByModule ?? vi.fn(),
     batchUpdateValues: overrides.batchUpdateValues ?? vi.fn(),
+    getGeneralConfig: overrides.getGeneralConfig ?? vi.fn(),
+    updateGeneralConfig: overrides.updateGeneralConfig ?? vi.fn(),
   };
 }
 

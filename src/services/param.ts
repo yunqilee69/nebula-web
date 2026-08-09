@@ -3,6 +3,7 @@ import type { NebulaPageResp } from '@/components/nebula-pro-table/params';
 import type {
   BatchUpdateResultResp,
   CreateSystemParamReq,
+  GeneralConfigDTO,
   ParamValueUpdateReq,
   SystemParamDetailResp,
   SystemParamPageReq,
@@ -28,6 +29,8 @@ export interface ParamService {
   getBooleanValue: (paramKey: string) => Promise<boolean>;
   listByModule: (moduleCode: string) => Promise<SystemParamResp[]>;
   batchUpdateValues: (data: readonly ParamValueUpdateReq[]) => Promise<BatchUpdateResultResp>;
+  getGeneralConfig: () => Promise<GeneralConfigDTO>;
+  updateGeneralConfig: (data: GeneralConfigDTO) => Promise<void>;
 }
 
 export const paramService: ParamService = {
@@ -44,4 +47,6 @@ export const paramService: ParamService = {
   listByModule: (moduleCode) => request<SystemParamResp[]>({ method: 'GET', url: `/api/param/module/${moduleCode}` }),
   batchUpdateValues: (data) =>
     request<BatchUpdateResultResp>({ method: 'POST', url: '/api/param/batch-update-values', data }),
+  getGeneralConfig: () => request<GeneralConfigDTO>({ method: 'GET', url: '/api/general-config' }),
+  updateGeneralConfig: (data) => request<void>({ method: 'PUT', url: '/api/general-config', data }),
 };
