@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import type { NebulaThemeMode } from '@/stores/theme-store';
 
 interface HeaderUserMenuProps {
+  readonly compact?: boolean;
   onOpenProfile: () => void;
 }
 
@@ -34,7 +35,7 @@ function getAvatarFallback(name: string): string {
   return Array.from(name.trim())[0]?.toUpperCase() ?? '?';
 }
 
-export function HeaderUserMenu({ onOpenProfile }: HeaderUserMenuProps) {
+export function HeaderUserMenu({ compact = false, onOpenProfile }: HeaderUserMenuProps) {
   const navigate = useNavigate();
   const { token } = antdTheme.useToken();
   const { styles } = useStyles();
@@ -120,9 +121,11 @@ export function HeaderUserMenu({ onOpenProfile }: HeaderUserMenuProps) {
             <Avatar src={user?.avatar} alt={displayName} size={32} className={styles.avatar}>
               {getAvatarFallback(displayName)}
             </Avatar>
-            <Typography.Text strong ellipsis className={styles.displayName} style={{ verticalAlign: 'middle' }}>
-              {displayName}
-            </Typography.Text>
+            {!compact && (
+              <Typography.Text strong ellipsis className={styles.displayName} style={{ verticalAlign: 'middle' }}>
+                {displayName}
+              </Typography.Text>
+            )}
           </Space>
         </Button>
       </Dropdown>
