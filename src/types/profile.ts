@@ -21,6 +21,11 @@ export interface UpdateProfileReq {
   phone?: string;
 }
 
+export interface ChangePasswordReq {
+  oldPassword: string;
+  newPassword: string;
+}
+
 export interface OAuth2BindingResp {
   providerId: string;
   providerName?: string;

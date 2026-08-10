@@ -1,5 +1,6 @@
 import { request } from '@/request/request';
 import type {
+  ChangePasswordReq,
   CreateOrgReq,
   CreateUserReq,
   OrgDetailResp,
@@ -22,6 +23,8 @@ export interface AuthManagementService {
   updateUser: (data: UpdateUserReq) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   getUserDetail: (id: string) => Promise<UserDetailResp>;
+  resetUserPassword: (id: string) => Promise<void>;
+  changeUserPassword: (id: string, data: ChangePasswordReq) => Promise<void>;
   listRoles: () => Promise<RoleOptionResp[]>;
   listOrgs: () => Promise<OrgOptionResp[]>;
   pageOrgs: (data: OrgPageReq) => Promise<PageResp<OrgResp>>;
@@ -38,6 +41,8 @@ export const authManagementService: AuthManagementService = {
   updateUser: (data) => request<void>({ method: 'PUT', url: `/api/auth/users/${data.id}`, data }),
   deleteUser: (id) => request<void>({ method: 'DELETE', url: `/api/auth/users/${id}` }),
   getUserDetail: (id) => request<UserDetailResp>({ method: 'GET', url: `/api/auth/users/${id}` }),
+  resetUserPassword: (id) => request<void>({ method: 'PUT', url: `/api/auth/users/${id}/reset-password` }),
+  changeUserPassword: (id, data) => request<void>({ method: 'PUT', url: `/api/auth/users/${id}/password`, data }),
   listRoles: () => request<RoleOptionResp[]>({ method: 'GET', url: '/api/auth/roles/list' }),
   listOrgs: () => request<OrgOptionResp[]>({ method: 'GET', url: '/api/auth/orgs/list' }),
   pageOrgs: (data) => request<PageResp<OrgResp>>({ method: 'POST', url: '/api/auth/orgs/page', data }),

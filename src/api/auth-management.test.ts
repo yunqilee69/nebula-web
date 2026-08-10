@@ -62,6 +62,24 @@ describe('authManagementService', () => {
     });
   });
 
+  it('resets and changes user password through the auth user endpoints', async () => {
+    mockedRequest.mockResolvedValueOnce(undefined);
+    mockedRequest.mockResolvedValueOnce(undefined);
+
+    await authManagementService.resetUserPassword('user-1');
+    await authManagementService.changeUserPassword('user-1', { oldPassword: 'old-secret', newPassword: 'new-secret' });
+
+    expect(mockedRequest).toHaveBeenNthCalledWith(1, {
+      method: 'PUT',
+      url: '/api/auth/users/user-1/reset-password',
+    });
+    expect(mockedRequest).toHaveBeenNthCalledWith(2, {
+      method: 'PUT',
+      url: '/api/auth/users/user-1/password',
+      data: { oldPassword: 'old-secret', newPassword: 'new-secret' },
+    });
+  });
+
   it('lists roles and orgs for user form dropdowns', async () => {
     mockedRequest.mockResolvedValueOnce([{ id: 'role-1', name: 'Admin', code: 'ADMIN' }]);
     mockedRequest.mockResolvedValueOnce([{ id: 'org-1', name: 'Engineering', code: 'ENG' }]);

@@ -58,6 +58,15 @@ describe('profileService', () => {
     expect(mockedRequest).toHaveBeenCalledWith({ method: 'PUT', url: '/api/auth/profile', data });
   });
 
+  it('changePassword calls PUT /api/auth/profile/password with password fields', async () => {
+    const data = { oldPassword: 'old-secret', newPassword: 'new-secret' };
+    mockedRequest.mockResolvedValueOnce(undefined);
+
+    await profileService.changePassword(data);
+
+    expect(mockedRequest).toHaveBeenCalledWith({ method: 'PUT', url: '/api/auth/profile/password', data });
+  });
+
   it('listOAuth2Bindings calls GET /api/auth/profile/oauth2/bindings', async () => {
     const bindings: OAuth2BindingListResp = {
       providers: [

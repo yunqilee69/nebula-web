@@ -79,6 +79,11 @@ export interface UpdateUserReq {
   orgIds?: string[];
 }
 
+export interface ChangePasswordReq {
+  oldPassword: string;
+  newPassword: string;
+}
+
 export type OrgType = 'COMPANY' | 'DEPARTMENT' | 'TEAM';
 
 export interface OrgPageReq extends PageReq {
