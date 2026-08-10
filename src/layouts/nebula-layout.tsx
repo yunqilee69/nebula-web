@@ -1,5 +1,5 @@
 import { flushSync } from 'react-dom';
-import { Breadcrumb, Button, Dropdown, Input, Layout, Menu, Tabs, Typography } from 'antd';
+import { Breadcrumb, Button, Dropdown, Grid, Input, Layout, Menu, Tabs, Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import type { BreadcrumbProps, MenuProps, TabsProps, InputRef } from 'antd';
 import type { ReactNode } from 'react';
@@ -13,6 +13,8 @@ import { useAppStore } from '@/stores/app-store';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { nebulaTokens } from '@/providers/tokens';
 import { HeaderUserMenu } from './components/header-user-menu';
+import { NotificationBell } from './components/notification-bell';
+import { PopupAnnouncement } from './components/popup-announcement';
 
 const { Header, Sider, Content } = Layout;
 
@@ -88,6 +90,18 @@ const useStyles = createStyles(({ token }) => ({
     paddingInline: token.paddingLG,
     background: token.colorBgContainer,
     borderBottom: `1px solid ${token.colorBorderSecondary}`,
+  },
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    flexShrink: 0,
+    gap: token.marginXS,
+  },
+  compactHeader: {
+    paddingInline: token.paddingXS,
+  },
+  compactHeaderActions: {
+    gap: token.marginXXS,
   },
   routeTabs: {
     '& .ant-tabs-nav-list': {
@@ -326,6 +340,8 @@ export function NebulaLayout({
   const setSiderCollapsed = useAppStore((state) => state.setSiderCollapsed);
   const { t } = useNebulaI18n();
   const { styles, cx } = useStyles();
+  const screens = Grid.useBreakpoint();
+  const compactHeader = screens.xs === true;
 
   const currentMenuPath = useMemo(
     () => findMenuPath(menuItems, location.pathname),
@@ -627,6 +643,7 @@ export function NebulaLayout({
 
   return (
     <Layout hasSider className={styles.shell}>
+      <PopupAnnouncement />
       <Sider
         width={nebulaTokens.siderWidth}
         collapsedWidth={nebulaTokens.siderCollapsedWidth}
@@ -681,11 +698,17 @@ export function NebulaLayout({
       </Sider>
       <Layout className={styles.workspace}>
         <Header
-          className={styles.header}
+          className={cx(styles.header, compactHeader && styles.compactHeader)}
         >
           <Breadcrumb aria-label={t('layout.breadcrumbAriaLabel')} items={breadcrumbItems} />
           {rightContent ?? (
-            <HeaderUserMenu onOpenProfile={() => openRouteWithLabel('/profile/info', t('layout.headerUser.profile'))} />
+            <div className={cx(styles.headerActions, compactHeader && styles.compactHeaderActions)}>
+              <NotificationBell />
+              <HeaderUserMenu
+                compact={compactHeader}
+                onOpenProfile={() => openRouteWithLabel('/profile/info', t('layout.headerUser.profile'))}
+              />
+            </div>
           )}
         </Header>
         <div className={cx('nebula-route-tabs', styles.routeTabs)}>

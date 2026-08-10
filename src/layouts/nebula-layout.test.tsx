@@ -3,21 +3,35 @@ import userEvent, { PointerEventsCheckLevel } from '@testing-library/user-event'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { useRef } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { Grid } from 'antd';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import { NebulaLayout } from './nebula-layout';
 import { useAppStore } from '@/stores/app-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useLocaleStore } from '@/stores/locale-store';
+import { useNotifyStore } from '@/stores/notify';
 import { useThemeStore } from '@/stores/theme-store';
 import type { AuthService } from '@/api/auth';
 import type { NebulaMenuItem } from '@/route/types';
+import type { CurrentAnnouncementResp } from '@/types/notify';
 import { clearAuthTokens } from '@/utils/auth/token-session';
+
+const notifyMocks = vi.hoisted(() => ({
+  getUnreadSiteMessageCount: vi.fn().mockResolvedValue(0),
+  pageSiteMessages: vi.fn().mockResolvedValue({ data: [], total: 0 }),
+  listCurrentPopupAnnouncements: vi.fn().mockResolvedValue([]),
+  markAnnouncementRead: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('@/utils/auth/token-session', () => ({
   saveAuthTokens: vi.fn(),
   getStoredAccessToken: vi.fn(() => null),
   getStoredRefreshToken: vi.fn(() => null),
   clearAuthTokens: vi.fn(),
+}));
+
+vi.mock('@/services/notify', () => ({
+  notifyService: notifyMocks,
 }));
 
 const menuItems: NebulaMenuItem[] = [
@@ -118,6 +132,10 @@ async function openTabContextMenu(tab: HTMLElement, coordinates?: { clientX: num
 
 describe('NebulaLayout', () => {
   beforeEach(() => {
+    notifyMocks.getUnreadSiteMessageCount.mockResolvedValue(0);
+    notifyMocks.pageSiteMessages.mockResolvedValue({ data: [], total: 0 });
+    notifyMocks.listCurrentPopupAnnouncements.mockResolvedValue([]);
+    notifyMocks.markAnnouncementRead.mockResolvedValue(undefined);
     useAppStore.getState().setSiderCollapsed(false);
     useAuthStore.getState().setUser({
       id: 'u1',
@@ -127,6 +145,7 @@ describe('NebulaLayout', () => {
       permissions: [],
     });
     useLocaleStore.getState().setLocale('zh-CN');
+    useNotifyStore.getState().setUnreadCount(0);
     useThemeStore.getState().setMode('light');
     vi.spyOn(window, 'open').mockImplementation(() => null);
   });
@@ -151,6 +170,25 @@ describe('NebulaLayout', () => {
     expect(screen.getByRole('main')).toHaveTextContent('用户内容');
   });
 
+  it('renders the authenticated popup announcement from the layout root', async () => {
+    const popupAnnouncement: CurrentAnnouncementResp = {
+      id: 'layout-announcement',
+      title: '布局公告',
+      content: '布局公告内容',
+      publishTime: '2026-08-10 10:00:00',
+      pinnedFlag: false,
+      sortNum: 1,
+      popupFlag: true,
+      readStatus: false,
+    };
+    notifyMocks.listCurrentPopupAnnouncements.mockResolvedValueOnce([popupAnnouncement]);
+
+    renderLayout('/');
+
+    expect(await screen.findByRole('dialog', { name: '布局公告' })).toBeInTheDocument();
+    expect(screen.getByText('布局公告内容')).toBeInTheDocument();
+  });
+
   it('keeps route-tab styling in generated classes instead of injecting raw style tags', async () => {
     const { container } = renderLayout('/system/users');
 
@@ -172,11 +210,28 @@ describe('NebulaLayout', () => {
       expect(within(trigger).getByRole('img', { name: /Ada Lovelace/ })).toBeInTheDocument();
     });
 
+    it('renders the notification bell for the authenticated default header', async () => {
+      renderLayoutWithoutRightContent('/');
+
+      expect(await screen.findByRole('button', { name: '通知，0 条未读' })).toBeInTheDocument();
+    });
+
+    it('keeps the user avatar accessible while hiding the display name on extra-small screens', async () => {
+      vi.spyOn(Grid, 'useBreakpoint').mockReturnValue({ xs: true });
+      renderLayoutWithoutRightContent('/');
+
+      const trigger = await screen.findByRole('button', { name: /Ada Lovelace/ });
+
+      expect(within(trigger).getByRole('img', { name: /Ada Lovelace/ })).toBeInTheDocument();
+      expect(within(trigger).queryByText('Ada Lovelace')).not.toBeInTheDocument();
+    });
+
     it('keeps rightContent as a full override for custom header actions', async () => {
       renderLayout('/');
 
       expect(await screen.findByRole('button', { name: 'Demo User' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Ada Lovelace/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /通知/ })).not.toBeInTheDocument();
     });
 
     it('shows profile preferences divider and logout actions from the user dropdown', async () => {
@@ -244,6 +299,7 @@ describe('NebulaLayout', () => {
 
       expect(useAuthStore.getState().user).toBeNull();
       expect(await screen.findByRole('button', { name: '未登录用户' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /通知/ })).not.toBeInTheDocument();
     });
 
     it('calls the auth service logout endpoint and returns to login when logout is selected', async () => {
