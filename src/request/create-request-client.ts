@@ -7,14 +7,33 @@ interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _nebulaSkipAuthRefresh?: boolean;
 }
 
+interface ApiResultPayload {
+  readonly code: string | number;
+  readonly message?: string;
+  readonly msg?: string;
+  readonly data?: unknown;
+}
+
 const defaultBusinessErrorMessage = '接口请求出错，请联系管理员';
 const authExpiredBusinessCode = '10006';
 
-function isApiResult(value: unknown): value is { code: string; message: string; data?: unknown } {
+function isApiResult(value: unknown): value is ApiResultPayload {
   if (!value || typeof value !== 'object') return false;
+  if (!('code' in value)) return false;
+  if (!('message' in value) && !('msg' in value)) return false;
 
-  const candidate = value as Record<string, unknown>;
-  return typeof candidate.code === 'string' && typeof candidate.message === 'string';
+  return (typeof value.code === 'string' || typeof value.code === 'number')
+    && (!('message' in value) || typeof value.message === 'string')
+    && (!('msg' in value) || typeof value.msg === 'string');
+}
+
+function getApiResultCode(result: ApiResultPayload): string {
+  return String(result.code);
+}
+
+function getApiResultMessage(result: ApiResultPayload): string {
+  const rawMessage = result.message ?? result.msg ?? '';
+  return rawMessage.trim() || defaultBusinessErrorMessage;
 }
 
 function showBusinessError(message: string, options: RequestClientOptions) {
@@ -57,18 +76,20 @@ export function createRequestClient(options: RequestClientOptions = {}) {
         return response;
       }
 
-      if (response.data.code === '0') {
+      const code = getApiResultCode(response.data);
+
+      if (code === '0') {
         return response.data.data;
       }
 
-      const message = response.data.message.trim() || defaultBusinessErrorMessage;
+      const message = getApiResultMessage(response.data);
       console.error('Nebula request business error', {
-        code: response.data.code,
+        code,
         message,
         url: response.config.url,
       });
 
-      if (isAuthExpiredBusinessCode(response.data.code)) {
+      if (isAuthExpiredBusinessCode(code)) {
         options.onUnauthorized?.();
         return Promise.reject(new Error(message));
       }
