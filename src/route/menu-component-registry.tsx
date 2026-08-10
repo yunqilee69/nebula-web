@@ -10,6 +10,8 @@ import { DictManagementPage } from '@/pages/system/config/dict';
 import { ParamManagementPage } from '@/pages/system/config/param';
 import { GeneralConfigPage } from '@/pages/system/config/general';
 import { AuditLogPage } from '@/pages/system/monitor/audit-log';
+import { CacheManagementPage } from '@/pages/system/monitor/cache-management';
+import { OnlineUserPage } from '@/pages/system/monitor/online-user';
 import { ScheduledTaskPage } from '@/pages/system/monitor/scheduled-task';
 import AnnouncementManagementPage from '@/pages/system/notify/announcement';
 import NotifyRecordPage from '@/pages/system/notify/record';
@@ -124,6 +126,22 @@ export const builtInMenuComponentRegistry = createMenuComponentRegistry({
     defaultCode: 'SCHEDULED_TASK',
     defaultPath: '/system/monitor/scheduled-task',
     loader: () => Promise.resolve({ default: ScheduledTaskPage }),
+  },
+  CacheManagementPage: {
+    component: 'CacheManagementPage',
+    defaultName: '缓存管理',
+    defaultCode: 'CACHE_MANAGEMENT',
+    defaultPath: '/system/monitor/cache-management',
+    defaultIcon: 'DatabaseOutlined',
+    loader: () => Promise.resolve({ default: CacheManagementPage }),
+  },
+  OnlineUserPage: {
+    component: 'OnlineUserPage',
+    defaultName: '在线用户',
+    defaultCode: 'ONLINE_USER',
+    defaultPath: '/system/monitor/online-user',
+    defaultIcon: 'TeamOutlined',
+    loader: () => Promise.resolve({ default: OnlineUserPage }),
   },
   // 系统管理 - 通知管理
   TemplateManagementPage: {
