@@ -84,6 +84,8 @@ function createAuthService(): AuthManagementService {
     updateUser: vi.fn(),
     deleteUser: vi.fn(),
     getUserDetail: vi.fn(),
+    resetUserPassword: vi.fn(),
+    changeUserPassword: vi.fn(),
     listRoles: vi.fn().mockResolvedValue([{ id: 'role-1', name: '平台管理员', code: 'ADMIN' }]),
     listOrgs: vi.fn(),
     pageOrgs: vi.fn(),

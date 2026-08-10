@@ -42,6 +42,8 @@ function createService(overrides: Partial<AuthManagementService> = {}): AuthMana
       nickname: '云起',
       status: 1,
     }),
+    resetUserPassword: vi.fn().mockResolvedValue(undefined),
+    changeUserPassword: vi.fn().mockResolvedValue(undefined),
     listRoles: vi.fn().mockResolvedValue([]),
     listOrgs: vi.fn().mockResolvedValue([]),
     getOrgTree: vi.fn().mockResolvedValue(orgTree),
