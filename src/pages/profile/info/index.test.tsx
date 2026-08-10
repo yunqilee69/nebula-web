@@ -44,6 +44,7 @@ function createService(overrides: Partial<ProfileService> = {}): ProfileService 
     }),
     bindOAuth2: vi.fn().mockResolvedValue('binding-1'),
     unbindOAuth2: vi.fn().mockResolvedValue(true),
+    changePassword: vi.fn().mockResolvedValue(undefined),
     pageLoginRecords: vi.fn().mockResolvedValue(loginRecords),
     ...overrides,
   };
@@ -111,6 +112,21 @@ describe('ProfileInfoPage', () => {
     await waitFor(() => {
       expect(service.unbindOAuth2).toHaveBeenCalledWith('wechat-web');
       expect(service.listOAuth2Bindings).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('submits password changes through the service', async () => {
+    const user = userEvent.setup();
+    const service = renderPage();
+
+    await screen.findByRole('button', { name: /修改密码/ });
+    await user.type(screen.getByLabelText('原密码'), 'old-secret');
+    await user.type(screen.getByLabelText('新密码'), 'new-secret');
+    await user.type(screen.getByLabelText('确认新密码'), 'new-secret');
+    await user.click(screen.getByRole('button', { name: /修改密码/ }));
+
+    await waitFor(() => {
+      expect(service.changePassword).toHaveBeenCalledWith({ oldPassword: 'old-secret', newPassword: 'new-secret' });
     });
   });
 

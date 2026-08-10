@@ -16,6 +16,12 @@ export interface ProfileInfoPageProps {
 
 type ProfileFormValues = UpdateProfileReq;
 
+interface PasswordFormValues {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 const useStyles = createStyles(({ token }) => ({
   avatar: {
     background: token.colorPrimary,
@@ -54,10 +60,12 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
   const { token } = antdTheme.useToken();
   const { styles } = useStyles();
   const [form] = Form.useForm<ProfileFormValues>();
+  const [passwordForm] = Form.useForm<PasswordFormValues>();
 
   const [profile, setProfile] = useState<ProfileResp>();
   const [profileLoading, setProfileLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [bindings, setBindings] = useState<OAuth2BindingResp[]>([]);
   const [bindingsLoading, setBindingsLoading] = useState(false);
   const [unbindProviderId, setUnbindProviderId] = useState<string>();
@@ -185,6 +193,27 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
     [loadBindings, notice, service, t],
   );
 
+  const submitPassword = useCallback(
+    async (values: PasswordFormValues) => {
+      setPasswordSaving(true);
+      try {
+        await service.changePassword({
+          oldPassword: values.oldPassword,
+          newPassword: values.newPassword,
+        });
+        passwordForm.resetFields();
+        notice.success(t('auth.profileInfo.feedback.passwordChangeSuccess'));
+      } catch (error: unknown) {
+        notice.error(t('auth.profileInfo.feedback.passwordChangeFailed'));
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Password change failed', message);
+      } finally {
+        setPasswordSaving(false);
+      }
+    },
+    [notice, passwordForm, service, t],
+  );
+
   const renderNotProvided = useCallback((value: string | number | undefined) => value ?? t('auth.profileInfo.empty.notProvided'), [t]);
 
   return (
@@ -220,6 +249,37 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
               <Button type="primary" htmlType="submit" loading={saving}>{t('auth.profileInfo.actions.save')}</Button>
             </Form>
           </Space>
+        </Card>
+
+        <Card title={t('auth.profileInfo.sections.password')}>
+          <Form form={passwordForm} layout="vertical" onFinish={(values) => void submitPassword(values)} disabled={passwordSaving}>
+            <Form.Item name="oldPassword" label={t('auth.profileInfo.fields.oldPassword')} htmlFor="profile-old-password" rules={[{ required: true, message: t('auth.profileInfo.validation.oldPasswordRequired') }]}> 
+              <Input.Password id="profile-old-password" autoComplete="current-password" placeholder={t('auth.profileInfo.placeholders.oldPassword')} />
+            </Form.Item>
+            <Form.Item name="newPassword" label={t('auth.profileInfo.fields.newPassword')} htmlFor="profile-new-password" rules={[{ required: true, message: t('auth.profileInfo.validation.newPasswordRequired') }]}> 
+              <Input.Password id="profile-new-password" autoComplete="new-password" placeholder={t('auth.profileInfo.placeholders.newPassword')} />
+            </Form.Item>
+            <Form.Item
+              name="confirmPassword"
+              label={t('auth.profileInfo.fields.confirmPassword')}
+              htmlFor="profile-confirm-password"
+              dependencies={['newPassword']}
+              rules={[
+                { required: true, message: t('auth.profileInfo.validation.confirmPasswordRequired') },
+                ({ getFieldValue }) => ({
+                  validator(_, value: string | undefined) {
+                    if (!value || getFieldValue('newPassword') === value) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error(t('auth.profileInfo.validation.passwordMismatch')));
+                  },
+                }),
+              ]}
+            >
+              <Input.Password id="profile-confirm-password" autoComplete="new-password" placeholder={t('auth.profileInfo.placeholders.confirmPassword')} />
+            </Form.Item>
+            <Button type="primary" htmlType="submit" loading={passwordSaving}>{t('auth.profileInfo.actions.changePassword')}</Button>
+          </Form>
         </Card>
 
         <Card title={t('auth.profileInfo.sections.oauth2')} loading={bindingsLoading} extra={<Button icon={<ReloadOutlined />} onClick={() => void loadBindings()}>{t('auth.profileInfo.actions.refresh')}</Button>}>
