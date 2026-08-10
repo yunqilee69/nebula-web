@@ -1,6 +1,6 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Button, Popconfirm, Tag } from 'antd';
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
@@ -24,6 +24,8 @@ interface UserTableProps {
   service: AuthManagementService;
   onAddUser: () => void;
   onEditUser: (record: UserResp) => void;
+  onResetPassword: (userIds: readonly string[]) => Promise<void>;
+  resetPasswordLoading?: boolean;
   roles?: RoleOptionResp[];
   orgs?: OrgOptionResp[];
 }
@@ -48,12 +50,13 @@ function buildUserPageReq(params: UserQuery & NebulaPageReq): UserPageReq {
 }
 
 export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function UserTable(
-  { service, onAddUser, onEditUser, roles = [], orgs = [] },
+  { service, onAddUser, onEditUser, onResetPassword, resetPasswordLoading = false, roles = [], orgs = [] },
   ref,
 ) {
   const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
   const { t } = useNebulaI18n();
   const statusOptions = createEnableStatusOptions(t);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   useImperativeHandle(ref, () => ({
     reload: () => actionRef.current?.reload() ?? Promise.resolve(),
@@ -71,6 +74,12 @@ export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function Us
     },
     [service],
   );
+
+  const resetSelectedUsersPassword = useCallback(async () => {
+    await onResetPassword(selectedUserIds);
+    setSelectedUserIds([]);
+    await actionRef.current?.reload();
+  }, [onResetPassword, selectedUserIds]);
 
   const columns = useMemo<NebulaProColumns<UserResp>[]>(() => [
     {
@@ -148,7 +157,25 @@ export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function Us
         labelWidth: 'auto',
         defaultCollapsed: false,
       }}
+      rowSelection={{
+        selectedRowKeys: selectedUserIds,
+        onChange: (selectedKeys) => {
+          setSelectedUserIds(selectedKeys.filter((key): key is string => typeof key === 'string'));
+        },
+      }}
       toolBarRender={() => [
+        <Popconfirm
+          key="reset-password"
+          title={t('auth.userManagement.confirm.resetPasswordTitle')}
+          okText={t('auth.userManagement.actions.resetPassword')}
+          cancelText={t('auth.userManagement.actions.cancel')}
+          onConfirm={() => void resetSelectedUsersPassword()}
+          disabled={selectedUserIds.length === 0}
+        >
+          <Button icon={<ReloadOutlined />} disabled={selectedUserIds.length === 0} loading={resetPasswordLoading}>
+            {t('auth.userManagement.actions.resetPassword')}
+          </Button>
+        </Popconfirm>,
         <Button key="create" type="primary" icon={<PlusOutlined />} onClick={onAddUser}>
           {t('auth.userManagement.actions.create')}
         </Button>,

@@ -28,6 +28,7 @@ export function UserManagementPage({ service: serviceProp }: UserManagementPageP
   const [drawerInitialValues, setDrawerInitialValues] = useState<Partial<UserDrawerFormValues>>();
   const [submitting, setSubmitting] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
 
   const [roles, setRoles] = useState<RoleOptionResp[]>([]);
   const [orgs, setOrgs] = useState<OrgOptionResp[]>([]);
@@ -143,6 +144,25 @@ export function UserManagementPage({ service: serviceProp }: UserManagementPageP
     [closeDrawer, drawerMode, editingUserId, notice, service, t],
   );
 
+  const resetUserPasswords = useCallback(
+    async (userIds: readonly string[]) => {
+      if (userIds.length === 0) return;
+
+      setResetPasswordLoading(true);
+      try {
+        await Promise.all(userIds.map((userId) => service.resetUserPassword(userId)));
+        notice.success(t('auth.userManagement.feedback.resetPasswordSuccess'));
+      } catch (error: unknown) {
+        notice.error(t('auth.userManagement.feedback.resetPasswordFailed'));
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('User password reset failed', message);
+      } finally {
+        setResetPasswordLoading(false);
+      }
+    },
+    [notice, service, t],
+  );
+
   return (
     <>
       <UserTable
@@ -152,6 +172,8 @@ export function UserManagementPage({ service: serviceProp }: UserManagementPageP
         orgs={orgs}
         onAddUser={openCreateDrawer}
         onEditUser={(record) => void openUpdateDrawer(record)}
+        onResetPassword={resetUserPasswords}
+        resetPasswordLoading={resetPasswordLoading}
       />
       <UserFormDrawer
         open={drawerOpen}

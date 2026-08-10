@@ -19,6 +19,8 @@ function createService(overrides: Partial<AuthManagementService> = {}): AuthMana
     updateUser: vi.fn().mockResolvedValue(undefined),
     deleteUser: vi.fn().mockResolvedValue(undefined),
     getUserDetail: vi.fn().mockResolvedValue({ id: 'user-1', username: 'yunqi', nickname: '云起', status: 1 }),
+    resetUserPassword: vi.fn().mockResolvedValue(undefined),
+    changeUserPassword: vi.fn().mockResolvedValue(undefined),
     listRoles: vi.fn().mockResolvedValue([{ id: 'role-1', name: '平台管理员', code: 'ADMIN' }]),
     listOrgs: vi.fn().mockResolvedValue([{ id: 'org-1', name: '研发中心', code: 'RND' }]),
     pageOrgs: vi.fn().mockResolvedValue({ data: [], total: 0 }),
@@ -78,6 +80,31 @@ describe('UserManagementPage', () => {
     const dialog = screen.getByRole('dialog', { name: '新增用户' });
     expect(within(dialog).getByLabelText('用户名')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('密码')).toBeInTheDocument();
+  });
+
+  it('resets the selected user password from the ProTable toolbar', async () => {
+    const user = userEvent.setup();
+    const service = renderPage();
+
+    expect(await screen.findByText('yunqi')).toBeInTheDocument();
+    const checkboxes = screen.getAllByRole('checkbox');
+    const rowCheckbox = checkboxes[1];
+    if (!rowCheckbox) {
+      throw new Error('Expected user row selection checkbox');
+    }
+
+    await user.click(rowCheckbox);
+    await user.click(screen.getByRole('button', { name: /重置密码/ }));
+    const resetButtons = await screen.findAllByRole('button', { name: /重置密码/ });
+    const confirmButton = resetButtons[resetButtons.length - 1];
+    if (!confirmButton) {
+      throw new Error('Expected reset password confirmation button');
+    }
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(service.resetUserPassword).toHaveBeenCalledWith('user-1');
+    });
   });
 
   it('renders page labels from the active English locale', async () => {
