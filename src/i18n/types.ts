@@ -248,6 +248,7 @@ export interface NebulaUserManagementMessages {
     create: string;
     edit: string;
     delete: string;
+    resetPassword: string;
     search: string;
     reset: string;
     save: string;
@@ -298,11 +299,14 @@ export interface NebulaUserManagementMessages {
     detailLoadFailed: string;
     createSuccess: string;
     updateSuccess: string;
+    resetPasswordSuccess: string;
     createFailed: string;
     updateFailed: string;
+    resetPasswordFailed: string;
   };
   confirm: {
     deleteTitle: string;
+    resetPasswordTitle: string;
   };
 }
 
@@ -416,11 +420,13 @@ export interface NebulaProfileInfoMessages {
   title: string;
   sections: {
     basic: string;
+    password: string;
     oauth2: string;
     loginRecords: string;
   };
   actions: {
     save: string;
+    changePassword: string;
     refresh: string;
     bind: string;
     unbind: string;
@@ -433,6 +439,9 @@ export interface NebulaProfileInfoMessages {
     phone: string;
     status: string;
     createTime: string;
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
   };
   columns: {
     loginType: string;
@@ -447,10 +456,17 @@ export interface NebulaProfileInfoMessages {
     avatar: string;
     email: string;
     phone: string;
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
   };
   validation: {
     email: string;
     phone: string;
+    oldPasswordRequired: string;
+    newPasswordRequired: string;
+    confirmPasswordRequired: string;
+    passwordMismatch: string;
   };
   status: {
     enabled: string;
@@ -472,6 +488,8 @@ export interface NebulaProfileInfoMessages {
     profileLoadFailed: string;
     profileUpdateSuccess: string;
     profileUpdateFailed: string;
+    passwordChangeSuccess: string;
+    passwordChangeFailed: string;
     oauth2LoadFailed: string;
     bindUnavailable: string;
     unbindSuccess: string;
