@@ -11,6 +11,9 @@ import { ParamManagementPage } from '@/pages/system/config/param';
 import { GeneralConfigPage } from '@/pages/system/config/general';
 import { AuditLogPage } from '@/pages/system/monitor/audit-log';
 import { ScheduledTaskPage } from '@/pages/system/monitor/scheduled-task';
+import AnnouncementManagementPage from '@/pages/system/notify/announcement';
+import NotifyRecordPage from '@/pages/system/notify/record';
+import TemplateManagementPage from '@/pages/system/notify/template';
 import type { MenuComponentRegistry } from './types';
 
 export function createMenuComponentRegistry(registry: MenuComponentRegistry): MenuComponentRegistry {
@@ -121,5 +124,30 @@ export const builtInMenuComponentRegistry = createMenuComponentRegistry({
     defaultCode: 'SCHEDULED_TASK',
     defaultPath: '/system/monitor/scheduled-task',
     loader: () => Promise.resolve({ default: ScheduledTaskPage }),
+  },
+  // 系统管理 - 通知管理
+  TemplateManagementPage: {
+    component: 'TemplateManagementPage',
+    defaultName: '通知模板',
+    defaultCode: 'NOTIFY_TEMPLATE',
+    defaultPath: '/system/notify/template',
+    defaultIcon: 'NotificationOutlined',
+    loader: () => Promise.resolve({ default: TemplateManagementPage }),
+  },
+  AnnouncementManagementPage: {
+    component: 'AnnouncementManagementPage',
+    defaultName: '公告管理',
+    defaultCode: 'NOTIFY_ANNOUNCEMENT',
+    defaultPath: '/system/notify/announcement',
+    defaultIcon: 'SoundOutlined',
+    loader: () => Promise.resolve({ default: AnnouncementManagementPage }),
+  },
+  NotifyRecordPage: {
+    component: 'NotifyRecordPage',
+    defaultName: '通知记录',
+    defaultCode: 'NOTIFY_RECORD',
+    defaultPath: '/system/notify/record',
+    defaultIcon: 'FileTextOutlined',
+    loader: () => Promise.resolve({ default: NotifyRecordPage }),
   },
 });

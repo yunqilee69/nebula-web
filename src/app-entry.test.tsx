@@ -112,6 +112,8 @@ describe('app entry wiring', () => {
       createRequestClient: () => ({
         request: async (config: { url?: string }): Promise<unknown> => {
           switch (config.url) {
+            case '/api/notify/announcements/current/popup':
+              return [];
             case '/api/auth/users/page':
               return { data: [], total: 0 };
             case '/api/auth/roles/list':
@@ -179,6 +181,8 @@ describe('app entry wiring', () => {
       createRequestClient: () => ({
         request: async (config: { url?: string }): Promise<unknown> => {
           switch (config.url) {
+            case '/api/notify/announcements/current/popup':
+              return [];
             case '/api/auth/current-user':
               return {
                 id: 'admin',

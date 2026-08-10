@@ -5,6 +5,7 @@ import { NebulaLayout } from '@/layouts/nebula-layout';
 import { GitHubCallbackPage } from '@/pages/login/github-callback';
 import { LoginPage } from '@/pages/login';
 import { WechatCallbackPage } from '@/pages/login/wechat-callback';
+import { NotificationInboxPage } from '@/pages/notify/inbox';
 import { ProfileInfoPage } from '@/pages/profile/info';
 import { RegisterPage } from '@/pages/register';
 import { buildMenuRoutes } from './build-menu-routes';
@@ -92,6 +93,9 @@ export function createNebulaRouter(options: CreateNebulaRouterOptions) {
   }
   if (!sourceRoutePaths.has('/profile/info')) {
     builtInLayoutRoutes.push({ path: '/profile/info', element: <ProfileInfoPage /> });
+  }
+  if (!sourceRoutePaths.has('/notify/inbox')) {
+    builtInLayoutRoutes.push({ path: '/notify/inbox', element: <NotificationInboxPage /> });
   }
   const fullPageRoutes = sourceRoutes.filter((route) => typeof route.path === 'string' && authPagePaths.has(route.path));
   const layoutSourceRoutes = sourceRoutes.filter((route) => typeof route.path !== 'string' || !authPagePaths.has(route.path));

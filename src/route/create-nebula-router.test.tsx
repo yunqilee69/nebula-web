@@ -9,6 +9,7 @@ vi.mock('@/request/create-request-client', () => ({
   createRequestClient: () => ({
     request: async (config: { url: string }) => {
       if (config.url === '/api/frontend/init') return { loginConfig: {} };
+      if (config.url === '/api/notify/announcements/current/popup') return [];
       if (config.url === '/api/auth/profile') return { id: 'user-1', username: 'yunqi', nickname: '云起', status: 1 };
       if (config.url === '/api/auth/profile/oauth2/bindings') return { providers: [] };
       if (config.url === '/api/auth/profile/login-records/page') return { data: [], total: 0 };
