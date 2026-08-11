@@ -180,7 +180,7 @@ export function UserSelect({
       width={800}
       footer={null}
       onCancel={handleCancel}
-      destroyOnClose
+      destroyOnHidden
     >
       <Flex gap={token.marginMD} style={{ minHeight: 400 }}>
         <Flex vertical gap={token.marginSM} style={{ flex: '0 0 240px' }}>
