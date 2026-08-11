@@ -76,8 +76,7 @@ describe('notifyService', () => {
       execute: () => notifyService.createNotifyTemplate({
         templateCode: 'ORDER_PAID',
         templateName: 'Order paid',
-        channelType: 'SITE',
-        contentTemplate: 'Order ${orderNo} was paid',
+        variants: [{ channelType: 'SITE', contentTemplate: 'Order ${orderNo} was paid' }],
       }),
       expected: {
         method: 'POST',
@@ -85,8 +84,7 @@ describe('notifyService', () => {
         data: {
           templateCode: 'ORDER_PAID',
           templateName: 'Order paid',
-          channelType: 'SITE',
-          contentTemplate: 'Order ${orderNo} was paid',
+          variants: [{ channelType: 'SITE', contentTemplate: 'Order ${orderNo} was paid' }],
         },
       },
     },
@@ -94,10 +92,11 @@ describe('notifyService', () => {
       name: 'updates a notification template by path ID',
       execute: () => notifyService.updateNotifyTemplate('template-1', {
         templateName: 'Order paid update',
-        contentTemplate: 'Updated ${orderNo}',
+        variants: [{ channelType: 'EMAIL', contentTemplate: 'Updated ${orderNo}' }],
       }),
       expected: { method: 'PUT', url: '/api/notify/templates/template-1', data: {
-        templateName: 'Order paid update', contentTemplate: 'Updated ${orderNo}',
+        templateName: 'Order paid update',
+        variants: [{ channelType: 'EMAIL', contentTemplate: 'Updated ${orderNo}' }],
       } },
     },
     {
@@ -119,11 +118,69 @@ describe('notifyService', () => {
       },
     },
     {
+      name: 'creates a notification channel target',
+      execute: () => notifyService.createNotifyChannelTarget({
+        targetName: 'Ops Group',
+        channelType: 'WECOM_GROUP_WEBHOOK',
+        endpointUrl: 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=secret',
+        configJson: '{"rateLimit":20}',
+      }),
+      expected: {
+        method: 'POST',
+        url: '/api/notify/channel-targets',
+        data: {
+          targetName: 'Ops Group',
+          channelType: 'WECOM_GROUP_WEBHOOK',
+          endpointUrl: 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=secret',
+          configJson: '{"rateLimit":20}',
+        },
+      },
+    },
+    {
+      name: 'updates a notification channel target by path ID',
+      execute: () => notifyService.updateNotifyChannelTarget('target-1', {
+        targetName: 'Ops Group Updated',
+        channelType: 'WECOM_GROUP_WEBHOOK',
+        endpointUrl: 'https://example.test/webhook',
+      }),
+      expected: {
+        method: 'PUT',
+        url: '/api/notify/channel-targets/target-1',
+        data: {
+          targetName: 'Ops Group Updated',
+          channelType: 'WECOM_GROUP_WEBHOOK',
+          endpointUrl: 'https://example.test/webhook',
+        },
+      },
+    },
+    {
+      name: 'deletes a notification channel target by path ID',
+      execute: () => notifyService.deleteNotifyChannelTarget('target-1'),
+      expected: { method: 'DELETE', url: '/api/notify/channel-targets/target-1' },
+    },
+    {
+      name: 'gets notification channel target detail by path ID',
+      execute: () => notifyService.getNotifyChannelTarget('target-1'),
+      expected: { method: 'GET', url: '/api/notify/channel-targets/target-1' },
+    },
+    {
+      name: 'pages notification channel targets in the request body',
+      execute: () => notifyService.pageNotifyChannelTargets({
+        pageNum: 1,
+        pageSize: 10,
+        channelType: 'WECOM_GROUP_WEBHOOK',
+      }),
+      expected: {
+        method: 'POST',
+        url: '/api/notify/channel-targets/page',
+        data: { pageNum: 1, pageSize: 10, channelType: 'WECOM_GROUP_WEBHOOK' },
+      },
+    },
+    {
       name: 'sends one notification batch in the request body',
       execute: () => notifyService.sendNotify({
         channelTypes: ['SITE', 'EMAIL'],
         receiverUserIds: ['user-1', 'user-2'],
-        receiver: 'team@example.com',
         content: 'Deployment complete',
       }),
       expected: {
@@ -132,7 +189,6 @@ describe('notifyService', () => {
         data: {
           channelTypes: ['SITE', 'EMAIL'],
           receiverUserIds: ['user-1', 'user-2'],
-          receiver: 'team@example.com',
           content: 'Deployment complete',
         },
       },
@@ -221,7 +277,6 @@ describe('notifyService', () => {
     const result = await notifyService.sendNotify({
       channelTypes: ['SITE', 'EMAIL'],
       receiverUserIds: ['user-1'],
-      receiver: 'team@example.com',
       content: 'Deployment complete',
     });
 

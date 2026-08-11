@@ -1,10 +1,9 @@
 import type { NebulaPageReq } from '@/components/nebula-pro-table/params';
 import type { UserResp } from '@/types/auth-management';
 
-export type ChannelType = 'SITE' | 'EMAIL' | (string & Record<never, never>);
+export type ChannelType = 'SITE' | 'EMAIL' | 'WECOM_GROUP_WEBHOOK' | (string & Record<never, never>);
 export type AnnouncementStatus = 0 | 1 | 2;
 export type AnnouncementTargetType = 'ALL' | 'USER' | 'ROLE' | 'ORG';
-export type NotifyTemplateStatus = 0 | 1;
 export type NotifySendStatus = 'SUCCESS' | 'FAILED';
 export type ReceiverSourceType = Exclude<AnnouncementTargetType, 'ALL'>;
 
@@ -95,44 +94,80 @@ export interface NotifyTemplateDto {
   readonly id: string;
   readonly templateCode: string;
   readonly templateName: string;
+  readonly remark?: string;
+  readonly createTime?: string;
+  readonly updateTime?: string;
+}
+
+export interface NotifyTemplateFieldDto {
+  readonly id: string;
+  readonly templateId: string;
+  readonly fieldCode: string;
+  readonly fieldName: string;
+  readonly requiredFlag?: boolean;
+  readonly defaultValue?: string;
+  readonly exampleValue?: string;
+  readonly remark?: string;
+  readonly createTime?: string;
+  readonly updateTime?: string;
+}
+
+export interface NotifyTemplateVariantDto {
+  readonly id: string;
+  readonly templateId: string;
   readonly channelType: ChannelType;
-  readonly status: NotifyTemplateStatus;
-  readonly builtinFlag: boolean;
+  readonly subjectTemplate?: string;
+  readonly contentTemplate: string;
+  readonly remark?: string;
   readonly createTime?: string;
   readonly updateTime?: string;
 }
 
 export interface NotifyTemplateDetailDto extends NotifyTemplateDto {
-  readonly subjectTemplate?: string;
-  readonly contentTemplate: string;
-  readonly remark?: string;
+  readonly fields?: readonly NotifyTemplateFieldDto[];
+  readonly variants?: readonly NotifyTemplateVariantDto[];
 }
 
 export interface NotifyTemplatePageReq extends NebulaPageReq {
   readonly templateCode?: string;
   readonly templateName?: string;
   readonly channelType?: ChannelType;
-  readonly status?: NotifyTemplateStatus;
+}
+
+export interface NotifyTemplateFieldReq {
+  readonly id?: string;
+  readonly fieldCode: string;
+  readonly fieldName: string;
+  readonly requiredFlag?: boolean;
+  readonly defaultValue?: string;
+  readonly exampleValue?: string;
+  readonly remark?: string;
+}
+
+export interface CreateNotifyTemplateVariantReq {
+  readonly channelType: ChannelType;
+  readonly subjectTemplate?: string;
+  readonly contentTemplate: string;
+  readonly remark?: string;
+}
+
+export interface UpdateNotifyTemplateVariantReq extends CreateNotifyTemplateVariantReq {
+  readonly id?: string;
 }
 
 export interface CreateNotifyTemplateReq {
   readonly templateCode: string;
   readonly templateName: string;
-  readonly channelType: ChannelType;
-  readonly subjectTemplate?: string;
-  readonly contentTemplate: string;
-  readonly status?: NotifyTemplateStatus;
-  readonly builtinFlag?: boolean;
   readonly remark?: string;
+  readonly fields?: readonly NotifyTemplateFieldReq[];
+  readonly variants: readonly CreateNotifyTemplateVariantReq[];
 }
 
 export interface UpdateNotifyTemplateReq {
   readonly templateName: string;
-  readonly subjectTemplate?: string;
-  readonly contentTemplate: string;
-  readonly status?: NotifyTemplateStatus;
-  readonly builtinFlag?: boolean;
   readonly remark?: string;
+  readonly fields?: readonly NotifyTemplateFieldReq[];
+  readonly variants: readonly UpdateNotifyTemplateVariantReq[];
 }
 
 export interface SendNotifyReq {
@@ -141,11 +176,8 @@ export interface SendNotifyReq {
   readonly templateParams?: Readonly<Record<string, string>>;
   readonly subject?: string;
   readonly content?: string;
-  readonly receiver?: string;
-  readonly ccReceiver?: string;
   readonly receiverUserIds?: readonly string[];
-  readonly bizType?: string;
-  readonly bizNo?: string;
+  readonly channelTargetIds?: Readonly<Record<string, string>>;
   readonly extJson?: string;
 }
 
@@ -154,6 +186,7 @@ export interface NotifySendResultDto {
   readonly siteMessageId?: string;
   readonly channelType: ChannelType;
   readonly receiver: string;
+  readonly receiverUserId?: string;
   readonly sendStatus: NotifySendStatus;
   readonly failReason?: string;
 }
@@ -164,6 +197,9 @@ export interface NotifyRecordDto {
   readonly id: string;
   readonly channelType: ChannelType;
   readonly templateCode?: string;
+  readonly templateVariantId?: string;
+  readonly targetId?: string;
+  readonly receiverUserId?: string;
   readonly subjectText?: string;
   readonly receiver: string;
   readonly sendStatus: NotifySendStatus;
@@ -173,10 +209,7 @@ export interface NotifyRecordDto {
 }
 
 export interface NotifyRecordDetailDto extends NotifyRecordDto {
-  readonly bizType?: string;
-  readonly bizNo?: string;
   readonly contentText: string;
-  readonly ccReceiver?: string;
   readonly failReason?: string;
   readonly extJson?: string;
 }
@@ -186,8 +219,34 @@ export interface NotifyRecordPageReq extends NebulaPageReq {
   readonly templateCode?: string;
   readonly sendStatus?: NotifySendStatus;
   readonly receiver?: string;
-  readonly bizType?: string;
+  readonly receiverUserId?: string;
 }
+
+export interface NotifyChannelTargetDto {
+  readonly id: string;
+  readonly targetName: string;
+  readonly channelType: ChannelType;
+  readonly endpointMask: string;
+  readonly configJson?: string;
+  readonly remark?: string;
+  readonly createTime?: string;
+  readonly updateTime?: string;
+}
+
+export interface NotifyChannelTargetPageReq extends NebulaPageReq {
+  readonly targetName?: string;
+  readonly channelType?: ChannelType;
+}
+
+export interface CreateNotifyChannelTargetReq {
+  readonly targetName: string;
+  readonly channelType: ChannelType;
+  readonly endpointUrl: string;
+  readonly configJson?: string;
+  readonly remark?: string;
+}
+
+export type UpdateNotifyChannelTargetReq = CreateNotifyChannelTargetReq;
 
 export interface SiteMessageDto {
   readonly id: string;
@@ -222,4 +281,7 @@ export type NotifyTemplateDetailResp = NotifyTemplateDetailDto;
 export type NotifySendResultResp = NotifySendResultDto;
 export type NotifyRecordResp = NotifyRecordDto;
 export type NotifyRecordDetailResp = NotifyRecordDetailDto;
+export type NotifyTemplateFieldResp = NotifyTemplateFieldDto;
+export type NotifyTemplateVariantResp = NotifyTemplateVariantDto;
+export type NotifyChannelTargetResp = NotifyChannelTargetDto;
 export type SiteMessageResp = SiteMessageDto;

@@ -5,9 +5,12 @@ import type {
   AnnouncementPageReq,
   AnnouncementResp,
   CreateAnnouncementReq,
+  CreateNotifyChannelTargetReq,
   CreateNotifyTemplateReq,
   CurrentAnnouncementPageReq,
   CurrentAnnouncementResp,
+  NotifyChannelTargetPageReq,
+  NotifyChannelTargetResp,
   NotifyRecordDetailResp,
   NotifyRecordPageReq,
   NotifyRecordResp,
@@ -21,6 +24,7 @@ import type {
   SiteMessageResp,
   UnreadSiteMessageCount,
   UpdateAnnouncementReq,
+  UpdateNotifyChannelTargetReq,
   UpdateNotifyTemplateReq,
 } from '@/types/notify';
 
@@ -40,6 +44,13 @@ export interface NotifyService {
   readonly deleteNotifyTemplate: (id: string) => Promise<void>;
   readonly getNotifyTemplate: (id: string) => Promise<NotifyTemplateDetailResp>;
   readonly pageNotifyTemplates: (data: NotifyTemplatePageReq) => Promise<NebulaPageResp<NotifyTemplateResp>>;
+  readonly createNotifyChannelTarget: (data: CreateNotifyChannelTargetReq) => Promise<string>;
+  readonly updateNotifyChannelTarget: (id: string, data: UpdateNotifyChannelTargetReq) => Promise<string>;
+  readonly deleteNotifyChannelTarget: (id: string) => Promise<void>;
+  readonly getNotifyChannelTarget: (id: string) => Promise<NotifyChannelTargetResp>;
+  readonly pageNotifyChannelTargets: (
+    data: NotifyChannelTargetPageReq,
+  ) => Promise<NebulaPageResp<NotifyChannelTargetResp>>;
   readonly sendNotify: (data: SendNotifyReq) => Promise<NotifySendResultList>;
   readonly getNotifyRecord: (id: string) => Promise<NotifyRecordDetailResp>;
   readonly pageNotifyRecords: (data: NotifyRecordPageReq) => Promise<NebulaPageResp<NotifyRecordResp>>;
@@ -50,6 +61,7 @@ export interface NotifyService {
   readonly markSiteMessagesRead: (ids: readonly string[]) => Promise<void>;
   readonly markSiteMessagesUnread: (ids: readonly string[]) => Promise<void>;
   readonly deleteSiteMessage: (id: string) => Promise<void>;
+  readonly removeSiteMessage: (id: string) => Promise<void>;
 }
 
 function buildSiteMessageReadStatusBatchReq(ids: readonly string[]): SiteMessageReadStatusBatchReq {
@@ -90,6 +102,20 @@ export const notifyService: NotifyService = {
     request<NotifyTemplateDetailResp>({ method: 'GET', url: `/api/notify/templates/${id}` }),
   pageNotifyTemplates: (data) =>
     request<NebulaPageResp<NotifyTemplateResp>>({ method: 'POST', url: '/api/notify/templates/page', data }),
+  createNotifyChannelTarget: (data) =>
+    request<string>({ method: 'POST', url: '/api/notify/channel-targets', data }),
+  updateNotifyChannelTarget: (id, data) =>
+    request<string>({ method: 'PUT', url: `/api/notify/channel-targets/${id}`, data }),
+  deleteNotifyChannelTarget: (id) =>
+    request<void>({ method: 'DELETE', url: `/api/notify/channel-targets/${id}` }),
+  getNotifyChannelTarget: (id) =>
+    request<NotifyChannelTargetResp>({ method: 'GET', url: `/api/notify/channel-targets/${id}` }),
+  pageNotifyChannelTargets: (data) =>
+    request<NebulaPageResp<NotifyChannelTargetResp>>({
+      method: 'POST',
+      url: '/api/notify/channel-targets/page',
+      data,
+    }),
   sendNotify: (data) =>
     request<NotifySendResultList>({ method: 'POST', url: '/api/notify/send', data }),
   getNotifyRecord: (id) =>
@@ -109,5 +135,7 @@ export const notifyService: NotifyService = {
   markSiteMessagesUnread: (ids) =>
     request<void>({ method: 'PUT', url: '/api/notify/site-messages/unread', data: buildSiteMessageReadStatusBatchReq(ids) }),
   deleteSiteMessage: (id) =>
+    request<void>({ method: 'DELETE', url: `/api/notify/site-messages/${id}` }),
+  removeSiteMessage: (id) =>
     request<void>({ method: 'DELETE', url: `/api/notify/site-messages/${id}` }),
 };
