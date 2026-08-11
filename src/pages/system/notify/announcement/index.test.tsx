@@ -63,6 +63,11 @@ function createNotifyService(overrides: Partial<NotifyService> = {}): NotifyServ
     deleteNotifyTemplate: vi.fn(),
     getNotifyTemplate: vi.fn(),
     pageNotifyTemplates: vi.fn(),
+    createNotifyChannelTarget: vi.fn(),
+    updateNotifyChannelTarget: vi.fn(),
+    deleteNotifyChannelTarget: vi.fn(),
+    getNotifyChannelTarget: vi.fn(),
+    pageNotifyChannelTargets: vi.fn(),
     sendNotify: vi.fn(),
     getNotifyRecord: vi.fn(),
     pageNotifyRecords: vi.fn(),
@@ -73,6 +78,7 @@ function createNotifyService(overrides: Partial<NotifyService> = {}): NotifyServ
     markSiteMessagesRead: vi.fn(),
     markSiteMessagesUnread: vi.fn(),
     deleteSiteMessage: vi.fn(),
+    removeSiteMessage: vi.fn(),
     ...overrides,
   };
 }
