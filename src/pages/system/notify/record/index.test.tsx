@@ -33,20 +33,21 @@ const FAILED_RECORD = {
 
 const SUCCESS_DETAIL = {
   ...SUCCESS_RECORD,
+  templateVariantId: 'variant-email',
+  targetId: 'target-email',
+  receiverUserId: 'user-buyer',
   subjectText: '订单支付成功',
   contentText: '订单 ORDER-20260809 已支付。\n请及时安排发货。',
-  ccReceiver: 'audit@example.com',
-  bizType: 'ORDER',
-  bizNo: 'ORDER-20260809',
   extJson: '{"traceId":"trace-1"}',
 } as const satisfies NotifyRecordDetailResp;
 
 const FAILED_DETAIL = {
   ...FAILED_RECORD,
+  templateVariantId: 'variant-failed-email',
+  targetId: 'target-email',
+  receiverUserId: 'user-ops',
   subjectText: '订单处理失败',
   contentText: '订单处理失败，请联系管理员。',
-  bizType: 'ORDER',
-  bizNo: 'ORDER-FAILED-1',
   failReason: 'SMTP connection timed out',
   extJson: '{"attempt":3}',
 } as const satisfies NotifyRecordDetailResp;
@@ -113,8 +114,9 @@ describe('NotifyRecordPage details', () => {
     const dialog = getDetailDialog();
     expect(within(dialog).getByText('订单支付成功')).toBeInTheDocument();
     expect(within(dialog).getByText(/请及时安排发货/)).toBeInTheDocument();
-    expect(within(dialog).getByText('audit@example.com')).toBeInTheDocument();
-    expect(within(dialog).getByText('ORDER-20260809')).toBeInTheDocument();
+    expect(within(dialog).getByText('variant-email')).toBeInTheDocument();
+    expect(within(dialog).getByText('target-email')).toBeInTheDocument();
+    expect(within(dialog).getByText('user-buyer')).toBeInTheDocument();
     expect(within(dialog).getByText('{"traceId":"trace-1"}')).toBeInTheDocument();
   });
 

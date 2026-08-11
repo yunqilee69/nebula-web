@@ -14,7 +14,6 @@ import type {
 } from '@/types/notify';
 import {
   CopyableRecordText,
-  formatOptionalText,
   formatRecordDateTime,
   NotifySendStatusTag,
   SEND_STATUS_VALUE_ENUM,
@@ -27,12 +26,7 @@ export interface NotifyRecordQuery {
   readonly templateCode?: string;
   readonly sendStatus?: NotifySendStatus;
   readonly receiver?: string;
-  readonly bizType?: string;
-}
-
-interface NotifyRecordTableRow extends NotifyRecordResp {
-  readonly bizType?: string;
-  readonly bizNo?: string;
+  readonly receiverUserId?: string;
 }
 
 interface NotifyRecordTableProps {
@@ -50,7 +44,7 @@ export function buildNotifyRecordPageReq(
 ): NotifyRecordPageReq {
   const templateCode = normalizeOptionalText(params.templateCode);
   const receiver = normalizeOptionalText(params.receiver);
-  const bizType = normalizeOptionalText(params.bizType);
+  const receiverUserId = normalizeOptionalText(params.receiverUserId);
 
   return {
     pageNum: params.pageNum,
@@ -61,7 +55,7 @@ export function buildNotifyRecordPageReq(
     ...(templateCode ? { templateCode } : {}),
     ...(params.sendStatus ? { sendStatus: params.sendStatus } : {}),
     ...(receiver ? { receiver } : {}),
-    ...(bizType ? { bizType } : {}),
+    ...(receiverUserId ? { receiverUserId } : {}),
   };
 }
 
@@ -77,7 +71,7 @@ export function NotifyRecordTable({ service, onDetail }: NotifyRecordTableProps)
     [service],
   );
 
-  const columns = useMemo<NebulaProColumns<NotifyRecordTableRow>[]>(() => [
+  const columns = useMemo<NebulaProColumns<NotifyRecordResp>[]>(() => [
     {
       title: '通知渠道',
       dataIndex: 'channelType',
@@ -121,18 +115,25 @@ export function NotifyRecordTable({ service, onDetail }: NotifyRecordTableProps)
       ),
     },
     {
-      title: '业务类型',
-      dataIndex: 'bizType',
-      width: 140,
-      fieldProps: { 'aria-label': '业务类型', placeholder: '请输入业务类型' },
-      render: (_, record) => formatOptionalText(record.bizType),
+      title: '接收用户 ID',
+      dataIndex: 'receiverUserId',
+      width: 180,
+      fieldProps: { 'aria-label': '接收用户 ID', placeholder: '请输入接收用户 ID' },
+      render: (_, record) => <CopyableRecordText value={record.receiverUserId} />,
     },
     {
-      title: '业务编号',
-      dataIndex: 'bizNo',
+      title: '模板变体 ID',
+      dataIndex: 'templateVariantId',
       width: 180,
       search: false,
-      render: (_, record) => <CopyableRecordText value={record.bizNo} />,
+      render: (_, record) => <CopyableRecordText value={record.templateVariantId} />,
+    },
+    {
+      title: '渠道目标 ID',
+      dataIndex: 'targetId',
+      width: 180,
+      search: false,
+      render: (_, record) => <CopyableRecordText value={record.targetId} />,
     },
     {
       title: '发送时间',
@@ -173,14 +174,14 @@ export function NotifyRecordTable({ service, onDetail }: NotifyRecordTableProps)
   ], [onDetail]);
 
   return (
-    <NebulaProTable<NotifyRecordTableRow, NotifyRecordQuery>
+    <NebulaProTable<NotifyRecordResp, NotifyRecordQuery>
       actionRef={actionRef}
       columns={columns}
       request={requestRecords}
       rowKey="id"
       search={{ defaultCollapsed: false }}
       size="middle"
-      scroll={{ x: 1420 }}
+      scroll={{ x: 1580 }}
       onRequestError={() => setRequestFailed(true)}
       tableExtraRender={() => requestFailed ? (
         <Alert

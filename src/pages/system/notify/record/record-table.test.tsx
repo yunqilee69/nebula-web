@@ -68,7 +68,7 @@ describe('buildNotifyRecordPageReq', () => {
       templateCode: '  ORDER_PAID  ',
       sendStatus: 'FAILED',
       receiver: '  ops@example.com  ',
-      bizType: '  ORDER  ',
+      receiverUserId: '  user-a  ',
     })).toEqual({
       pageNum: 3,
       pageSize: 50,
@@ -78,13 +78,13 @@ describe('buildNotifyRecordPageReq', () => {
       templateCode: 'ORDER_PAID',
       sendStatus: 'FAILED',
       receiver: 'ops@example.com',
-      bizType: 'ORDER',
+      receiverUserId: 'user-a',
     });
   });
 });
 
 describe('NotifyRecordPage filters', () => {
-  it('submits channel, template, status, receiver, and business type filters', async () => {
+  it('submits channel, template, status, receiver, and receiver user filters', async () => {
     const user = userEvent.setup();
     const service = renderPage();
 
@@ -95,7 +95,7 @@ describe('NotifyRecordPage filters', () => {
     await user.click(screen.getByRole('combobox', { name: '发送状态' }));
     await user.click(await screen.findByText('失败', { selector: '.ant-select-item-option-content' }));
     await user.type(screen.getByRole('textbox', { name: '接收人' }), 'ops@example.com');
-    await user.type(screen.getByRole('textbox', { name: '业务类型' }), 'ORDER');
+    await user.type(screen.getByRole('textbox', { name: '接收用户 ID' }), 'user-a');
     await user.click(screen.getByRole('button', { name: /查\s*询/ }));
 
     await waitFor(() => {
@@ -106,7 +106,7 @@ describe('NotifyRecordPage filters', () => {
         templateCode: 'ORDER_PAID',
         sendStatus: 'FAILED',
         receiver: 'ops@example.com',
-        bizType: 'ORDER',
+        receiverUserId: 'user-a',
       });
     });
   });

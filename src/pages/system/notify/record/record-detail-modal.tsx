@@ -86,14 +86,14 @@ export function RecordDetailModal({ state, onClose, onRetry }: RecordDetailModal
             <Descriptions.Item label="模板编码">
               <CopyableRecordText value={detail.templateCode} />
             </Descriptions.Item>
-            <Descriptions.Item label="抄送人">
-              <CopyableRecordText value={detail.ccReceiver} />
+            <Descriptions.Item label="模板变体 ID">
+              <CopyableRecordText value={detail.templateVariantId} />
             </Descriptions.Item>
-            <Descriptions.Item label="业务类型">
-              {formatOptionalText(detail.bizType)}
+            <Descriptions.Item label="渠道目标 ID">
+              <CopyableRecordText value={detail.targetId} />
             </Descriptions.Item>
-            <Descriptions.Item label="业务编号">
-              <CopyableRecordText value={detail.bizNo} />
+            <Descriptions.Item label="接收用户 ID">
+              <CopyableRecordText value={detail.receiverUserId} />
             </Descriptions.Item>
             <Descriptions.Item label="发送时间">
               {formatRecordDateTime(detail.sendTime)}
