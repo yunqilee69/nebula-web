@@ -89,24 +89,41 @@ const builtinTemplate: NotifyTemplateResp = {
   id: 'template-builtin',
   templateCode: 'SYSTEM_ALERT',
   templateName: '系统提醒',
-  channelType: 'SITE',
-  status: 1,
-  builtinFlag: true,
 };
 
 const customTemplate: NotifyTemplateResp = {
   id: 'template-custom',
   templateCode: 'ORDER_APPROVED',
   templateName: '订单审批通过',
-  channelType: 'EMAIL',
-  status: 1,
-  builtinFlag: false,
 };
 
 const customTemplateDetail: NotifyTemplateDetailResp = {
   ...customTemplate,
-  subjectTemplate: '${recipientName}，订单已审批',
-  contentTemplate: '${recipientName} 的订单 ${orderNo} 已于 ${notify.currentDateTime} 审批通过。',
+  fields: [
+    {
+      id: 'field-recipient-name',
+      templateId: 'template-custom',
+      fieldCode: 'recipientName',
+      fieldName: '接收人姓名',
+      requiredFlag: true,
+    },
+    {
+      id: 'field-order-no',
+      templateId: 'template-custom',
+      fieldCode: 'orderNo',
+      fieldName: '订单号',
+      requiredFlag: true,
+    },
+  ],
+  variants: [
+    {
+      id: 'variant-email',
+      templateId: 'template-custom',
+      channelType: 'EMAIL',
+      subjectTemplate: '${recipientName}，订单已审批',
+      contentTemplate: '${recipientName} 的订单 ${orderNo} 已于 ${notify.currentDateTime} 审批通过。',
+    },
+  ],
   remark: '订单审批结果通知',
 };
 
@@ -121,6 +138,7 @@ function createService(overrides: Partial<NotifyTemplateService> = {}): NotifyTe
     createNotifyTemplate: vi.fn().mockResolvedValue('template-created'),
     updateNotifyTemplate: vi.fn().mockResolvedValue('template-custom'),
     deleteNotifyTemplate: vi.fn().mockResolvedValue(undefined),
+    pageNotifyChannelTargets: vi.fn().mockResolvedValue({ data: [], total: 0 }),
     sendNotify: vi.fn().mockResolvedValue([]),
     ...overrides,
   };
@@ -189,24 +207,7 @@ describe('TemplateManagementPage', () => {
     expect(within(row).queryByRole('button', { name: /删除/ })).not.toBeInTheDocument();
   });
 
-  it('disables deletion for built-in templates and explains the protection rule', async () => {
-    const user = userEvent.setup();
-    const service = createService();
-    renderPage(service);
-
-    const row = await waitFor(() => getRow('SYSTEM_ALERT'));
-    const deleteButton = within(row).getByRole('button', { name: /删除/ });
-    const tooltipTrigger = deleteButton.parentElement;
-    if (!(tooltipTrigger instanceof HTMLElement)) throw new Error('Missing built-in delete tooltip trigger');
-
-    expect(deleteButton).toBeDisabled();
-    await user.hover(tooltipTrigger);
-
-    expect(await screen.findByText('内置模板不允许删除')).toBeInTheDocument();
-    expect(service.deleteNotifyTemplate).not.toHaveBeenCalled();
-  });
-
-  it('loads template detail and renders custom and built-in variables read-only', async () => {
+  it('loads template detail and renders parameters plus variant tabs read-only', async () => {
     const user = userEvent.setup();
     const service = createService();
     renderPage(service);
@@ -218,45 +219,30 @@ describe('TemplateManagementPage', () => {
     const title = await screen.findByText('模板详情');
     const dialog = title.closest('.ant-modal');
     if (!(dialog instanceof HTMLElement)) throw new Error('Unable to find template detail modal');
-    expect(within(dialog).getByText('recipientName')).toBeInTheDocument();
-    expect(within(dialog).getByText('orderNo')).toBeInTheDocument();
-    expect(within(dialog).queryByText('notify.currentDateTime', { selector: 'code' })).not.toBeNull();
+    expect(within(dialog).getAllByText('recipientName')).not.toHaveLength(0);
+    expect(within(dialog).getAllByText('orderNo')).not.toHaveLength(0);
+    expect(within(dialog).getByRole('tab', { name: 'EMAIL' })).toBeInTheDocument();
+    expect(within(dialog).queryByText(/系统内置变量/)).not.toBeInTheDocument();
+    const helpButtons = within(dialog).getAllByRole('button', { name: '查看系统内置变量' });
+    const helpButton = helpButtons[0];
+    if (!(helpButton instanceof HTMLElement)) throw new Error('Unable to find built-in variable help');
+    await user.hover(helpButton);
+    expect(await screen.findByText('当前日期时间')).toBeInTheDocument();
     expect(within(dialog).queryAllByRole('textbox')).toHaveLength(0);
   });
 
-  it('opens send flow from a template row with that template preselected', async () => {
+  it('keeps send entry in the toolbar and removes row-level send action', async () => {
     const user = userEvent.setup();
-    const sendNotify = vi.fn().mockResolvedValue([
-      { recordId: 'record-a', channelType: 'EMAIL', receiver: 'alice@example.com', sendStatus: 'SUCCESS' },
-    ]);
-    const service = createService({ sendNotify });
+    const service = createService();
     renderPage(service);
 
     const row = await waitFor(() => getRow('ORDER_APPROVED'));
-    await user.click(within(row).getByRole('button', { name: /发送/ }));
+    expect(within(row).queryByRole('button', { name: /发送/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /发送通知/ }));
 
     const sendTitles = await screen.findAllByText('发送通知');
     const drawer = sendTitles.map((element) => element.closest('.ant-drawer')).find((element) => element instanceof HTMLElement);
     if (!(drawer instanceof HTMLElement)) throw new Error('Unable to find send drawer');
-    await waitFor(() => expect(service.getNotifyTemplate).toHaveBeenCalledWith('template-custom'));
-    await user.type(within(drawer).getByLabelText('recipientName'), 'Alice');
-    await user.type(within(drawer).getByLabelText('orderNo'), 'ORD-001');
-    await user.click(within(drawer).getByRole('button', { name: '选择接收对象' }));
-    await waitFor(() => expect(within(drawer).getByText('已选择 1 个接收对象')).toBeInTheDocument());
-    await user.click(within(drawer).getByRole('button', { name: /预览并发送/ }));
-    const confirmationText = await screen.findByText('请核对渠道与接收人数。确认后将以一次请求提交全部投递。');
-    const confirmationDialog = confirmationText.closest('.ant-modal');
-    if (!(confirmationDialog instanceof HTMLElement)) throw new Error('Unable to find send confirmation modal');
-    await user.click(within(confirmationDialog).getByRole('button', { name: '确认发送' }));
-
-    await waitFor(() => expect(service.sendNotify).toHaveBeenCalledTimes(1));
-    expect(service.sendNotify).toHaveBeenCalledWith({
-      channelTypes: ['EMAIL'],
-      templateCode: 'ORDER_APPROVED',
-      templateParams: { recipientName: 'Alice', orderNo: 'ORD-001' },
-      receiverUserIds: ['user-a'],
-      receiver: 'alice@example.com',
-    });
-    expect(await within(drawer).findByText('record-a')).toBeInTheDocument();
+    expect(within(drawer).getByLabelText('通知模板')).toBeInTheDocument();
   });
 });

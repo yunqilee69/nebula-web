@@ -4,9 +4,10 @@ import type { NotifyService } from '@/services/notify';
 import type {
   ChannelType,
   CreateNotifyTemplateReq,
+  NotifyTemplateFieldReq,
   NotifyTemplateDetailResp,
   NotifyTemplatePageReq,
-  NotifyTemplateStatus,
+  UpdateNotifyTemplateVariantReq,
   TemplateVariable,
   UpdateNotifyTemplateReq,
 } from '@/types/notify';
@@ -27,10 +28,8 @@ export const SYSTEM_TEMPLATE_VARIABLES = [
   { kind: 'BUILTIN', name: 'notify.dayOfWeek', description: '当前星期', builtin: true },
   { kind: 'BUILTIN', name: 'notify.templateCode', description: '当前模板编码（自动）', builtin: true },
   { kind: 'BUILTIN', name: 'notify.channelType', description: '当前发送渠道（自动）', builtin: true },
-  { kind: 'BUILTIN', name: 'notify.bizType', description: '业务类型（自动）', builtin: true },
-  { kind: 'BUILTIN', name: 'notify.bizNo', description: '业务编号（自动）', builtin: true },
-  { kind: 'BUILTIN', name: 'notify.receiver', description: '当前接收地址（自动）', builtin: true },
   { kind: 'BUILTIN', name: 'notify.receiverUserId', description: '当前接收用户 ID（自动）', builtin: true },
+  { kind: 'BUILTIN', name: 'notify.receiverEmail', description: '当前接收用户邮箱（自动）', builtin: true },
 ] as const satisfies readonly TemplateVariable[];
 
 export type NotifyTemplateService = Pick<
@@ -40,6 +39,7 @@ export type NotifyTemplateService = Pick<
   | 'createNotifyTemplate'
   | 'updateNotifyTemplate'
   | 'deleteNotifyTemplate'
+  | 'pageNotifyChannelTargets'
   | 'sendNotify'
 >;
 
@@ -47,17 +47,14 @@ export interface NotifyTemplateTableQuery {
   readonly templateCode?: string;
   readonly templateName?: string;
   readonly channelType?: ChannelType;
-  readonly status?: NotifyTemplateStatus;
 }
 
 export interface NotifyTemplateFormValues {
   readonly templateCode: string;
   readonly templateName: string;
-  readonly channelType: ChannelType;
-  readonly subjectTemplate?: string;
-  readonly contentTemplate: string;
-  readonly status: NotifyTemplateStatus;
   readonly remark?: string;
+  readonly fields?: readonly NotifyTemplateFieldReq[];
+  readonly variants: readonly UpdateNotifyTemplateVariantReq[];
 }
 
 export type NotifyTemplateFormState =
@@ -84,6 +81,27 @@ export function extractCustomTemplateVariables(
   return variables;
 }
 
+export function extractCustomTemplateVariablesFromVariants(
+  variants: readonly Pick<UpdateNotifyTemplateVariantReq, 'subjectTemplate' | 'contentTemplate'>[],
+): readonly TemplateVariable[] {
+  const variables: TemplateVariable[] = [];
+  const names = new Set<string>();
+  const pattern = /\$\{([A-Za-z_][A-Za-z0-9_.-]*)\}/g;
+
+  for (const variant of variants) {
+    for (const template of [variant.subjectTemplate ?? '', variant.contentTemplate]) {
+      for (const match of template.matchAll(pattern)) {
+        const name = match[1];
+        if (!name || name.startsWith('notify.') || names.has(name)) continue;
+        names.add(name);
+        variables.push({ kind: 'CUSTOM', name, builtin: false });
+      }
+    }
+  }
+
+  return variables;
+}
+
 export function buildNotifyTemplatePageReq(
   params: NotifyTemplateTableQuery & Partial<NebulaPageReq>,
 ): NotifyTemplatePageReq {
@@ -96,7 +114,6 @@ export function buildNotifyTemplatePageReq(
     ...(templateCode ? { templateCode } : {}),
     ...(templateName ? { templateName } : {}),
     ...(params.channelType ? { channelType: params.channelType } : {}),
-    ...(params.status !== undefined ? { status: params.status } : {}),
     ...(params.orderName ? { orderName: params.orderName } : {}),
     ...(params.orderType ? { orderType: params.orderType } : {}),
   };
@@ -106,9 +123,8 @@ export function toCreateNotifyTemplateReq(values: NotifyTemplateFormValues): Cre
   return {
     templateCode: values.templateCode.trim(),
     templateName: values.templateName.trim(),
-    channelType: values.channelType,
-    contentTemplate: values.contentTemplate.trim(),
-    status: values.status,
+    variants: normalizeVariants(values.variants),
+    fields: normalizeFields(values.fields),
     ...optionalTemplateFields(values),
   };
 }
@@ -116,8 +132,8 @@ export function toCreateNotifyTemplateReq(values: NotifyTemplateFormValues): Cre
 export function toUpdateNotifyTemplateReq(values: NotifyTemplateFormValues): UpdateNotifyTemplateReq {
   return {
     templateName: values.templateName.trim(),
-    contentTemplate: values.contentTemplate.trim(),
-    status: values.status,
+    variants: normalizeVariants(values.variants),
+    fields: normalizeFields(values.fields),
     ...optionalTemplateFields(values),
   };
 }
@@ -128,19 +144,59 @@ export function toNotifyTemplateFormValues(
   return {
     templateCode: detail.templateCode,
     templateName: detail.templateName,
-    channelType: detail.channelType,
-    contentTemplate: detail.contentTemplate,
-    status: detail.status,
-    ...(detail.subjectTemplate ? { subjectTemplate: detail.subjectTemplate } : {}),
+    fields: detail.fields ?? [],
+    variants: detail.variants ?? [],
     ...(detail.remark ? { remark: detail.remark } : {}),
   };
 }
 
 function optionalTemplateFields(
   values: NotifyTemplateFormValues,
-): Pick<CreateNotifyTemplateReq, 'subjectTemplate' | 'remark'> {
-  const subjectTemplate = normalizeOptionalText(values.subjectTemplate);
+): Pick<CreateNotifyTemplateReq, 'remark'> {
   const remark = normalizeOptionalText(values.remark);
+  return {
+    ...(remark ? { remark } : {}),
+  };
+}
+
+function normalizeFields(values: readonly NotifyTemplateFieldReq[] | undefined): readonly NotifyTemplateFieldReq[] | undefined {
+  const fields = values
+    ?.filter((field) => normalizeOptionalText(field.fieldCode) && normalizeOptionalText(field.fieldName))
+    .map((field) => ({
+      ...(field.id ? { id: field.id } : {}),
+      fieldCode: field.fieldCode.trim(),
+      fieldName: field.fieldName.trim(),
+      requiredFlag: field.requiredFlag ?? false,
+      ...optionalFieldValues(field),
+    }));
+  return fields && fields.length > 0 ? fields : undefined;
+}
+
+function normalizeVariants(values: readonly UpdateNotifyTemplateVariantReq[]): readonly UpdateNotifyTemplateVariantReq[] {
+  return values.map((variant) => ({
+    ...(variant.id ? { id: variant.id } : {}),
+    channelType: variant.channelType,
+    contentTemplate: variant.contentTemplate.trim(),
+    ...optionalVariantValues(variant),
+  }));
+}
+
+function optionalFieldValues(field: NotifyTemplateFieldReq): Pick<NotifyTemplateFieldReq, 'defaultValue' | 'exampleValue' | 'remark'> {
+  const defaultValue = normalizeOptionalText(field.defaultValue);
+  const exampleValue = normalizeOptionalText(field.exampleValue);
+  const remark = normalizeOptionalText(field.remark);
+  return {
+    ...(defaultValue ? { defaultValue } : {}),
+    ...(exampleValue ? { exampleValue } : {}),
+    ...(remark ? { remark } : {}),
+  };
+}
+
+function optionalVariantValues(
+  variant: UpdateNotifyTemplateVariantReq,
+): Pick<UpdateNotifyTemplateVariantReq, 'subjectTemplate' | 'remark'> {
+  const subjectTemplate = normalizeOptionalText(variant.subjectTemplate);
+  const remark = normalizeOptionalText(variant.remark);
   return {
     ...(subjectTemplate ? { subjectTemplate } : {}),
     ...(remark ? { remark } : {}),

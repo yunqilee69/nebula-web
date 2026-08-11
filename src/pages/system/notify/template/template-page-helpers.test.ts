@@ -8,7 +8,7 @@ import {
 describe('extractCustomTemplateVariables', () => {
   it('deduplicates custom variables in first-appearance order and excludes notify variables', () => {
     const subject = '${recipientName} ${notify.currentDateTime} ${recipientName}';
-    const content = '${order.code} ${notify.bizNo} ${retry_count} ${order.code}';
+    const content = '${order.code} ${notify.receiverUserId} ${retry_count} ${order.code}';
 
     const variables = extractCustomTemplateVariables(subject, content);
 
@@ -23,7 +23,7 @@ describe('extractCustomTemplateVariables', () => {
   it('returns an empty list when templates contain only built-in or malformed variables', () => {
     const variables = extractCustomTemplateVariables(
       '${notify.timestamp}',
-      '${invalid variable} ${notify.receiver}',
+      '${invalid variable} ${notify.receiverEmail}',
     );
 
     expect(variables).toEqual([]);
@@ -46,24 +46,21 @@ describe('SYSTEM_TEMPLATE_VARIABLES', () => {
       'notify.dayOfWeek',
       'notify.templateCode',
       'notify.channelType',
-      'notify.bizType',
-      'notify.bizNo',
-      'notify.receiver',
       'notify.receiverUserId',
+      'notify.receiverEmail',
     ]);
     expect(SYSTEM_TEMPLATE_VARIABLES.every((variable) => variable.kind === 'BUILTIN' && variable.builtin)).toBe(true);
   });
 });
 
 describe('buildNotifyTemplatePageReq', () => {
-  it('normalizes search text and preserves channel, status, and pagination', () => {
+  it('normalizes search text and preserves channel and pagination', () => {
     const request = buildNotifyTemplatePageReq({
       pageNum: 2,
       pageSize: 20,
       templateCode: ' approval ',
       templateName: ' 审批提醒 ',
       channelType: 'SITE',
-      status: 0,
     });
 
     expect(request).toEqual({
@@ -72,7 +69,6 @@ describe('buildNotifyTemplatePageReq', () => {
       templateCode: 'approval',
       templateName: '审批提醒',
       channelType: 'SITE',
-      status: 0,
     });
   });
 });

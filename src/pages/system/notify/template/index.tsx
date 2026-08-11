@@ -26,6 +26,8 @@ import type {
   NotifyTemplateTableQuery,
 } from './template-page-helpers';
 
+const DEFAULT_TEMPLATE_VARIANT = { channelType: 'SITE', contentTemplate: '' } as const;
+
 interface TemplateManagementPageProps {
   readonly service?: NotifyTemplateService;
   readonly authService?: Pick<AuthManagementService, 'getOrgTree' | 'listRoles' | 'pageUsers'>;
@@ -63,7 +65,7 @@ export function TemplateManagementPage({
   const openCreateForm = useCallback(() => {
     setFormState({ mode: 'create' });
     form.resetFields();
-    form.setFieldsValue({ status: 1 });
+    form.setFieldsValue({ fields: [], variants: [DEFAULT_TEMPLATE_VARIANT] });
     setFormOpen(true);
   }, [form]);
 
@@ -143,7 +145,6 @@ export function TemplateManagementPage({
   }, [closeForm, form, formState, notice, service]);
 
   const removeTemplate = useCallback(async (record: NotifyTemplateResp) => {
-    if (record.builtinFlag) return;
     try {
       await service.deleteNotifyTemplate(record.id);
       notice.success('通知模板删除成功');
@@ -157,10 +158,9 @@ export function TemplateManagementPage({
     }
   }, [notice, service]);
 
-  const columns = useMemo(() => createTemplateColumns({ openDetail, openEditForm, openSendDrawer, removeTemplate }), [
+  const columns = useMemo(() => createTemplateColumns({ openDetail, openEditForm, removeTemplate }), [
     openDetail,
     openEditForm,
-    openSendDrawer,
     removeTemplate,
   ]);
 
