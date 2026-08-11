@@ -31,6 +31,7 @@ export const layout: NebulaLayoutMessages = {
     cancel: '取消',
     profilePlaceholder: '个人信息内容暂未开放，后续将在这里展示账号资料。',
   },
+  notificationInbox: '我的消息',
   tabRenameAriaLabel: '重命名标签页',
   tabReorderHandleAriaLabel: '拖拽标签页',
 };

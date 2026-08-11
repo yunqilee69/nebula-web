@@ -31,6 +31,7 @@ export const layout: NebulaLayoutMessages = {
     cancel: 'Cancel',
     profilePlaceholder: 'Profile content is reserved and will show account details here later.',
   },
+  notificationInbox: 'My Messages',
   tabRenameAriaLabel: 'Rename tab',
   tabReorderHandleAriaLabel: 'Move tab',
 };

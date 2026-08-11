@@ -58,6 +58,7 @@ export interface NebulaLayoutMessages {
   sidebarAriaLabel: string;
   tabContextMenu: NebulaTabContextMenuMessages;
   headerUser: NebulaHeaderUserMessages;
+  notificationInbox: string;
   tabRenameAriaLabel: string;
   tabReorderHandleAriaLabel: string;
 }
