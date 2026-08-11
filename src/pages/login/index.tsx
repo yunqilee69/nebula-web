@@ -343,6 +343,11 @@ function PasswordPanel({ authService, onSuccess }: PasswordPanelProps) {
       <Form.Item label="密码" name="password" rules={[{ required: true, message: '请输入密码' }]}>
         <Input.Password />
       </Form.Item>
+      <Flex justify="end" className="mb-4">
+        <Typography.Text type="secondary">
+          <Link to="/forgot-password">忘记密码？</Link>
+        </Typography.Text>
+      </Flex>
       <Form.Item>
         <Button type="primary" htmlType="submit" loading={loading} block>
           登录

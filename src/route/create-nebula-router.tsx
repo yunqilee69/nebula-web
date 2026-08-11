@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet, useLocation, type RouteObject } 
 import { EmptyModule } from '@/layouts/empty-module';
 import { ExceptionResult } from '@/layouts/exception-result';
 import { NebulaLayout } from '@/layouts/nebula-layout';
+import { ForgotPasswordPage } from '@/pages/forgot-password';
 import { GitHubCallbackPage } from '@/pages/login/github-callback';
 import { LoginPage } from '@/pages/login';
 import { WechatCallbackPage } from '@/pages/login/wechat-callback';
@@ -12,7 +13,7 @@ import { buildMenuRoutes } from './build-menu-routes';
 import { RouteGuard } from './route-guard';
 import type { CreateNebulaRouterOptions, NebulaRouteObject } from './types';
 
-const authPagePaths = new Set(['/login', '/login/wechat-callback', '/login/github-callback', '/register']);
+const authPagePaths = new Set(['/login', '/login/wechat-callback', '/login/github-callback', '/register', '/forgot-password']);
 const redirectPathPrefix = '/redirect';
 
 function RedirectRoute() {
@@ -90,6 +91,9 @@ export function createNebulaRouter(options: CreateNebulaRouterOptions) {
   }
   if (!sourceRoutePaths.has('/register')) {
     builtInAuthRoutes.push({ path: '/register', element: <RegisterPage /> });
+  }
+  if (!sourceRoutePaths.has('/forgot-password')) {
+    builtInAuthRoutes.push({ path: '/forgot-password', element: <ForgotPasswordPage /> });
   }
   if (!sourceRoutePaths.has('/profile/info')) {
     builtInLayoutRoutes.push({ path: '/profile/info', element: <ProfileInfoPage /> });
