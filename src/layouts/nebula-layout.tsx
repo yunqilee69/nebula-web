@@ -180,6 +180,10 @@ function isNavigableMenuItem(item: NebulaMenuItem): boolean {
   return type === undefined || type === 'MENU' || type === 'IFRAME' || type === 'EXTERNAL';
 }
 
+function isVisibleInRouteTabs(item: NebulaMenuItem): boolean {
+  return item.visibleInTab !== false;
+}
+
 function toMenuItems(items: NebulaMenuItem[]): MenuProps['items'] {
   return items
     .filter((item) => !item.hidden)
@@ -201,14 +205,14 @@ function createSidebarCollapseIcon(collapsed: boolean, className?: string): Reac
 }
 
 function createInitialTabs(items: NebulaMenuItem[], currentPath: string, currentTitle: string): RouteTab[] {
-  const firstItem = items[0];
   const currentItem = findMenuItem(items, currentPath);
+  const firstItem = flattenMenuItems(items).find((item) => isNavigableMenuItem(item) && isVisibleInRouteTabs(item));
 
   if (!firstItem) {
     return [{ path: currentPath, label: currentTitle, closable: true, renamed: false }];
   }
 
-  if (!currentItem) {
+  if (!currentItem || !isVisibleInRouteTabs(currentItem)) {
     return [{ path: firstItem.path, label: firstItem.name, closable: true, renamed: false }];
   }
 
@@ -446,7 +450,7 @@ export function NebulaLayout({
     openRouteWithLabel(path, label);
   }
 
-  function openRouteWithLabel(path: string, label: string) {
+  function addRouteTabWithLabel(path: string, label: string) {
     setTabs((currentTabs) => {
       const existingTab = currentTabs.find((tab) => tab.path === path);
       if (existingTab) {
@@ -457,19 +461,28 @@ export function NebulaLayout({
       }
       return [...currentTabs, { path, label, closable: true, renamed: false }];
     });
+  }
+
+  function openRouteWithLabel(path: string, label: string) {
+    addRouteTabWithLabel(path, label);
     navigate(path);
   }
 
   function openMenuKey(key: string) {
     const item = flattenMenuItems(menuItems).find((menuItem) => toTabKey(menuItem.path) === key);
     if (item && isNavigableMenuItem(item)) {
-      openRoute(item.path);
+      if (isVisibleInRouteTabs(item)) {
+        openRoute(item.path);
+      } else {
+        navigate(item.path);
+      }
     }
   }
 
   function getWorkspaceFallbackTab(): RouteTab {
     const flatItems = flattenMenuItems(menuItems);
-    const workspaceItem = flatItems.find((item) => item.path === '/') ?? flatItems[0];
+    const fallbackItems = flatItems.filter((item) => isNavigableMenuItem(item) && isVisibleInRouteTabs(item));
+    const workspaceItem = fallbackItems.find((item) => item.path === '/') ?? fallbackItems[0];
 
     return {
       path: workspaceItem?.path ?? '/',
@@ -703,7 +716,7 @@ export function NebulaLayout({
           <Breadcrumb aria-label={t('layout.breadcrumbAriaLabel')} items={breadcrumbItems} />
           {rightContent ?? (
             <div className={cx(styles.headerActions, compactHeader && styles.compactHeaderActions)}>
-              <NotificationBell />
+              <NotificationBell onOpenInboxTab={(path) => addRouteTabWithLabel(path, t('layout.notificationInbox'))} />
               <HeaderUserMenu
                 compact={compactHeader}
                 onOpenProfile={() => openRouteWithLabel('/profile/info', t('layout.headerUser.profile'))}
@@ -720,7 +733,7 @@ export function NebulaLayout({
             locale={{ removeAriaLabel: t('layout.tabContextMenu.closeCurrent') }}
             onChange={(sanitizedKey) => {
               const tab = tabs.find((t) => toTabKey(t.path) === sanitizedKey);
-              if (tab) openRoute(tab.path);
+              if (tab) openRouteWithLabel(tab.path, tab.label);
             }}
             onEdit={(targetKey, action) => {
               if (action === 'remove') {

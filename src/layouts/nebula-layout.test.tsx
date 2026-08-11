@@ -68,6 +68,7 @@ function renderLayoutWithoutRightContent(initialPath = '/') {
           <Route path="/ops" element={<h1>运维内容</h1>} />
           <Route path="/system/users" element={<h1>用户内容</h1>} />
           <Route path="/profile/info" element={<h1>个人信息内容</h1>} />
+          <Route path="/notify/inbox" element={<h1>我的消息内容</h1>} />
         </Routes>
       </NebulaLayout>
     </MemoryRouter>,
@@ -216,6 +217,25 @@ describe('NebulaLayout', () => {
       expect(await screen.findByRole('button', { name: '通知，0 条未读' })).toBeInTheDocument();
     });
 
+    it('opens notification inbox as a localized route tab from the bell dropdown', async () => {
+      const user = userEvent.setup();
+      renderLayoutWithoutRightContent('/');
+
+      await user.click(await screen.findByRole('button', { name: '通知，0 条未读' }));
+      await user.click(await screen.findByRole('menuitem', { name: '查看全部消息' }));
+
+      expect(await screen.findByRole('tab', { name: '我的消息' })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('main')).toHaveTextContent('我的消息内容');
+
+      await user.click(screen.getByRole('tab', { name: '工作台' }));
+      await user.click(screen.getByRole('tab', { name: '我的消息' }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('tab', { name: '我的消息' })).toHaveAttribute('aria-selected', 'true');
+      });
+      expect(screen.queryByRole('tab', { name: '/notify/inbox' })).not.toBeInTheDocument();
+    });
+
     it('keeps the user avatar accessible while hiding the display name on extra-small screens', async () => {
       vi.spyOn(Grid, 'useBreakpoint').mockReturnValue({ xs: true });
       renderLayoutWithoutRightContent('/');
@@ -288,6 +308,14 @@ describe('NebulaLayout', () => {
 
       expect(await screen.findByRole('tab', { name: '个人信息' })).toHaveAttribute('aria-selected', 'true');
       expect(screen.getByRole('main')).toHaveTextContent('个人信息内容');
+
+      await user.click(screen.getByRole('tab', { name: '工作台' }));
+      await user.click(screen.getByRole('tab', { name: '个人信息' }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('tab', { name: '个人信息' })).toHaveAttribute('aria-selected', 'true');
+      });
+      expect(screen.queryByRole('tab', { name: '/profile/info' })).not.toBeInTheDocument();
     });
 
     it('clears the current user when logout is selected', async () => {
@@ -540,6 +568,53 @@ describe('NebulaLayout', () => {
 
     expect(screen.getAllByRole('tab', { name: '运维中心' })).toHaveLength(1);
     expect(screen.getByRole('tab', { name: '运维中心' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('navigates menu items with visibleInTab false without opening a route tab', async () => {
+    const user = userEvent.setup();
+    const runtimeItems: NebulaMenuItem[] = [
+      { key: '/', path: '/', name: '工作台' },
+      { key: '/report/detail', path: '/report/detail', name: '报表详情', visibleInTab: false },
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <NebulaLayout title="Test" menuItems={runtimeItems}>
+          <Routes>
+            <Route path="/" element={<h1>工作台内容</h1>} />
+            <Route path="/report/detail" element={<h1>报表详情内容</h1>} />
+          </Routes>
+        </NebulaLayout>
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByRole('menuitem', { name: /报表详情/ }));
+
+    expect(screen.getByRole('main')).toHaveTextContent('报表详情内容');
+    expect(screen.queryByRole('tab', { name: '报表详情' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '工作台' })).toBeInTheDocument();
+  });
+
+  it('skips visibleInTab false menu items when seeding initial route tabs', async () => {
+    const runtimeItems: NebulaMenuItem[] = [
+      { key: '/hidden-tab', path: '/hidden-tab', name: '隐藏标签', visibleInTab: false },
+      { key: '/visible-tab', path: '/visible-tab', name: '可见标签' },
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/visible-tab']}>
+        <NebulaLayout title="Test" menuItems={runtimeItems}>
+          <Routes>
+            <Route path="/hidden-tab" element={<h1>隐藏标签内容</h1>} />
+            <Route path="/visible-tab" element={<h1>可见标签内容</h1>} />
+          </Routes>
+        </NebulaLayout>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('tab', { name: '可见标签' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('tab', { name: '隐藏标签' })).not.toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveTextContent('可见标签内容');
   });
 
   it('renders runtime iconNode instead of the backend icon string', async () => {
