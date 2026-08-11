@@ -456,6 +456,23 @@ describe('NebulaLayout', () => {
     expect(main).toHaveStyle('flex: 1; min-height: 0; overflow: auto;');
   });
 
+  it('bounds expanded sidebar menus inside an independently scrollable flex child', async () => {
+    renderLayout('/system/users');
+
+    const navigation = await screen.findByRole('navigation', { name: '主导航' });
+    const menu = within(navigation).getAllByRole('menu').find((element) => element.classList.contains('ant-menu-root'));
+    const menuWrapper = menu?.parentElement;
+    const siderChildren = menuWrapper?.parentElement;
+
+    if (!menuWrapper || !siderChildren) {
+      throw new Error('Expected sidebar menu to have a scroll container parent');
+    }
+
+    expect(navigation).toHaveStyle('display: flex; flex-direction: column; height: 100dvh; overflow: hidden;');
+    expect(siderChildren).toHaveStyle('display: flex; flex-direction: column; height: 100%; min-height: 0;');
+    expect(menuWrapper).toHaveStyle('flex: 1; min-height: 0; overflow: hidden auto;');
+  });
+
   it('collapses the sidebar to icon-only navigation from the brand header divider trigger', async () => {
     const user = userEvent.setup();
     renderLayout('/');

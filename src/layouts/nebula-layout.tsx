@@ -27,11 +27,19 @@ const useStyles = createStyles(({ token }) => ({
   sider: {
     position: 'sticky' as const,
     top: 0,
+    display: 'flex',
+    flexDirection: 'column' as const,
     height: '100dvh',
-    overflow: 'visible',
+    overflow: 'hidden',
     scrollbarWidth: 'thin' as const,
     background: token.colorBgContainer,
     borderRight: `1px solid ${token.colorBorderSecondary}`,
+    '& .ant-layout-sider-children': {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      height: '100%',
+      minHeight: 0,
+    },
   },
   brandHeader: {
     position: 'relative' as const,
@@ -75,6 +83,11 @@ const useStyles = createStyles(({ token }) => ({
   menu: {
     borderInlineEnd: 0,
     paddingBlock: token.paddingSM,
+  },
+  menuWrapper: {
+    flex: 1,
+    minHeight: 0,
+    overflow: 'hidden auto',
   },
   workspace: {
     minWidth: 0,
@@ -700,14 +713,16 @@ export function NebulaLayout({
             }}
           />
         </div>
-        <Menu
-          mode="inline"
-          selectedKeys={selectedMenuPath ? [toTabKey(selectedMenuPath)] : []}
-          defaultOpenKeys={openMenuKeys}
-          items={toMenuItems(menuItems)}
-          onClick={({ key }) => openMenuKey(String(key))}
-          className={styles.menu}
-        />
+        <div className={styles.menuWrapper}>
+          <Menu
+            mode="inline"
+            selectedKeys={selectedMenuPath ? [toTabKey(selectedMenuPath)] : []}
+            defaultOpenKeys={openMenuKeys}
+            items={toMenuItems(menuItems)}
+            onClick={({ key }) => openMenuKey(String(key))}
+            className={styles.menu}
+          />
+        </div>
       </Sider>
       <Layout className={styles.workspace}>
         <Header
