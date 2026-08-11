@@ -7,6 +7,8 @@ import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { AuthManagementService } from '@/api/auth-management';
 import type { EnableStatus, OrgPageReq, OrgResp, OrgType } from '@/types/auth-management';
 
+const TABLE_OPTIONS = { density: false, fullScreen: true, reload: true, setting: true };
+
 export interface OrgTableHandle {
   reload: () => Promise<void>;
 }
@@ -16,6 +18,7 @@ interface OrgTableProps {
   parentId?: string;
   onCreate: () => void;
   onEdit: (record: OrgResp) => void;
+  showCreateButton?: boolean;
 }
 
 interface OrgQuery {
@@ -41,7 +44,7 @@ function buildOrgPageReq(params: OrgQuery & NebulaPageReq, parentId?: string): O
 }
 
 export const OrgTable = forwardRef<OrgTableHandle, OrgTableProps>(function OrgTable(
-  { service, parentId, onCreate, onEdit },
+  { service, parentId, onCreate, onEdit, showCreateButton = true },
   ref,
 ) {
   const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
@@ -150,12 +153,13 @@ export const OrgTable = forwardRef<OrgTableHandle, OrgTableProps>(function OrgTa
     <NebulaProTable<OrgResp, OrgQuery>
       actionRef={actionRef}
       columns={columns}
+      options={TABLE_OPTIONS}
       request={requestOrgs}
-      toolBarRender={() => [
+      toolBarRender={() => (showCreateButton ? [
         <Button key="create" type="primary" icon={<PlusOutlined />} onClick={onCreate}>
           {t('auth.orgManagement.actions.create')}
         </Button>,
-      ]}
+      ] : [])}
     />
   );
 });
