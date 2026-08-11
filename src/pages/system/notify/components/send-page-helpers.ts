@@ -8,6 +8,7 @@ export type SendPlanCounts = {
   readonly siteRecipientCount: number;
   readonly emailRecipientCount: number;
   readonly emailExcludedCount: number;
+  readonly wecomTargetCount: number;
 };
 
 export type ValidSendPlan = {
@@ -18,15 +19,15 @@ export type ValidSendPlan = {
 
 type InvalidSendPlan = {
   readonly kind: 'INVALID';
-  readonly reason: 'CHANNELS_REQUIRED' | 'RECIPIENTS_REQUIRED' | 'EMAIL_RECIPIENTS_REQUIRED';
+  readonly reason: 'CHANNELS_REQUIRED' | 'RECIPIENTS_REQUIRED' | 'EMAIL_RECIPIENTS_REQUIRED' | 'WECOM_TARGET_REQUIRED';
 };
 
 type SendPlanInput = {
   readonly channelTypes?: readonly ChannelType[];
   readonly receiverItems: readonly ReceiverItem[];
   readonly templateCode: string;
-  readonly templateChannelType?: ChannelType;
   readonly templateParams: Readonly<Record<string, string>>;
+  readonly channelTargetIds?: Readonly<Record<string, string>>;
 };
 
 type ReceiverUserService = Pick<AuthManagementService, 'pageUsers'>;
@@ -75,31 +76,35 @@ export function extractCustomTemplateVariables(
 }
 
 export function createSendPlan(input: SendPlanInput): ValidSendPlan | InvalidSendPlan {
-  const channelTypes = input.templateChannelType ? [input.templateChannelType] : input.channelTypes ?? [];
+  const channelTypes = input.channelTypes ?? [];
 
   if (channelTypes.length === 0) {
     return { kind: 'INVALID', reason: 'CHANNELS_REQUIRED' };
   }
 
+  const includesSite = channelTypes.includes('SITE');
+  const includesEmail = channelTypes.includes('EMAIL');
+  const includesWecom = channelTypes.includes('WECOM_GROUP_WEBHOOK');
   const users = mergeReceiverUsers(input.receiverItems);
-  if (users.length === 0) {
+  if ((includesSite || includesEmail) && users.length === 0) {
     return { kind: 'INVALID', reason: 'RECIPIENTS_REQUIRED' };
   }
 
   const emailUsers = users.filter((user) => Boolean(user.email?.trim()));
-  const includesEmail = channelTypes.includes('EMAIL');
   if (includesEmail && emailUsers.length === 0) {
     return { kind: 'INVALID', reason: 'EMAIL_RECIPIENTS_REQUIRED' };
+  }
+
+  if (includesWecom && !input.channelTargetIds?.WECOM_GROUP_WEBHOOK?.trim()) {
+    return { kind: 'INVALID', reason: 'WECOM_TARGET_REQUIRED' };
   }
 
   const request: SendNotifyReq = {
     channelTypes,
     templateCode: input.templateCode,
     templateParams: input.templateParams,
-    receiverUserIds: users.map((user) => user.id),
-    ...(includesEmail
-      ? { receiver: emailUsers.map((user) => user.email?.trim() ?? '').join(',') }
-      : {}),
+    ...((includesSite || includesEmail) ? { receiverUserIds: users.map((user) => user.id) } : {}),
+    ...(input.channelTargetIds ? { channelTargetIds: input.channelTargetIds } : {}),
   };
 
   return {
@@ -108,9 +113,10 @@ export function createSendPlan(input: SendPlanInput): ValidSendPlan | InvalidSen
     counts: {
       channelCount: channelTypes.length,
       selectedUserCount: users.length,
-      siteRecipientCount: channelTypes.includes('SITE') ? users.length : 0,
+      siteRecipientCount: includesSite ? users.length : 0,
       emailRecipientCount: includesEmail ? emailUsers.length : 0,
       emailExcludedCount: includesEmail ? users.length - emailUsers.length : 0,
+      wecomTargetCount: includesWecom ? 1 : 0,
     },
   };
 }

@@ -75,23 +75,45 @@ function createNotifyService(overrides: Partial<NotifyService> = {}): NotifyServ
       id: 'template-a',
       templateCode: 'WELCOME',
       templateName: 'Welcome',
-      channelType: 'SITE',
-      status: 1,
-      builtinFlag: false,
-      subjectTemplate: 'Hello ${name}',
-      contentTemplate: '${message} ${notify.currentDate}',
+      fields: [
+        {
+          id: 'field-name',
+          templateId: 'template-a',
+          fieldCode: 'name',
+          fieldName: 'name',
+          requiredFlag: true,
+        },
+        {
+          id: 'field-message',
+          templateId: 'template-a',
+          fieldCode: 'message',
+          fieldName: 'message',
+          requiredFlag: true,
+        },
+      ],
+      variants: [
+        {
+          id: 'variant-site',
+          templateId: 'template-a',
+          channelType: 'SITE',
+          subjectTemplate: 'Hello ${name}',
+          contentTemplate: '${message} ${notify.currentDate}',
+        },
+      ],
     }),
     pageNotifyTemplates: vi.fn().mockResolvedValue({
       data: [{
         id: 'template-a',
         templateCode: 'WELCOME',
         templateName: 'Welcome',
-        channelType: 'SITE',
-        status: 1,
-        builtinFlag: false,
       }],
       total: 1,
     }),
+    createNotifyChannelTarget: vi.fn(),
+    updateNotifyChannelTarget: vi.fn(),
+    deleteNotifyChannelTarget: vi.fn(),
+    getNotifyChannelTarget: vi.fn(),
+    pageNotifyChannelTargets: vi.fn().mockResolvedValue({ data: [], total: 0 }),
     sendNotify: vi.fn().mockResolvedValue([]),
     getNotifyRecord: vi.fn(),
     pageNotifyRecords: vi.fn(),
@@ -102,6 +124,7 @@ function createNotifyService(overrides: Partial<NotifyService> = {}): NotifyServ
     markSiteMessagesRead: vi.fn(),
     markSiteMessagesUnread: vi.fn(),
     deleteSiteMessage: vi.fn(),
+    removeSiteMessage: vi.fn(),
     ...overrides,
   };
 }
@@ -165,7 +188,6 @@ describe('NotifySendPage', () => {
     const channels = screen.getByLabelText('通知渠道');
     expect(channels).toHaveAttribute('data-dict-code', 'NOTIFY_CHANNEL_TYPE');
     expect(channels).toHaveAttribute('data-mode', 'multiple');
-    expect(channels).toBeDisabled();
     await waitFor(() => expect(screen.getByRole('combobox', { name: '通知模板' })).toBeEnabled());
   });
 
@@ -173,7 +195,6 @@ describe('NotifySendPage', () => {
     // Given
     const user = userEvent.setup();
     const service = renderPage();
-    await user.click(screen.getByRole('button', { name: '选择接收对象' }));
 
     // When
     await user.click(screen.getByRole('button', { name: /预览并发送/ }));

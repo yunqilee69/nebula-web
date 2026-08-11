@@ -6,20 +6,41 @@ import { Access } from '@/components/access';
 import { DictSelect } from '@/components/dict-select';
 import { useNotice } from '@/hooks/use-notice';
 import type { NotifyService } from '@/services/notify';
-import type { ChannelType, NotifySendResultResp, NotifyTemplateDetailResp, NotifyTemplateResp, ReceiverItem } from '@/types/notify';
+import type {
+  ChannelType,
+  NotifyChannelTargetResp,
+  NotifySendResultResp,
+  NotifyTemplateDetailResp,
+  NotifyTemplateResp,
+  ReceiverItem,
+} from '@/types/notify';
 import { ReceiverSelector } from './receiver-selector';
 import { SendConfirmationModal } from './send-confirmation-modal';
 import { createSendPlan, extractCustomTemplateVariables } from './send-page-helpers';
 import type { ValidSendPlan } from './send-page-helpers';
 import { SendResultTable } from './send-result-table';
 
+const NOTIFY_CHANNEL_TYPE = 'NOTIFY_CHANNEL_TYPE';
+const WECOM_GROUP_WEBHOOK_CHANNEL = 'WECOM_GROUP_WEBHOOK';
+
 type SendFormValues = {
   readonly channelTypes?: readonly ChannelType[];
   readonly templateId?: string;
   readonly templateParams?: Readonly<Record<string, string>>;
+  readonly channelTargetIds?: Readonly<Record<string, string>>;
 };
 
-export type NotificationSendService = Pick<NotifyService, 'pageNotifyTemplates' | 'getNotifyTemplate' | 'sendNotify'>;
+type TemplateParamField = {
+  readonly name: string;
+  readonly label: string;
+  readonly required: boolean;
+  readonly placeholder?: string;
+};
+
+export type NotificationSendService = Pick<
+  NotifyService,
+  'pageNotifyTemplates' | 'getNotifyTemplate' | 'pageNotifyChannelTargets' | 'sendNotify'
+>;
 export type NotificationSendAuthService = Pick<AuthManagementService, 'getOrgTree' | 'listRoles' | 'pageUsers'>;
 
 export type NotificationSendPanelProps = {
@@ -37,7 +58,45 @@ function invalidPlanMessage(reason: Exclude<ReturnType<typeof createSendPlan>, V
       return '请选择至少一个有效接收用户';
     case 'EMAIL_RECIPIENTS_REQUIRED':
       return '邮件渠道至少需要一个配置了邮箱的用户';
+    case 'WECOM_TARGET_REQUIRED':
+      return '企业微信群机器人渠道请选择一个投递目标';
   }
+}
+
+function defaultTemplateParams(detail: NotifyTemplateDetailResp): Readonly<Record<string, string>> {
+  const params: Record<string, string> = {};
+  for (const field of detail.fields ?? []) {
+    if (field.fieldCode.trim() && field.defaultValue?.trim()) {
+      params[field.fieldCode.trim()] = field.defaultValue.trim();
+    }
+  }
+  return params;
+}
+
+function buildTemplateParamFields(
+  detail: NotifyTemplateDetailResp | undefined,
+  channelTypes: readonly ChannelType[],
+): readonly TemplateParamField[] {
+  if (!detail) return [];
+  const selectedChannels = new Set(channelTypes);
+  const fields = new Map<string, TemplateParamField>();
+  for (const field of detail.fields ?? []) {
+    const name = field.fieldCode.trim();
+    if (!name) continue;
+    fields.set(name, {
+      name,
+      label: field.fieldName || name,
+      required: field.requiredFlag ?? false,
+      ...(field.exampleValue ? { placeholder: field.exampleValue } : {}),
+    });
+  }
+  for (const variant of detail.variants ?? []) {
+    if (!selectedChannels.has(variant.channelType)) continue;
+    for (const name of extractCustomTemplateVariables(variant.subjectTemplate, variant.contentTemplate)) {
+      if (!fields.has(name)) fields.set(name, { name, label: name, required: true });
+    }
+  }
+  return [...fields.values()];
 }
 
 export function NotificationSendPanel({
@@ -50,8 +109,10 @@ export function NotificationSendPanel({
   const [form] = Form.useForm<SendFormValues>();
   const [templates, setTemplates] = useState<readonly NotifyTemplateResp[]>([]);
   const [templateDetail, setTemplateDetail] = useState<NotifyTemplateDetailResp>();
+  const [channelTargets, setChannelTargets] = useState<readonly NotifyChannelTargetResp[]>([]);
   const [templateListLoading, setTemplateListLoading] = useState(false);
   const [templateDetailLoading, setTemplateDetailLoading] = useState(false);
+  const [targetLoading, setTargetLoading] = useState(false);
   const [receiverItems, setReceiverItems] = useState<readonly ReceiverItem[]>([]);
   const [pendingPlan, setPendingPlan] = useState<ValidSendPlan>();
   const [confirmationOpen, setConfirmationOpen] = useState(false);
@@ -62,12 +123,14 @@ export function NotificationSendPanel({
     setTemplateDetail(undefined);
     form.setFieldValue('templateParams', {});
     form.setFieldValue('channelTypes', []);
+    form.setFieldValue('channelTargetIds', {});
     if (!templateId) return;
     setTemplateDetailLoading(true);
     try {
       const detail = await service.getNotifyTemplate(templateId);
       setTemplateDetail(detail);
-      form.setFieldValue('channelTypes', [detail.channelType]);
+      form.setFieldValue('templateParams', defaultTemplateParams(detail));
+      form.setFieldValue('channelTypes', (detail.variants ?? []).map((variant) => variant.channelType));
     } catch (error: unknown) {
       if (error instanceof Error) {
         notice.error('通知模板详情加载失败');
@@ -82,7 +145,7 @@ export function NotificationSendPanel({
   useEffect(() => {
     let active = true;
     setTemplateListLoading(true);
-    service.pageNotifyTemplates({ pageNum: 1, pageSize: 100, status: 1 })
+    service.pageNotifyTemplates({ pageNum: 1, pageSize: 100 })
       .then((page) => {
         if (active) setTemplates(page.data);
       })
@@ -95,6 +158,28 @@ export function NotificationSendPanel({
       })
       .finally(() => {
         if (active) setTemplateListLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [notice, service]);
+
+  useEffect(() => {
+    let active = true;
+    setTargetLoading(true);
+    service.pageNotifyChannelTargets({ pageNum: 1, pageSize: 100, channelType: WECOM_GROUP_WEBHOOK_CHANNEL })
+      .then((page) => {
+        if (active) setChannelTargets(page.data);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Error) {
+          notice.error('通知渠道目标加载失败');
+          return;
+        }
+        throw error;
+      })
+      .finally(() => {
+        if (active) setTargetLoading(false);
       });
     return () => {
       active = false;
@@ -115,11 +200,12 @@ export function NotificationSendPanel({
     void loadTemplateDetail(initialTemplateId);
   }, [form, initialTemplateId, loadTemplateDetail]);
 
+  const selectedChannelTypes = Form.useWatch('channelTypes', form) ?? [];
+  const includesUserRecipientChannel = selectedChannelTypes.includes('SITE') || selectedChannelTypes.includes('EMAIL');
+  const includesWecomTargetChannel = selectedChannelTypes.includes(WECOM_GROUP_WEBHOOK_CHANNEL);
   const variables = useMemo(
-    () => templateDetail
-      ? extractCustomTemplateVariables(templateDetail.subjectTemplate, templateDetail.contentTemplate)
-      : [],
-    [templateDetail],
+    () => buildTemplateParamFields(templateDetail, selectedChannelTypes),
+    [selectedChannelTypes, templateDetail],
   );
 
   const previewSend = useCallback(async () => {
@@ -136,8 +222,8 @@ export function NotificationSendPanel({
       channelTypes: values.channelTypes ?? [],
       receiverItems,
       templateCode: templateDetail.templateCode,
-      templateChannelType: templateDetail.channelType,
       templateParams: values.templateParams ?? {},
+      channelTargetIds: values.channelTargetIds,
     });
     switch (plan.kind) {
       case 'INVALID':
@@ -178,16 +264,34 @@ export function NotificationSendPanel({
         label="通知渠道"
         rules={[{ required: true, type: 'array', min: 1, message: '请选择至少一个通知渠道' }]}
       >
-        <DictSelect
-          dictCode="NOTIFY_CHANNEL_TYPE"
+          <DictSelect
+          dictCode={NOTIFY_CHANNEL_TYPE}
           mode="multiple"
           showDisabled={false}
           aria-label="通知渠道"
           allowClear={false}
-          disabled
-          placeholder="选择模板后自动带出渠道"
+          placeholder="请选择通知渠道"
         />
       </Form.Item>
+
+      {includesWecomTargetChannel ? (
+        <Form.Item
+          name={['channelTargetIds', WECOM_GROUP_WEBHOOK_CHANNEL]}
+          label="企业微信群机器人目标"
+          rules={[{ required: true, message: '请选择企业微信群机器人目标' }]}
+        >
+          <Select
+            aria-label="企业微信群机器人目标"
+            loading={targetLoading}
+            options={channelTargets.map((target) => ({
+              value: target.id,
+              label: `${target.targetName} (${target.endpointMask})`,
+            }))}
+            placeholder="请选择企业微信群机器人目标"
+            showSearch={{ optionFilterProp: 'label' }}
+          />
+        </Form.Item>
+      ) : null}
 
       <Form.Item
         name="templateId"
@@ -218,18 +322,20 @@ export function NotificationSendPanel({
 
       {variables.map((variable) => (
         <Form.Item
-          key={variable}
-          name={['templateParams', variable]}
-          label={variable}
-          rules={[{ required: true, message: `请输入模板参数 ${variable}` }]}
+          key={variable.name}
+          name={['templateParams', variable.name]}
+          label={variable.label}
+          rules={[{ required: variable.required, message: `请输入模板参数 ${variable.name}` }]}
         >
-          <Input aria-label={variable} placeholder={`输入 ${variable}`} />
+          <Input aria-label={variable.name} placeholder={variable.placeholder ?? `输入 ${variable.name}`} />
         </Form.Item>
       ))}
 
-      <Form.Item label="接收对象" required>
-        <ReceiverSelector service={authService} value={receiverItems} onChange={setReceiverItems} />
-      </Form.Item>
+      {includesUserRecipientChannel ? (
+        <Form.Item label="接收对象" required>
+          <ReceiverSelector service={authService} value={receiverItems} onChange={setReceiverItems} />
+        </Form.Item>
+      ) : null}
 
       <Access permission="NOTIFY_SEND_EXECUTE" fallback={null}>
         <Button type="primary" icon={<SendOutlined />} onClick={() => void previewSend()}>

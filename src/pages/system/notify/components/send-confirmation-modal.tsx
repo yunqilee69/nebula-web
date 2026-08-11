@@ -53,6 +53,9 @@ export function SendConfirmationModal({
             <Descriptions.Item label="无邮箱排除人数">
               <span data-count="email-excluded">{plan.counts.emailExcludedCount}</span>
             </Descriptions.Item>
+            <Descriptions.Item label="企业微信群目标数">
+              <span data-count="wecom-targets">{plan.counts.wecomTargetCount}</span>
+            </Descriptions.Item>
           </Descriptions>
         </Space>
       ) : null}

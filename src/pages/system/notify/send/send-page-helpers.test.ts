@@ -118,7 +118,6 @@ describe('send page helpers', () => {
         templateCode: 'WELCOME',
         templateParams: { name: 'Nebula' },
         receiverUserIds: ['user-a', 'user-b', 'user-c'],
-        receiver: 'alice@example.com,carol@example.com',
       },
       counts: {
         channelCount: 2,
@@ -126,32 +125,7 @@ describe('send page helpers', () => {
         siteRecipientCount: 3,
         emailRecipientCount: 2,
         emailExcludedCount: 1,
-      },
-    });
-  });
-
-  it('uses the selected template channel so backend template content resolves', () => {
-    // Given
-    const items = [receiverItem('USER', userA.id, [userA])];
-
-    // When
-    const plan = createSendPlan({
-      channelTypes: ['SITE'],
-      receiverItems: items,
-      templateCode: 'ORDER_APPROVED',
-      templateChannelType: 'EMAIL',
-      templateParams: { orderNo: 'ORD-001' },
-    });
-
-    // Then
-    expect(plan).toMatchObject({
-      kind: 'VALID',
-      request: {
-        channelTypes: ['EMAIL'],
-        templateCode: 'ORDER_APPROVED',
-        templateParams: { orderNo: 'ORD-001' },
-        receiverUserIds: ['user-a'],
-        receiver: 'alice@example.com',
+        wecomTargetCount: 0,
       },
     });
   });
