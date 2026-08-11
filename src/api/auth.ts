@@ -7,6 +7,10 @@ import type {
   RegisterReq,
   PhoneLoginReq,
   EmailLoginReq,
+  ForgotPasswordChangeReq,
+  ForgotPasswordSendCodeReq,
+  ForgotPasswordVerifyCodeReq,
+  ForgotPasswordVerifyCodeResp,
   SendPhoneCodeReq,
   SendEmailCodeReq,
   RefreshTokenReq,
@@ -33,6 +37,9 @@ export interface AuthService {
   register: (data: RegisterReq) => Promise<void>;
   sendPhoneCode: (data: SendPhoneCodeReq) => Promise<void>;
   sendEmailCode: (data: SendEmailCodeReq) => Promise<void>;
+  sendForgotPasswordCode: (data: ForgotPasswordSendCodeReq) => Promise<void>;
+  verifyForgotPasswordCode: (data: ForgotPasswordVerifyCodeReq) => Promise<ForgotPasswordVerifyCodeResp>;
+  changeForgottenPassword: (data: ForgotPasswordChangeReq) => Promise<LoginResp>;
   refreshToken: (data: RefreshTokenReq) => Promise<LoginResp>;
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<CurrentUserResp>;
@@ -93,6 +100,27 @@ export const authService: AuthService = {
     request<void>({
       method: 'POST',
       url: '/api/auth/send-email-code',
+      data,
+    }),
+
+  sendForgotPasswordCode: (data: ForgotPasswordSendCodeReq) =>
+    request<void>({
+      method: 'POST',
+      url: '/api/auth/forgot-password/send-code',
+      data,
+    }),
+
+  verifyForgotPasswordCode: (data: ForgotPasswordVerifyCodeReq) =>
+    request<ForgotPasswordVerifyCodeResp>({
+      method: 'POST',
+      url: '/api/auth/forgot-password/verify-code',
+      data,
+    }),
+
+  changeForgottenPassword: (data: ForgotPasswordChangeReq) =>
+    request<LoginResp>({
+      method: 'POST',
+      url: '/api/auth/forgot-password/change',
       data,
     }),
 

@@ -158,6 +158,25 @@ export interface SendEmailCodeReq {
   email: string;
 }
 
+export interface ForgotPasswordSendCodeReq {
+  identity: string;
+}
+
+export interface ForgotPasswordVerifyCodeReq {
+  identity: string;
+  code: string;
+}
+
+export interface ForgotPasswordVerifyCodeResp {
+  passwordChangeToken: string;
+  expiresInSeconds: number;
+}
+
+export interface ForgotPasswordChangeReq {
+  passwordChangeToken: string;
+  newPassword: string;
+}
+
 export interface RefreshTokenReq {
   refreshToken: string;
 }

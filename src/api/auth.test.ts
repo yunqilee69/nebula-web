@@ -14,6 +14,10 @@ import type {
   RegisterReq,
   PhoneLoginReq,
   EmailLoginReq,
+  ForgotPasswordChangeReq,
+  ForgotPasswordSendCodeReq,
+  ForgotPasswordVerifyCodeReq,
+  ForgotPasswordVerifyCodeResp,
   SendPhoneCodeReq,
   SendEmailCodeReq,
   RefreshTokenReq,
@@ -153,6 +157,50 @@ describe('authService', () => {
     expect(mockedRequest).toHaveBeenCalledWith({
       method: 'POST',
       url: '/api/auth/send-email-code',
+      data,
+    });
+  });
+
+  it('sendForgotPasswordCode calls POST /api/auth/forgot-password/send-code with identity', async () => {
+    mockedRequest.mockResolvedValueOnce(undefined);
+
+    const data: ForgotPasswordSendCodeReq = { identity: 'alice@example.com' };
+    await authService.sendForgotPasswordCode(data);
+
+    expect(mockedRequest).toHaveBeenCalledWith({
+      method: 'POST',
+      url: '/api/auth/forgot-password/send-code',
+      data,
+    });
+  });
+
+  it('verifyForgotPasswordCode calls POST /api/auth/forgot-password/verify-code and returns change token', async () => {
+    const mockResp: ForgotPasswordVerifyCodeResp = {
+      passwordChangeToken: 'change-token-1',
+      expiresInSeconds: 600,
+    };
+    mockedRequest.mockResolvedValueOnce(mockResp);
+
+    const data: ForgotPasswordVerifyCodeReq = { identity: 'alice@example.com', code: '123456' };
+    const result = await authService.verifyForgotPasswordCode(data);
+
+    expect(result).toBe(mockResp);
+    expect(mockedRequest).toHaveBeenCalledWith({
+      method: 'POST',
+      url: '/api/auth/forgot-password/verify-code',
+      data,
+    });
+  });
+
+  it('changeForgottenPassword calls POST /api/auth/forgot-password/change with password change token', async () => {
+    mockedRequest.mockResolvedValueOnce(undefined);
+
+    const data: ForgotPasswordChangeReq = { passwordChangeToken: 'change-token-1', newPassword: 'newSecret' };
+    await authService.changeForgottenPassword(data);
+
+    expect(mockedRequest).toHaveBeenCalledWith({
+      method: 'POST',
+      url: '/api/auth/forgot-password/change',
       data,
     });
   });
