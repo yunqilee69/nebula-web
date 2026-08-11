@@ -14,6 +14,7 @@ import { CacheManagementPage } from '@/pages/system/monitor/cache-management';
 import { OnlineUserPage } from '@/pages/system/monitor/online-user';
 import { ScheduledTaskPage } from '@/pages/system/monitor/scheduled-task';
 import AnnouncementManagementPage from '@/pages/system/notify/announcement';
+import ChannelTargetManagementPage from '@/pages/system/notify/channel-target';
 import NotifyRecordPage from '@/pages/system/notify/record';
 import TemplateManagementPage from '@/pages/system/notify/template';
 import type { MenuComponentRegistry } from './types';
@@ -167,5 +168,13 @@ export const builtInMenuComponentRegistry = createMenuComponentRegistry({
     defaultPath: '/system/notify/record',
     defaultIcon: 'FileTextOutlined',
     loader: () => Promise.resolve({ default: NotifyRecordPage }),
+  },
+  ChannelTargetManagementPage: {
+    component: 'ChannelTargetManagementPage',
+    defaultName: '渠道目标',
+    defaultCode: 'NOTIFY_CHANNEL_TARGET',
+    defaultPath: '/system/notify/channel-target',
+    defaultIcon: 'LinkOutlined',
+    loader: () => Promise.resolve({ default: ChannelTargetManagementPage }),
   },
 });
