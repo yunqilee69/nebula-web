@@ -34,13 +34,13 @@ function createService(overrides: Partial<NotificationBellService> = {}): Notifi
   };
 }
 
-function renderBell(service = createService()) {
+function renderBell(service = createService(), onOpenInboxTab?: (path: string) => void) {
   const currentUser = useAuthStore.getState().user;
   render(
     <NebulaProvider authAdapter={{ getCurrentUser: async () => currentUser }}>
       <MemoryRouter>
         <Routes>
-          <Route path="/" element={<NotificationBell service={service} />} />
+          <Route path="/" element={<NotificationBell service={service} onOpenInboxTab={onOpenInboxTab} />} />
           <Route path="/notify/inbox" element={<h1>通知收件箱</h1>} />
         </Routes>
       </MemoryRouter>
@@ -192,6 +192,18 @@ describe('NotificationBell', () => {
     await user.click(await screen.findByRole('button', { name: '通知，4 条未读' }));
     await user.click(await screen.findByRole('menuitem', { name: '查看全部消息' }));
 
+    expect(await screen.findByRole('heading', { name: '通知收件箱' })).toBeInTheDocument();
+  });
+
+  it('requests an inbox route tab before opening a specific preview message', async () => {
+    const user = userEvent.setup();
+    const onOpenInboxTab = vi.fn();
+    renderBell(createService({ pageSiteMessages: vi.fn().mockResolvedValue({ data: [messages[0]], total: 1 }) }), onOpenInboxTab);
+
+    await user.click(await screen.findByRole('button', { name: '通知，4 条未读' }));
+    await user.click(await screen.findByRole('menuitem', { name: /消息 1/ }));
+
+    expect(onOpenInboxTab).toHaveBeenCalledWith('/notify/inbox');
     expect(await screen.findByRole('heading', { name: '通知收件箱' })).toBeInTheDocument();
   });
 });

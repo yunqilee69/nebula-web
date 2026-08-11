@@ -69,9 +69,10 @@ export interface NotificationBellService {
 
 interface NotificationBellProps {
   readonly service?: NotificationBellService;
+  readonly onOpenInboxTab?: (path: string) => void;
 }
 
-export function NotificationBell({ service = notifyService }: NotificationBellProps) {
+export function NotificationBell({ service = notifyService, onOpenInboxTab }: NotificationBellProps) {
   const navigate = useNavigate();
   const userId = useAuthStore((state) => state.user?.id);
   const unreadCount = useNotifyStore((state) => state.unreadCount);
@@ -237,10 +238,12 @@ export function NotificationBell({ service = notifyService }: NotificationBellPr
             loadPreview();
           } else if (key === 'inbox') {
             setOpen(false);
+            onOpenInboxTab?.('/notify/inbox');
             navigate('/notify/inbox');
           } else if (key.startsWith(MESSAGE_ITEM_KEY_PREFIX)) {
             const messageId = key.slice(MESSAGE_ITEM_KEY_PREFIX.length);
             setOpen(false);
+            onOpenInboxTab?.('/notify/inbox');
             navigate(`/notify/inbox?messageId=${encodeURIComponent(messageId)}`);
           }
         },
