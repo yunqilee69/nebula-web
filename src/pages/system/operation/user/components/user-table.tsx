@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { ApartmentOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, TeamOutlined } from '@ant-design/icons';
 import { Button, Popconfirm, Tag } from 'antd';
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { NebulaProTable } from '@/components/nebula-pro-table';
@@ -6,6 +6,7 @@ import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/co
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { AuthManagementService } from '@/api/auth-management';
 import type { EnableStatus, OrgOptionResp, RoleOptionResp, UserPageReq, UserResp } from '@/types/auth-management';
+import type { BatchAssignmentMode } from '../../components/batch-assignment-modal';
 import { createEnableStatusOptions, normalizeOptionalText } from './user-page-shared';
 
 interface UserQuery {
@@ -18,6 +19,7 @@ interface UserQuery {
 
 export interface UserTableHandle {
   reload: () => Promise<void>;
+  clearSelection: () => void;
 }
 
 interface UserTableProps {
@@ -25,7 +27,9 @@ interface UserTableProps {
   onAddUser: () => void;
   onEditUser: (record: UserResp) => void;
   onResetPassword: (userIds: readonly string[]) => Promise<void>;
+  onBatchAssign: (users: readonly UserResp[], mode: Exclude<BatchAssignmentMode, 'both'>) => void;
   resetPasswordLoading?: boolean;
+  batchAssignLoading?: boolean;
   roles?: RoleOptionResp[];
   orgs?: OrgOptionResp[];
 }
@@ -50,16 +54,21 @@ function buildUserPageReq(params: UserQuery & NebulaPageReq): UserPageReq {
 }
 
 export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function UserTable(
-  { service, onAddUser, onEditUser, onResetPassword, resetPasswordLoading = false, roles = [], orgs = [] },
+  { service, onAddUser, onEditUser, onResetPassword, onBatchAssign, resetPasswordLoading = false, batchAssignLoading = false, roles = [], orgs = [] },
   ref,
 ) {
   const actionRef = useRef<NebulaProTableAction | undefined>(undefined);
   const { t } = useNebulaI18n();
   const statusOptions = createEnableStatusOptions(t);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<UserResp[]>([]);
 
   useImperativeHandle(ref, () => ({
     reload: () => actionRef.current?.reload() ?? Promise.resolve(),
+    clearSelection: () => {
+      setSelectedUserIds([]);
+      setSelectedUsers([]);
+    },
   }), []);
 
   const requestUsers = useCallback(
@@ -78,6 +87,7 @@ export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function Us
   const resetSelectedUsersPassword = useCallback(async () => {
     await onResetPassword(selectedUserIds);
     setSelectedUserIds([]);
+    setSelectedUsers([]);
     await actionRef.current?.reload();
   }, [onResetPassword, selectedUserIds]);
 
@@ -159,11 +169,34 @@ export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function Us
       }}
       rowSelection={{
         selectedRowKeys: selectedUserIds,
-        onChange: (selectedKeys) => {
+        onChange: (selectedKeys, selectedRows) => {
           setSelectedUserIds(selectedKeys.filter((key): key is string => typeof key === 'string'));
+          setSelectedUsers(selectedRows);
         },
       }}
+      tableAlertRender={false}
       toolBarRender={() => [
+        <Button key="create" type="primary" icon={<PlusOutlined />} onClick={onAddUser}>
+          {t('auth.userManagement.actions.create')}
+        </Button>,
+        <Button
+          key="set-orgs"
+          icon={<ApartmentOutlined />}
+          disabled={selectedUserIds.length === 0}
+          loading={batchAssignLoading}
+          onClick={() => onBatchAssign(selectedUsers, 'orgs')}
+        >
+          {t('auth.assignment.actions.setOrgs')}
+        </Button>,
+        <Button
+          key="set-roles"
+          icon={<TeamOutlined />}
+          disabled={selectedUserIds.length === 0}
+          loading={batchAssignLoading}
+          onClick={() => onBatchAssign(selectedUsers, 'roles')}
+        >
+          {t('auth.assignment.actions.setRoles')}
+        </Button>,
         <Popconfirm
           key="reset-password"
           title={t('auth.userManagement.confirm.resetPasswordTitle')}
@@ -176,9 +209,6 @@ export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function Us
             {t('auth.userManagement.actions.resetPassword')}
           </Button>
         </Popconfirm>,
-        <Button key="create" type="primary" icon={<PlusOutlined />} onClick={onAddUser}>
-          {t('auth.userManagement.actions.create')}
-        </Button>,
       ]}
     />
   );

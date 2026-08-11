@@ -3,7 +3,8 @@ import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import { authManagementService as defaultAuthManagementService } from '@/api/auth-management';
 import type { AuthManagementService } from '@/api/auth-management';
-import type { CreateUserReq, OrgOptionResp, RoleOptionResp, UpdateUserReq, UserResp } from '@/types/auth-management';
+import type { BatchUpdateUserAssignmentsReq, CreateUserReq, OrgOptionResp, RoleOptionResp, UpdateUserReq, UserResp } from '@/types/auth-management';
+import { BatchAssignmentModal, type BatchAssignmentMode } from '../components/batch-assignment-modal';
 import { UserFormDrawer } from './components/user-form-drawer';
 import { UserTable, type UserTableHandle } from './components/user-table';
 import type { UserDrawerFormValues } from './components/user-page-shared';
@@ -29,6 +30,11 @@ export function UserManagementPage({ service: serviceProp }: UserManagementPageP
   const [submitting, setSubmitting] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [batchAssignmentOpen, setBatchAssignmentOpen] = useState(false);
+  const [batchAssignmentSubmitting, setBatchAssignmentSubmitting] = useState(false);
+  const [batchAssignmentUserIds, setBatchAssignmentUserIds] = useState<readonly string[]>([]);
+  const [batchAssignmentUserNames, setBatchAssignmentUserNames] = useState<readonly string[]>([]);
+  const [batchAssignmentMode, setBatchAssignmentMode] = useState<BatchAssignmentMode>('both');
 
   const [roles, setRoles] = useState<RoleOptionResp[]>([]);
   const [orgs, setOrgs] = useState<OrgOptionResp[]>([]);
@@ -163,6 +169,40 @@ export function UserManagementPage({ service: serviceProp }: UserManagementPageP
     [notice, service, t],
   );
 
+  const openBatchAssignment = useCallback((users: readonly UserResp[], mode: Exclude<BatchAssignmentMode, 'both'>) => {
+    if (users.length === 0) return;
+    setBatchAssignmentUserIds(users.map((user) => user.id));
+    setBatchAssignmentUserNames(users.map((user) => user.nickname || user.username));
+    setBatchAssignmentMode(mode);
+    setBatchAssignmentOpen(true);
+  }, []);
+
+  const closeBatchAssignment = useCallback(() => {
+    setBatchAssignmentOpen(false);
+    setBatchAssignmentUserIds([]);
+    setBatchAssignmentUserNames([]);
+  }, []);
+
+  const submitBatchAssignment = useCallback(
+    async (data: BatchUpdateUserAssignmentsReq) => {
+      setBatchAssignmentSubmitting(true);
+      try {
+        await service.batchUpdateUserAssignments(data);
+        notice.success(t('auth.assignment.feedback.success'));
+        closeBatchAssignment();
+        tableRef.current?.clearSelection();
+        await tableRef.current?.reload();
+      } catch (error: unknown) {
+        notice.error(t('auth.assignment.feedback.failed'));
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Batch user assignment failed', message);
+      } finally {
+        setBatchAssignmentSubmitting(false);
+      }
+    },
+    [closeBatchAssignment, notice, service, t],
+  );
+
   return (
     <>
       <UserTable
@@ -173,7 +213,9 @@ export function UserManagementPage({ service: serviceProp }: UserManagementPageP
         onAddUser={openCreateDrawer}
         onEditUser={(record) => void openUpdateDrawer(record)}
         onResetPassword={resetUserPasswords}
+        onBatchAssign={openBatchAssignment}
         resetPasswordLoading={resetPasswordLoading}
+        batchAssignLoading={batchAssignmentSubmitting}
       />
       <UserFormDrawer
         open={drawerOpen}
@@ -185,6 +227,17 @@ export function UserManagementPage({ service: serviceProp }: UserManagementPageP
         orgs={orgs}
         onClose={closeDrawer}
         onSubmit={(values) => void handleSubmit(values)}
+      />
+      <BatchAssignmentModal
+        open={batchAssignmentOpen}
+        selectedUserIds={batchAssignmentUserIds}
+        selectedUserNames={batchAssignmentUserNames}
+        roles={roles}
+        orgs={orgs}
+        submitting={batchAssignmentSubmitting}
+        mode={batchAssignmentMode}
+        onCancel={closeBatchAssignment}
+        onSubmit={submitBatchAssignment}
       />
     </>
   );

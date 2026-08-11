@@ -21,6 +21,7 @@ function createService(overrides: Partial<AuthManagementService> = {}): AuthMana
     getUserDetail: vi.fn().mockResolvedValue({ id: 'user-1', username: 'yunqi', nickname: '云起', status: 1 }),
     resetUserPassword: vi.fn().mockResolvedValue(undefined),
     changeUserPassword: vi.fn().mockResolvedValue(undefined),
+    batchUpdateUserAssignments: vi.fn().mockResolvedValue(undefined),
     listRoles: vi.fn().mockResolvedValue([{ id: 'role-1', name: '平台管理员', code: 'ADMIN' }]),
     listOrgs: vi.fn().mockResolvedValue([{ id: 'org-1', name: '研发中心', code: 'RND' }]),
     pageOrgs: vi.fn().mockResolvedValue({ data: [], total: 0 }),
@@ -54,7 +55,11 @@ describe('UserManagementPage', () => {
 
     expect(screen.getByLabelText('账号')).toBeInTheDocument();
     expect(screen.getByLabelText('昵称')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /新增用户/ })).toBeInTheDocument();
+    const toolbarActionLabels = screen
+      .getAllByRole('button')
+      .map((button) => button.textContent?.trim())
+      .filter((text): text is string => ['新增', '追加组织', '追加角色', '重置密码'].includes(text ?? ''));
+    expect(toolbarActionLabels).toEqual(['新增', '追加组织', '追加角色', '重置密码']);
     expect(await screen.findByText('yunqi')).toBeInTheDocument();
     expect(service.pageUsers).toHaveBeenCalledWith({ pageNum: 1, pageSize: 10 });
   });
@@ -75,7 +80,7 @@ describe('UserManagementPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /新增用户/ }));
+    await user.click(screen.getByRole('button', { name: /新增/ }));
 
     const dialog = screen.getByRole('dialog', { name: '新增用户' });
     expect(within(dialog).getByLabelText('用户名')).toBeInTheDocument();
@@ -107,6 +112,85 @@ describe('UserManagementPage', () => {
     });
   });
 
+  it('submits role assignment for selected users from the toolbar', async () => {
+    const user = userEvent.setup();
+    const service = renderPage();
+
+    expect(await screen.findByText('yunqi')).toBeInTheDocument();
+    const checkboxes = screen.getAllByRole('checkbox');
+    const rowCheckbox = checkboxes[1];
+    if (!rowCheckbox) {
+      throw new Error('Expected user row selection checkbox');
+    }
+
+    await user.click(rowCheckbox);
+    expect(screen.queryByText(/已选择\s*1\s*项/)).not.toBeInTheDocument();
+    const batchAssignButton = screen.getByRole('button', { name: /追加角色/ });
+    await waitFor(() => {
+      expect(batchAssignButton).toBeEnabled();
+    });
+    await user.click(batchAssignButton);
+
+    const modalTitle = await screen.findByText('批量设置用户归属');
+    const modal = modalTitle.closest('.ant-modal');
+    if (!(modal instanceof HTMLElement)) {
+      throw new Error('Expected batch assignment modal');
+    }
+    expect(within(modal).getByText(/已选择\s*1\s*个用户[:：]\s*云起/)).toBeInTheDocument();
+    expect(within(modal).getByLabelText('角色')).toBeInTheDocument();
+    expect(within(modal).queryByLabelText('组织')).not.toBeInTheDocument();
+    expect(within(modal).queryByText(/勾选.*移除/)).not.toBeInTheDocument();
+    await user.click(within(modal).getByRole('button', { name: '追加归属' }));
+
+    await waitFor(() => {
+      expect(service.batchUpdateUserAssignments).toHaveBeenCalledWith({
+        userIds: ['user-1'],
+        roleIds: null,
+        orgIds: null,
+        operation: 'ADD',
+      });
+    });
+  });
+
+  it('submits organization assignment for selected users from the toolbar', async () => {
+    const user = userEvent.setup();
+    const service = renderPage();
+
+    expect(await screen.findByText('yunqi')).toBeInTheDocument();
+    const checkboxes = screen.getAllByRole('checkbox');
+    const rowCheckbox = checkboxes[1];
+    if (!rowCheckbox) {
+      throw new Error('Expected user row selection checkbox');
+    }
+
+    await user.click(rowCheckbox);
+    const batchAssignButton = screen.getByRole('button', { name: /追加组织/ });
+    await waitFor(() => {
+      expect(batchAssignButton).toBeEnabled();
+    });
+    await user.click(batchAssignButton);
+
+    const modalTitle = await screen.findByText('批量设置用户归属');
+    const modal = modalTitle.closest('.ant-modal');
+    if (!(modal instanceof HTMLElement)) {
+      throw new Error('Expected batch assignment modal');
+    }
+    expect(within(modal).getByText(/已选择\s*1\s*个用户[:：]\s*云起/)).toBeInTheDocument();
+    expect(within(modal).queryByLabelText('角色')).not.toBeInTheDocument();
+    expect(within(modal).getByLabelText('组织')).toBeInTheDocument();
+    expect(within(modal).queryByText(/勾选.*移除/)).not.toBeInTheDocument();
+    await user.click(within(modal).getByRole('button', { name: '追加归属' }));
+
+    await waitFor(() => {
+      expect(service.batchUpdateUserAssignments).toHaveBeenCalledWith({
+        userIds: ['user-1'],
+        roleIds: null,
+        orgIds: null,
+        operation: 'ADD',
+      });
+    });
+  });
+
   it('renders page labels from the active English locale', async () => {
     act(() => {
       useLocaleStore.getState().setLocale('en-US');
@@ -114,7 +198,7 @@ describe('UserManagementPage', () => {
 
     renderPage();
 
-    expect(screen.getByRole('button', { name: /New User/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add User/ })).toBeInTheDocument();
     expect(await screen.findByText('yunqi')).toBeInTheDocument();
   });
 });
