@@ -65,6 +65,22 @@ describe('NeTree', () => {
     expect(screen.queryByText('产品体验组')).not.toBeInTheDocument();
   });
 
+  it('filters nodes by optional search text without changing the visible title', async () => {
+    const user = userEvent.setup();
+    const roleTreeData: NeTreeNode[] = [
+      { key: 'admin', title: '管理员', searchText: '管理员 ADMIN' },
+      { key: 'auditor', title: '审计员', searchText: '审计员 AUDITOR' },
+    ];
+
+    render(<NeTree title="角色树" dataSource={roleTreeData} searchable searchPlaceholder="搜索角色" />);
+
+    await user.type(screen.getByPlaceholderText('搜索角色'), 'AUD');
+
+    expect(screen.getByText('审计员')).toBeInTheDocument();
+    expect(screen.queryByText('管理员')).not.toBeInTheDocument();
+    expect(screen.queryByText('AUDITOR')).not.toBeInTheDocument();
+  });
+
   it('allows parent nodes to collapse and expand their children', async () => {
     const user = userEvent.setup();
 
@@ -79,5 +95,29 @@ describe('NeTree', () => {
     await user.click(screen.getByRole('button', { name: '展开 研发中心' }));
 
     expect(screen.getByText('产品体验组')).toBeInTheDocument();
+  });
+
+  it('renders per-node actions without selecting the node', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const actionTreeData: NeTreeNode[] = [
+      {
+        key: 'root',
+        title: '全部组织',
+        actions: <button type="button">更多操作</button>,
+      },
+    ];
+
+    render(<NeTree title="按组织过滤" dataSource={actionTreeData} onSelect={onSelect} />);
+
+    await user.click(screen.getByRole('button', { name: '更多操作' }));
+
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('omits the title row when title and extra are null', () => {
+    const { container } = render(<NeTree title={null} extra={null} dataSource={[{ key: 'root', title: '全部组织' }]} />);
+
+    expect(container.firstElementChild?.children).toHaveLength(1);
   });
 });

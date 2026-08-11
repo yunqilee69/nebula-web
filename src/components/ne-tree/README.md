@@ -18,14 +18,14 @@ If you only need a raw Ant Design tree with no panel chrome, title, search, or n
 ### `title`
 
 - **Type:** `ReactNode`
-- **Required:** Yes
-- **Behavior:** Renders the tree panel title.
+- **Required:** No
+- **Behavior:** Renders the tree panel title. Pass `null` with `extra={null}` to hide the title row.
 
 ### `dataSource`
 
 - **Type:** `NeTreeNode[]`
 - **Required:** Yes
-- **Behavior:** Provides the tree nodes. Each node supports `key`, `title`, `children`, `disabled`, `icon`, and `tag`.
+- **Behavior:** Provides the tree nodes. Each node supports `key`, `title`, `searchText`, `children`, `disabled`, `icon`, `tag`, and `actions`.
 
 ### `selectedKey`
 
@@ -56,12 +56,13 @@ If you only need a raw Ant Design tree with no panel chrome, title, search, or n
 - **Type:** `ReactNode`
 - **Default:** `undefined`
 - **Behavior:** Renders content on the right side of the title row, such as a count tag or small action.
+- **Note:** Pass `null` with `title={null}` to hide the title row.
 
 ### `searchable`
 
 - **Type:** `boolean`
 - **Default:** `false`
-- **Behavior:** Shows a keyword input above the tree. Search matches node titles and keeps matching ancestors visible.
+- **Behavior:** Shows a keyword input above the tree. Search matches `searchText` when provided, otherwise node titles, and keeps matching ancestors visible.
 
 ### `searchPlaceholder`
 
@@ -105,10 +106,12 @@ If you only need a raw Ant Design tree with no panel chrome, title, search, or n
 interface NeTreeNode {
   key: string;
   title: string;
+  searchText?: string;
   children?: NeTreeNode[];
   disabled?: boolean;
   icon?: ReactNode;
   tag?: ReactNode;
+  actions?: ReactNode;
 }
 ```
 

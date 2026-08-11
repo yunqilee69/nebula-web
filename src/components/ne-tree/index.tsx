@@ -1,6 +1,6 @@
 import { DownOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons';
 import { Empty, Flex, Input, Typography, theme as antdTheme } from 'antd';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { NeTreeNode, NeTreeProps } from './types';
 
@@ -17,7 +17,8 @@ function filterTree(nodes: NeTreeNode[], keyword: string): NeTreeNode[] {
 
   return nodes.flatMap((node) => {
     const children = filterTree(node.children ?? [], normalizedKeyword);
-    const matched = node.title.toLowerCase().includes(normalizedKeyword);
+    const searchableText = node.searchText ?? node.title;
+    const matched = searchableText.toLowerCase().includes(normalizedKeyword);
 
     if (!matched && children.length === 0) return [];
     return [{ ...node, children }];
@@ -120,6 +121,14 @@ function NeTreeNodeList({
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.title}</span>
                 {node.tag ? <span>{node.tag}</span> : null}
               </button>
+              {node.actions ? (
+                <span
+                  onClick={(event) => event.stopPropagation()}
+                  style={{ display: 'inline-flex', flexShrink: 0 }}
+                >
+                  {node.actions}
+                </span>
+              ) : null}
             </Flex>
 
             {hasChildren && expanded ? (
@@ -167,6 +176,12 @@ export function NeTree({
   const filteredData = useMemo(() => filterTree(dataSource, keyword), [dataSource, keyword]);
   const searchActive = keyword.trim().length > 0;
 
+  useEffect(() => {
+    if (!expandedKeys) {
+      setInternalExpandedKeys(defaultExpandedKeys ?? collectExpandableKeys(dataSource));
+    }
+  }, [dataSource, defaultExpandedKeys, expandedKeys]);
+
   function updateExpandedKeys(nextKeys: string[]) {
     if (!expandedKeys) {
       setInternalExpandedKeys(nextKeys);
@@ -194,6 +209,7 @@ export function NeTree({
   }
 
   const hasData = filteredData.length > 0;
+  const showHeader = title !== null && title !== undefined || extra !== null && extra !== undefined;
 
   return (
     <Flex
@@ -208,10 +224,12 @@ export function NeTree({
         ...style,
       }}
     >
-      <Flex align="center" justify="space-between" gap={token.marginSM} wrap>
-        <Typography.Text strong>{title}</Typography.Text>
-        {extra ? <span>{extra}</span> : null}
-      </Flex>
+      {showHeader ? (
+        <Flex align="center" justify="space-between" gap={token.marginSM} wrap>
+          {title !== null && title !== undefined ? <Typography.Text strong>{title}</Typography.Text> : null}
+          {extra !== null && extra !== undefined ? <span>{extra}</span> : null}
+        </Flex>
+      ) : null}
 
       {searchable ? (
         <Input

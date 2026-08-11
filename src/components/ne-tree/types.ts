@@ -3,14 +3,16 @@ import type { CSSProperties, ReactNode } from 'react';
 export interface NeTreeNode {
   key: string;
   title: string;
+  searchText?: string;
   children?: NeTreeNode[];
   disabled?: boolean;
   icon?: ReactNode;
   tag?: ReactNode;
+  actions?: ReactNode;
 }
 
 export interface NeTreeProps {
-  title: ReactNode;
+  title?: ReactNode;
   dataSource: NeTreeNode[];
   selectedKey?: string;
   defaultSelectedKey?: string;
