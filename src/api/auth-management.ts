@@ -1,5 +1,6 @@
 import { request } from '@/request/request';
 import type {
+  BatchUpdateUserAssignmentsReq,
   ChangePasswordReq,
   CreateOrgReq,
   CreateUserReq,
@@ -25,6 +26,7 @@ export interface AuthManagementService {
   getUserDetail: (id: string) => Promise<UserDetailResp>;
   resetUserPassword: (id: string) => Promise<void>;
   changeUserPassword: (id: string, data: ChangePasswordReq) => Promise<void>;
+  batchUpdateUserAssignments: (data: BatchUpdateUserAssignmentsReq) => Promise<void>;
   listRoles: () => Promise<RoleOptionResp[]>;
   listOrgs: () => Promise<OrgOptionResp[]>;
   pageOrgs: (data: OrgPageReq) => Promise<PageResp<OrgResp>>;
@@ -43,6 +45,7 @@ export const authManagementService: AuthManagementService = {
   getUserDetail: (id) => request<UserDetailResp>({ method: 'GET', url: `/api/auth/users/${id}` }),
   resetUserPassword: (id) => request<void>({ method: 'PUT', url: `/api/auth/users/${id}/reset-password` }),
   changeUserPassword: (id, data) => request<void>({ method: 'PUT', url: `/api/auth/users/${id}/password`, data }),
+  batchUpdateUserAssignments: (data) => request<void>({ method: 'POST', url: '/api/auth/users/batch-assignments', data }),
   listRoles: () => request<RoleOptionResp[]>({ method: 'GET', url: '/api/auth/roles/list' }),
   listOrgs: () => request<OrgOptionResp[]>({ method: 'GET', url: '/api/auth/orgs/list' }),
   pageOrgs: (data) => request<PageResp<OrgResp>>({ method: 'POST', url: '/api/auth/orgs/page', data }),

@@ -16,6 +16,7 @@ export interface RoleOptionResp {
   id: string;
   name: string;
   code: string;
+  status?: EnableStatus;
 }
 
 export interface OrgOptionResp {
@@ -34,6 +35,18 @@ export interface UserPageReq extends PageReq {
   status?: EnableStatus;
   orgId?: string;
   roleId?: string;
+  withRole?: boolean;
+  withoutRole?: boolean;
+  withoutOrg?: boolean;
+}
+
+export type BatchAssignmentOperation = 'ADD' | 'REMOVE';
+
+export interface BatchUpdateUserAssignmentsReq {
+  readonly userIds: readonly string[];
+  readonly roleIds?: readonly string[] | null;
+  readonly orgIds?: readonly string[] | null;
+  readonly operation?: BatchAssignmentOperation;
 }
 
 export interface UserResp {
