@@ -9,6 +9,9 @@ export const auth: NebulaAuthMessages = {
       create: '新增角色',
       edit: '编辑',
       delete: '删除',
+      addUsers: '添加用户',
+      removeUsers: '移除用户',
+      moreActions: '更多操作',
       search: '查询',
       reset: '重置',
       save: '保存',
@@ -26,12 +29,19 @@ export const auth: NebulaAuthMessages = {
       name: '角色名称',
       code: '角色编码',
       status: '状态',
-      permissionIds: '权限 ID',
       description: '角色描述',
     },
     modal: {
       createTitle: '新增角色',
       editTitle: '编辑角色',
+    },
+    addUsers: {
+      title: '添加用户到角色',
+    },
+    tree: {
+      title: '角色树',
+      searchPlaceholder: '搜索角色',
+      totalRoles: '个角色',
     },
     placeholders: {
       name: '请输入角色名称',
@@ -39,7 +49,6 @@ export const auth: NebulaAuthMessages = {
       status: '全部状态',
       formName: '例如：管理员',
       formCode: '例如：ADMIN',
-      permissionIds: '输入权限 ID 后回车',
       description: '请输入角色描述',
     },
     validation: {
@@ -55,6 +64,7 @@ export const auth: NebulaAuthMessages = {
     },
     feedback: {
       listLoadFailed: '角色列表加载失败',
+      userListLoadFailed: '角色用户加载失败',
       detailLoadFailed: '角色详情加载失败',
       createSuccess: '角色创建成功',
       updateSuccess: '角色更新成功',
@@ -62,6 +72,7 @@ export const auth: NebulaAuthMessages = {
     },
     confirm: {
       deleteTitle: '确认删除该角色？',
+      unbindUsersTitle: '确认将所选用户从该角色移除？',
     },
   },
   menuManagement: {
@@ -181,7 +192,7 @@ export const auth: NebulaAuthMessages = {
   },
   userManagement: {
     title: '用户管理',
-    actions: { create: '新增用户', edit: '编辑', delete: '删除', resetPassword: '重置密码', search: '查询', reset: '重置', save: '保存', cancel: '取消' },
+    actions: { create: '新增', edit: '编辑', delete: '删除', resetPassword: '重置密码', search: '查询', reset: '重置', save: '保存', cancel: '取消' },
     columns: { username: '账号', nickname: '昵称', status: '状态', role: '角色', org: '组织', actions: '操作' },
     fields: { username: '用户名', password: '密码', nickname: '昵称', email: '邮箱', phone: '手机号', roles: '角色', orgs: '组织', status: '状态' },
     modal: { createTitle: '新增用户', editTitle: '编辑用户' },
@@ -193,16 +204,29 @@ export const auth: NebulaAuthMessages = {
   },
   orgManagement: {
     title: '组织管理',
-    actions: { create: '新增组织', edit: '编辑', delete: '删除', search: '查询', reset: '重置', save: '保存', cancel: '取消' },
+    actions: { create: '新增组织', edit: '编辑', rename: '重命名', delete: '删除', move: '移动', moreActions: '更多操作', addUsers: '新增', search: '查询', reset: '重置', save: '保存', cancel: '取消' },
     columns: { name: '组织名称', code: '组织编码', type: '组织类型', status: '状态', actions: '操作' },
     fields: { name: '组织名称', code: '组织编码', parentId: '上级组织', type: '组织类型', status: '状态' },
     modal: { createTitle: '新增组织', editTitle: '编辑组织' },
+    moveOrg: { title: '移动组织', selectParent: '选择上级组织', placeholder: '请选择上级组织' },
+    addUsers: { title: '添加用户到组织' },
     placeholders: { name: '请输入组织名称', code: '请输入组织编码', parentId: '请选择上级组织', type: '请选择组织类型', status: '全部状态' },
     validation: { nameRequired: '请输入组织名称', codeRequired: '请输入组织编码', typeRequired: '请选择组织类型' },
     types: { company: '公司', department: '部门', team: '团队' },
     status: { enabled: '启用', disabled: '停用' },
     tree: { title: '组织树', searchPlaceholder: '搜索组织', rootCount: '个根节点' },
-    feedback: { treeLoadFailed: '组织树加载失败', listLoadFailed: '组织列表加载失败', refreshFailed: '刷新组织数据失败', detailLoadFailed: '组织详情加载失败', createSuccess: '组织创建成功', updateSuccess: '组织更新成功', createFailed: '组织创建失败', updateFailed: '组织更新失败', deleteFailed: '删除组织失败' },
+    feedback: { treeLoadFailed: '组织树加载失败', listLoadFailed: '组织列表加载失败', refreshFailed: '刷新组织数据失败', detailLoadFailed: '组织详情加载失败', createSuccess: '组织创建成功', updateSuccess: '组织更新成功', deleteSuccess: '组织删除成功', moveSuccess: '组织移动成功', addUsersSuccess: '用户添加成功', createFailed: '组织创建失败', updateFailed: '组织更新失败', deleteFailed: '删除组织失败', moveFailed: '组织移动失败', addUsersFailed: '用户添加失败' },
+  },
+  assignment: {
+    title: '批量设置用户归属',
+    selectedUsers: '已选择 {count} 个用户',
+    tabs: { organizations: '组织列表', orgUsers: '组织用户', childOrgs: '下级组织', unassignedOrgUsers: '未分配组织用户', roles: '角色列表', globalRoleUsers: '全部角色用户', unassignedRoleUsers: '未分配角色用户' },
+    actions: { batchAssign: '批量追加', setRoles: '追加角色', setOrgs: '追加组织', assign: '追加归属' },
+    fields: { roles: '角色', orgs: '组织' },
+    placeholders: { roles: '选择要追加的角色', orgs: '选择要追加的组织' },
+    hints: { noRoleChange: '不选择时跳过角色追加', noOrgChange: '不选择时跳过组织追加' },
+    validation: { rolesRequired: '请选择要追加的角色' },
+    feedback: { success: '用户归属追加成功', failed: '用户归属追加失败', removeSuccess: '用户归属移除成功', removeFailed: '用户归属移除失败' },
   },
   permissionConfig: {
     title: '权限配置',

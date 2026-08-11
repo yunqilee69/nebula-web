@@ -9,6 +9,9 @@ export const auth: NebulaAuthMessages = {
       create: 'New Role',
       edit: 'Edit',
       delete: 'Delete',
+      addUsers: 'Add Users',
+      removeUsers: 'Remove Users',
+      moreActions: 'More actions',
       search: 'Search',
       reset: 'Reset',
       save: 'Save',
@@ -26,12 +29,19 @@ export const auth: NebulaAuthMessages = {
       name: 'Role Name',
       code: 'Role Code',
       status: 'Status',
-      permissionIds: 'Permission IDs',
       description: 'Description',
     },
     modal: {
       createTitle: 'New Role',
       editTitle: 'Edit Role',
+    },
+    addUsers: {
+      title: 'Add Users to Role',
+    },
+    tree: {
+      title: 'Role Tree',
+      searchPlaceholder: 'Search roles',
+      totalRoles: 'roles',
     },
     placeholders: {
       name: 'Enter role name',
@@ -39,7 +49,6 @@ export const auth: NebulaAuthMessages = {
       status: 'All statuses',
       formName: 'For example: Administrator',
       formCode: 'For example: ADMIN',
-      permissionIds: 'Enter permission IDs and press Enter',
       description: 'Enter role description',
     },
     validation: {
@@ -55,6 +64,7 @@ export const auth: NebulaAuthMessages = {
     },
     feedback: {
       listLoadFailed: 'Failed to load roles',
+      userListLoadFailed: 'Failed to load role users',
       detailLoadFailed: 'Failed to load role details',
       createSuccess: 'Role created',
       updateSuccess: 'Role updated',
@@ -62,6 +72,7 @@ export const auth: NebulaAuthMessages = {
     },
     confirm: {
       deleteTitle: 'Delete this role?',
+      unbindUsersTitle: 'Remove selected users from this role?',
     },
   },
   menuManagement: {
@@ -181,7 +192,7 @@ export const auth: NebulaAuthMessages = {
   },
   userManagement: {
     title: 'User Management',
-    actions: { create: 'New User', edit: 'Edit', delete: 'Delete', resetPassword: 'Reset Password', search: 'Search', reset: 'Reset', save: 'Save', cancel: 'Cancel' },
+    actions: { create: 'Add User', edit: 'Edit', delete: 'Delete', resetPassword: 'Reset Password', search: 'Search', reset: 'Reset', save: 'Save', cancel: 'Cancel' },
     columns: { username: 'Account', nickname: 'Nickname', status: 'Status', role: 'Role', org: 'Organization', actions: 'Actions' },
     fields: { username: 'Username', password: 'Password', nickname: 'Nickname', email: 'Email', phone: 'Phone', roles: 'Roles', orgs: 'Organizations', status: 'Status' },
     modal: { createTitle: 'New User', editTitle: 'Edit User' },
@@ -193,16 +204,29 @@ export const auth: NebulaAuthMessages = {
   },
   orgManagement: {
     title: 'Organization Management',
-    actions: { create: 'New Organization', edit: 'Edit', delete: 'Delete', search: 'Search', reset: 'Reset', save: 'Save', cancel: 'Cancel' },
+    actions: { create: 'New Organization', edit: 'Edit', rename: 'Rename', delete: 'Delete', move: 'Move', moreActions: 'More actions', addUsers: 'Add', search: 'Search', reset: 'Reset', save: 'Save', cancel: 'Cancel' },
     columns: { name: 'Organization Name', code: 'Organization Code', type: 'Organization Type', status: 'Status', actions: 'Actions' },
     fields: { name: 'Organization Name', code: 'Organization Code', parentId: 'Parent Organization', type: 'Organization Type', status: 'Status' },
     modal: { createTitle: 'New Organization', editTitle: 'Edit Organization' },
+    moveOrg: { title: 'Move Organization', selectParent: 'Select Parent Organization', placeholder: 'Select a parent organization' },
+    addUsers: { title: 'Add Users to Organization' },
     placeholders: { name: 'Enter organization name', code: 'Enter organization code', parentId: 'Select parent organization', type: 'Select organization type', status: 'All statuses' },
     validation: { nameRequired: 'Enter organization name', codeRequired: 'Enter organization code', typeRequired: 'Select organization type' },
     types: { company: 'Company', department: 'Department', team: 'Team' },
     status: { enabled: 'Enabled', disabled: 'Disabled' },
     tree: { title: 'Organization Tree', searchPlaceholder: 'Search organizations', rootCount: 'root nodes' },
-    feedback: { treeLoadFailed: 'Failed to load organization tree', listLoadFailed: 'Failed to load organizations', refreshFailed: 'Failed to refresh organization data', detailLoadFailed: 'Failed to load organization details', createSuccess: 'Organization created', updateSuccess: 'Organization updated', createFailed: 'Failed to create organization', updateFailed: 'Failed to update organization', deleteFailed: 'Failed to delete organization' },
+    feedback: { treeLoadFailed: 'Failed to load organization tree', listLoadFailed: 'Failed to load organizations', refreshFailed: 'Failed to refresh organization data', detailLoadFailed: 'Failed to load organization details', createSuccess: 'Organization created', updateSuccess: 'Organization updated', deleteSuccess: 'Organization deleted', moveSuccess: 'Organization moved', addUsersSuccess: 'Users added to organization', createFailed: 'Failed to create organization', updateFailed: 'Failed to update organization', deleteFailed: 'Failed to delete organization', moveFailed: 'Failed to move organization', addUsersFailed: 'Failed to add users' },
+  },
+  assignment: {
+    title: 'Batch User Assignments',
+    selectedUsers: '{count} users selected',
+    tabs: { organizations: 'Organizations', orgUsers: 'Organization Users', childOrgs: 'Child Organizations', unassignedOrgUsers: 'Users without Organization', roles: 'Roles', globalRoleUsers: 'All Role Users', unassignedRoleUsers: 'Users without Role' },
+    actions: { batchAssign: 'Batch Add', setRoles: 'Add Roles', setOrgs: 'Add Organizations', assign: 'Add Assignments' },
+    fields: { roles: 'Roles', orgs: 'Organizations' },
+    placeholders: { roles: 'Select roles to add', orgs: 'Select organizations to add' },
+    hints: { noRoleChange: 'Leave empty to skip adding roles', noOrgChange: 'Leave empty to skip adding organizations' },
+    validation: { rolesRequired: 'Select roles to add' },
+    feedback: { success: 'User assignments added', failed: 'Failed to add user assignments', removeSuccess: 'User assignments removed', removeFailed: 'Failed to remove user assignments' },
   },
   permissionConfig: {
     title: 'Permission Configuration',

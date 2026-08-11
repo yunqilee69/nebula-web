@@ -70,6 +70,9 @@ export interface NebulaRoleManagementMessages {
     create: string;
     edit: string;
     delete: string;
+    addUsers: string;
+    removeUsers: string;
+    moreActions: string;
     search: string;
     reset: string;
     save: string;
@@ -87,12 +90,19 @@ export interface NebulaRoleManagementMessages {
     name: string;
     code: string;
     status: string;
-    permissionIds: string;
     description: string;
   };
   modal: {
     createTitle: string;
     editTitle: string;
+  };
+  addUsers: {
+    title: string;
+  };
+  tree: {
+    title: string;
+    searchPlaceholder: string;
+    totalRoles: string;
   };
   placeholders: {
     name: string;
@@ -100,7 +110,6 @@ export interface NebulaRoleManagementMessages {
     status: string;
     formName: string;
     formCode: string;
-    permissionIds: string;
     description: string;
   };
   validation: {
@@ -116,6 +125,7 @@ export interface NebulaRoleManagementMessages {
   };
   feedback: {
     listLoadFailed: string;
+    userListLoadFailed: string;
     detailLoadFailed: string;
     createSuccess: string;
     updateSuccess: string;
@@ -123,6 +133,7 @@ export interface NebulaRoleManagementMessages {
   };
   confirm: {
     deleteTitle: string;
+    unbindUsersTitle: string;
   };
 }
 
@@ -315,7 +326,11 @@ export interface NebulaOrgManagementMessages {
   actions: {
     create: string;
     edit: string;
+    rename: string;
     delete: string;
+    move: string;
+    moreActions: string;
+    addUsers: string;
     search: string;
     reset: string;
     save: string;
@@ -338,6 +353,14 @@ export interface NebulaOrgManagementMessages {
   modal: {
     createTitle: string;
     editTitle: string;
+  };
+  moveOrg: {
+    title: string;
+    selectParent: string;
+    placeholder: string;
+  };
+  addUsers: {
+    title: string;
   };
   placeholders: {
     name: string;
@@ -372,9 +395,55 @@ export interface NebulaOrgManagementMessages {
     detailLoadFailed: string;
     createSuccess: string;
     updateSuccess: string;
+    deleteSuccess: string;
+    moveSuccess: string;
+    addUsersSuccess: string;
     createFailed: string;
     updateFailed: string;
     deleteFailed: string;
+    moveFailed: string;
+    addUsersFailed: string;
+  };
+}
+
+export interface NebulaAssignmentMessages {
+  title: string;
+  selectedUsers: string;
+  tabs: {
+    organizations: string;
+    orgUsers: string;
+    childOrgs: string;
+    unassignedOrgUsers: string;
+    roles: string;
+    globalRoleUsers: string;
+    unassignedRoleUsers: string;
+  };
+  actions: {
+    batchAssign: string;
+    setRoles: string;
+    setOrgs: string;
+    assign: string;
+  };
+  fields: {
+    roles: string;
+    orgs: string;
+  };
+  placeholders: {
+    roles: string;
+    orgs: string;
+  };
+  hints: {
+    noRoleChange: string;
+    noOrgChange: string;
+  };
+  validation: {
+    rolesRequired: string;
+  };
+  feedback: {
+    success: string;
+    failed: string;
+    removeSuccess: string;
+    removeFailed: string;
   };
 }
 
@@ -1175,6 +1244,7 @@ export interface NebulaAuthMessages {
   menuManagement: NebulaMenuManagementMessages;
   userManagement: NebulaUserManagementMessages;
   orgManagement: NebulaOrgManagementMessages;
+  assignment: NebulaAssignmentMessages;
   permissionConfig: NebulaPermissionConfigMessages;
   profileInfo: NebulaProfileInfoMessages;
   buttonManagement: NebulaButtonManagementMessages;

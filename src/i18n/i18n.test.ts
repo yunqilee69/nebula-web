@@ -40,8 +40,10 @@ describe('i18n', () => {
       expect(messages.common.languageEn).toBe('English');
       expect(messages.auth.roleManagement.title).toBe('角色管理');
       expect(messages.auth.roleManagement.actions.create).toBe('新增角色');
+      expect(messages.auth.roleManagement.actions.moreActions).toBe('更多操作');
       expect(messages.auth.roleManagement.fields.name).toBe('角色名称');
       expect(messages.auth.roleManagement.status.enabled).toBe('启用');
+      expect(messages.auth.assignment.validation.rolesRequired).toBe('请选择要追加的角色');
       expect(messages.auth.userManagement.title).toBe('用户管理');
       expect(messages.auth.orgManagement.title).toBe('组织管理');
       expect(messages.auth.permissionConfig.title).toBe('权限配置');
@@ -91,8 +93,10 @@ describe('i18n', () => {
       expect(messages.common.languageEn).toBe('English');
       expect(messages.auth.roleManagement.title).toBe('Role Management');
       expect(messages.auth.roleManagement.actions.create).toBe('New Role');
+      expect(messages.auth.roleManagement.actions.moreActions).toBe('More actions');
       expect(messages.auth.roleManagement.fields.name).toBe('Role Name');
       expect(messages.auth.roleManagement.status.enabled).toBe('Enabled');
+      expect(messages.auth.assignment.validation.rolesRequired).toBe('Select roles to add');
       expect(messages.auth.userManagement.title).toBe('User Management');
       expect(messages.auth.orgManagement.title).toBe('Organization Management');
       expect(messages.auth.permissionConfig.title).toBe('Permission Configuration');
