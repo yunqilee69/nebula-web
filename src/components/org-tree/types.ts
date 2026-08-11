@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import type { NeTreeNode } from '@/components/ne-tree/types';
 import type { OrgTreeResp } from '@/types/auth-management';
 
 export interface OrgTreeProps {
@@ -31,6 +32,8 @@ export interface OrgTreeProps {
    * Extra content in the header right side
    */
   extra?: ReactNode;
+  extraRootNodes?: NeTreeNode[];
+  renderNodeActions?: (org: OrgTreeResp, isRoot: boolean) => ReactNode;
   /**
    * Whether to show search input
    * @default true
@@ -60,7 +63,7 @@ export interface OrgTreeProps {
   /**
    * Callback when an organization is selected
    */
-  onSelect?: (orgId: string, org: OrgTreeResp) => void;
+  onSelect?: (orgId: string, org: OrgTreeResp | undefined) => void;
   /**
    * Callback when nodes are expanded or collapsed
    */

@@ -1,6 +1,6 @@
 import { ApartmentOutlined } from '@ant-design/icons';
 import { Tag, theme as antdTheme } from 'antd';
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { NeTree } from '@/components/ne-tree';
 import type { NeTreeNode } from '@/components/ne-tree/types';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
@@ -18,18 +18,21 @@ function toNeTreeNodes(
   items: OrgTreeResp[],
   showStatusTags: boolean,
   statusLabels: { enabled: string; disabled: string },
+  renderNodeActions: ((org: OrgTreeResp, isRoot: boolean) => ReactNode) | undefined,
+  isRootLevel: boolean,
 ): NeTreeNode[] {
   return items.map((item) => ({
     key: item.id,
     title: item.name,
     icon: <ApartmentOutlined />,
+    actions: renderNodeActions?.(item, isRootLevel),
     tag: showStatusTags
       ? item.status === 1
         ? <Tag color="success">{statusLabels.enabled}</Tag>
         : <Tag>{statusLabels.disabled}</Tag>
       : undefined,
     children: item.children?.length
-      ? toNeTreeNodes(item.children, showStatusTags, statusLabels)
+      ? toNeTreeNodes(item.children, showStatusTags, statusLabels, renderNodeActions, false)
       : undefined,
   }));
 }
@@ -51,6 +54,8 @@ export function OrgTree({
   defaultExpandedKeys,
   title,
   extra,
+  extraRootNodes = [],
+  renderNodeActions,
   searchable = true,
   searchPlaceholder,
   emptyText,
@@ -76,8 +81,11 @@ export function OrgTree({
   const rootCountLabel = t('auth.orgManagement.tree.rootCount');
 
   const treeNodes = useMemo(
-    () => toNeTreeNodes(dataSource, showStatusTags, statusLabels),
-    [dataSource, showStatusTags, statusLabels],
+    () => [
+      ...extraRootNodes,
+      ...toNeTreeNodes(dataSource, showStatusTags, statusLabels, renderNodeActions, true),
+    ],
+    [dataSource, extraRootNodes, renderNodeActions, showStatusTags, statusLabels],
   );
 
   const autoExpandedKeys = useMemo(
@@ -87,22 +95,22 @@ export function OrgTree({
 
   const handleSelect = (key: string) => {
     const org = findOrgById(dataSource, key);
-    if (org) {
-      onSelect?.(key, org);
-    }
+    onSelect?.(key, org);
   };
 
   const rootCount = dataSource.length;
+  const resolvedTitle = title === undefined ? defaultTitle : title;
+  const resolvedExtra = extra === undefined ? <Tag>{rootCount} {rootCountLabel}</Tag> : extra;
 
   return (
     <NeTree
-      title={title ?? defaultTitle}
+      title={resolvedTitle}
       dataSource={treeNodes}
       selectedKey={selectedKey}
       defaultSelectedKey={defaultSelectedKey}
       expandedKeys={expandedKeys}
       defaultExpandedKeys={defaultExpandedKeys ?? autoExpandedKeys}
-      extra={extra ?? <Tag>{rootCount} {rootCountLabel}</Tag>}
+      extra={resolvedExtra}
       searchable={searchable}
       searchPlaceholder={searchPlaceholder ?? defaultSearchPlaceholder}
       emptyText={emptyText ?? '暂无组织数据'}

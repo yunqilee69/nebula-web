@@ -49,13 +49,25 @@ If you need a generic tree without organization-specific features, use `NeTree` 
 
 - **Type:** `ReactNode`
 - **Default:** Organization tree title from i18n
-- **Behavior:** Renders the tree panel title.
+- **Behavior:** Renders the tree panel title. Pass `null` with `extra={null}` to hide the header row.
 
 ### `extra`
 
 - **Type:** `ReactNode`
 - **Default:** Root organization count tag
-- **Behavior:** Renders content on the right side of the title row.
+- **Behavior:** Renders content on the right side of the title row. Pass `null` with `title={null}` to hide the header row.
+
+### `extraRootNodes`
+
+- **Type:** `NeTreeNode[]`
+- **Default:** `[]`
+- **Behavior:** Prepends virtual records before root organizations, such as an unassigned-users entry.
+
+### `renderNodeActions`
+
+- **Type:** `(org: OrgTreeResp, isRoot: boolean) => ReactNode`
+- **Default:** `undefined`
+- **Behavior:** Renders controls at the right side of each organization node. `isRoot` is true for top-level organizations only.
 
 ### `searchable`
 
@@ -97,7 +109,7 @@ If you need a generic tree without organization-specific features, use `NeTree` 
 
 - **Type:** `(orgId: string, org: OrgTreeResp) => void`
 - **Default:** `undefined`
-- **Behavior:** Called when an organization is selected.
+- **Behavior:** Called when an organization or virtual node is selected. `org` is `undefined` for virtual nodes from `extraRootNodes`.
 
 ### `onExpand`
 
