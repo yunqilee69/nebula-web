@@ -75,7 +75,9 @@ export function TemplateDetailModal({
             scroll={{ x: 'max-content' }}
           />
           <div className="rounded-md border border-solid border-[var(--nebula-color-border)] p-3">
-            {sectionTitle('渠道变体')}
+            <div className="flex items-center gap-2">
+              <span>渠道变体</span>
+            </div>
             {(detail.variants ?? []).length > 0 ? (
               <Tabs
                 className="mt-3"

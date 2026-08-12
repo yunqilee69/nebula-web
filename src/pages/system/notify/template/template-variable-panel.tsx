@@ -2,6 +2,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Button, Divider, Table, Tooltip, Typography } from 'antd';
 import { createStyles } from 'antd-style';
 import type { ColumnsType } from 'antd/es/table';
+import type { ReactNode } from 'react';
 import { WECOM_WEBHOOK_HELP_LINK } from './template-page-helpers';
 import type { TemplateVariable } from '@/types/notify';
 import { SYSTEM_TEMPLATE_VARIABLES } from './template-page-helpers';
@@ -20,10 +21,29 @@ const builtinVariableColumns: ColumnsType<TemplateVariable> = [
   },
 ];
 
+interface HelpIconProps {
+  readonly title: ReactNode;
+  readonly ariaLabel: string;
+}
+
+export function HelpIcon({ title, ariaLabel }: HelpIconProps) {
+  return (
+    <Tooltip placement="bottom" title={title}>
+      <Button
+        type="text"
+        size="small"
+        icon={<QuestionCircleOutlined />}
+        aria-label={ariaLabel}
+        className="text-[var(--nebula-color-text-secondary)]"
+      />
+    </Tooltip>
+  );
+}
+
 export function BuiltinVariableHelp() {
   return (
-    <Tooltip
-      placement="bottom"
+    <HelpIcon
+      ariaLabel="查看系统内置变量"
       title={(
         <Table<TemplateVariable>
           columns={builtinVariableColumns}
@@ -34,15 +54,7 @@ export function BuiltinVariableHelp() {
           className="min-w-[440px]"
         />
       )}
-    >
-      <Button
-        type="text"
-        size="small"
-        icon={<QuestionCircleOutlined />}
-        aria-label="查看系统内置变量"
-        className="text-[var(--nebula-color-text-secondary)]"
-      />
-    </Tooltip>
+    />
   );
 }
 
@@ -74,9 +86,8 @@ const useWecomStyles = createStyles(({ token, css }) => ({
 export function WeComWebhookHelp() {
   const { styles } = useWecomStyles();
   return (
-    <Tooltip
-      placement="bottom"
-      overlayStyle={{ maxWidth: 520 }}
+    <HelpIcon
+      ariaLabel="查看企业微信群机器人消息格式说明"
       title={(
         <div className={styles.tooltipContent}>
           <Typography.Text strong>企业微信群机器人消息格式</Typography.Text>
@@ -108,14 +119,6 @@ export function WeComWebhookHelp() {
           </Typography.Link>
         </div>
       )}
-    >
-      <Button
-        type="text"
-        size="small"
-        icon={<QuestionCircleOutlined />}
-        aria-label="查看企业微信群机器人消息格式说明"
-        className="text-[var(--nebula-color-text-secondary)]"
-      />
-    </Tooltip>
+    />
   );
 }

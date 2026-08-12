@@ -1,7 +1,8 @@
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Card, Form, Input, Modal, Switch, Tabs, Typography } from 'antd';
 import type { FormInstance } from 'antd';
-import { DictSelect } from '@/components/dict-select';
+import type { ReactNode } from 'react';
+import { DictLabel, DictSelect } from '@/components/dict-select';
 import type { UpdateNotifyTemplateVariantReq } from '@/types/notify';
 import type { NotifyTemplateFormState, NotifyTemplateFormValues } from './template-page-helpers';
 import { NOTIFY_CHANNEL_TYPE } from './template-page-helpers';
@@ -19,9 +20,12 @@ interface TemplateFormModalProps {
 
 const DEFAULT_VARIANT = { channelType: 'SITE', contentTemplate: '' } as const;
 
-function variantTabLabel(variant: UpdateNotifyTemplateVariantReq | undefined, index: number): string {
+function variantTabLabel(variant: UpdateNotifyTemplateVariantReq | undefined, _index: number): ReactNode {
   const channelType = variant?.channelType?.trim();
-  return channelType ? channelType : `变体 ${index + 1}`;
+  if (!channelType) {
+    return `变体 ${_index + 1}`;
+  }
+  return <DictLabel dictCode={NOTIFY_CHANNEL_TYPE} value={channelType} showTag={false} />;
 }
 
 function sectionTitle(title: string) {
@@ -167,7 +171,7 @@ export function TemplateFormModal({
           {(variantItems, { add, remove }, { errors }) => (
             <Card
               size="small"
-              title={sectionTitle('渠道变体')}
+              title="渠道变体"
               extra={<Button type="link" icon={<PlusOutlined />} onClick={() => add(DEFAULT_VARIANT)}>新增变体</Button>}
               className="mb-4"
             >
