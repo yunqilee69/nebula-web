@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { DictLabel } from '@/components/dict-select';
 import type { UpdateNotifyTemplateVariantReq } from '@/types/notify';
 import type { NotifyTemplateFormState, NotifyTemplateFormValues } from './template-page-helpers';
-import { NOTIFY_CHANNEL_TYPE } from './template-page-helpers';
+import { ALL_CHANNEL_TYPES, NOTIFY_CHANNEL_TYPE } from './template-page-helpers';
 import { BuiltinVariableHelp, WeComWebhookHelp, FeishuWebhookHelp, DingTalkWebhookHelp } from './template-variable-panel';
 
 interface TemplateFormModalProps {
@@ -18,10 +18,10 @@ interface TemplateFormModalProps {
   readonly onCancel: () => void;
 }
 
-function variantTabLabel(variant: UpdateNotifyTemplateVariantReq | undefined, _index: number): ReactNode {
-  const channelType = variant?.channelType?.trim();
+function variantTabLabel(_variant: UpdateNotifyTemplateVariantReq | undefined, index: number): ReactNode {
+  const channelType = ALL_CHANNEL_TYPES[index];
   if (!channelType) {
-    return `变体 ${_index + 1}`;
+    return `变体 ${index + 1}`;
   }
   return <DictLabel dictCode={NOTIFY_CHANNEL_TYPE} value={channelType} showTag={false} />;
 }
@@ -166,15 +166,15 @@ export function TemplateFormModal({
             >
               <Tabs
                 type="card"
+                className="[&_.ant-tabs-tab-active]:!bg-[var(--nebula-color-bg-container)] [&_.ant-tabs-tab]:bg-[var(--nebula-color-bg-layout)] [&_.ant-tabs-nav]:mb-0"
                 items={variantItems.map((variantItem, index) => ({
                   key: String(variantItem.key),
                   label: variantTabLabel(variants[variantItem.name], index),
                   children: (
-                    <div className="rounded-md border border-solid border-[var(--nebula-color-border)] p-3">
+                    <div className="rounded-b-md border border-t-0 border-solid border-[var(--nebula-color-border)] p-3">
                       <div className="flex items-center gap-4 mb-3">
                         <Form.Item name={[variantItem.name, 'channelType']} hidden><Input /></Form.Item>
                         <Form.Item name={[variantItem.name, 'id']} hidden><Input /></Form.Item>
-                        <DictLabel dictCode={NOTIFY_CHANNEL_TYPE} value={variants[variantItem.name]?.channelType ?? ''} showTag />
                         <Form.Item
                           name={[variantItem.name, 'enabled']}
                           valuePropName="checked"
