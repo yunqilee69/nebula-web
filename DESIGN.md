@@ -107,6 +107,15 @@ All spacing follows Ant Design's 4px-derived token scale (`paddingXXS` through `
 - **Motion**: none.
 - **Layout**: CSS Module isolation for third-party content.
 
+### NebulaProTable
+- **Structure**: Nebula wrapper around ProComponents `ProTable`, scoped by `.nebula-pro-table-wrapper` so native Ant Design tables keep their own sizing.
+- **Variants**: backend-paginated list tables with optional toolbar, built-in options, search, horizontal scroll, and pagination.
+- **Spacing**: inherits Ant Design ProTable/Card spacing; layout CSS only establishes flex fill and scroll ownership.
+- **States**: loading, empty, short-data, and long-data states remain Ant Design-owned.
+- **Accessibility**: row-area scrolling must stay inside the table body so shell header, filters, toolbar, and pagination remain reachable and predictable.
+- **Motion**: Ant Design component motion only.
+- **Layout**: fills the remaining shell content height with `min-height: 0`; the table body owns vertical scrolling while pagination stays fixed at the bottom of the table region.
+
 ## 6. Motion & Interaction
 
 ### Timing

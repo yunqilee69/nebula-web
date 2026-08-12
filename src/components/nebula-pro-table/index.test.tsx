@@ -56,7 +56,7 @@ describe('NebulaProTable layout', () => {
 
     expect(tableBody).toBeInTheDocument();
     expect(tableBody).toHaveStyle({ maxHeight: '100%' });
-    expect(container.querySelector('.ant-table-content')).toHaveStyle({ overflowX: 'auto' });
+    expect(tableBody).toHaveStyle({ overflowX: 'auto' });
   });
 });
 
