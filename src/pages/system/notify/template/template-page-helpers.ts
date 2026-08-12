@@ -141,7 +141,7 @@ export function toCreateNotifyTemplateReq(values: NotifyTemplateFormValues): Cre
   return {
     templateCode: values.templateCode.trim(),
     templateName: values.templateName.trim(),
-    variants: normalizeVariants(values.variants),
+    variants: normalizeVariants(values.variants ?? []),
     fields: normalizeFields(values.fields),
     ...optionalTemplateFields(values),
   };

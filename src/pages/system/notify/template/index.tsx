@@ -26,8 +26,6 @@ import type {
   NotifyTemplateTableQuery,
 } from './template-page-helpers';
 
-const DEFAULT_TEMPLATE_VARIANT = { channelType: 'SITE', contentTemplate: '' } as const;
-
 interface TemplateManagementPageProps {
   readonly service?: NotifyTemplateService;
   readonly authService?: Pick<AuthManagementService, 'getOrgTree' | 'listRoles' | 'pageUsers'>;
@@ -65,7 +63,6 @@ export function TemplateManagementPage({
   const openCreateForm = useCallback(() => {
     setFormState({ mode: 'create' });
     form.resetFields();
-    form.setFieldsValue({ fields: [], variants: [DEFAULT_TEMPLATE_VARIANT] });
     setFormOpen(true);
   }, [form]);
 

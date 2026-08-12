@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { DictLabel } from '@/components/dict-select';
 import type { UpdateNotifyTemplateVariantReq } from '@/types/notify';
 import type { NotifyTemplateFormState, NotifyTemplateFormValues } from './template-page-helpers';
-import { DEFAULT_VARIANTS, NOTIFY_CHANNEL_TYPE } from './template-page-helpers';
+import { NOTIFY_CHANNEL_TYPE } from './template-page-helpers';
 import { BuiltinVariableHelp, WeComWebhookHelp, FeishuWebhookHelp, DingTalkWebhookHelp } from './template-variable-panel';
 
 interface TemplateFormModalProps {
@@ -60,7 +60,7 @@ export function TemplateFormModal({
       onOk={onSubmit}
       onCancel={onCancel}
     >
-      <Form form={form} layout="vertical" disabled={disabled} initialValues={{ fields: [], variants: DEFAULT_VARIANTS }}>
+      <Form form={form} layout="vertical" disabled={disabled} initialValues={{ fields: [] }}>
         <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
           <Form.Item
             name="templateCode"
@@ -156,6 +156,7 @@ export function TemplateFormModal({
           )}
         </Form.List>
 
+        {formState.mode === 'update' && (
         <Form.List name="variants">
           {(variantItems) => (
             <Card
@@ -199,6 +200,7 @@ export function TemplateFormModal({
             </Card>
           )}
         </Form.List>
+        )}
 
         <Form.Item name="remark" label="备注">
           <Input.TextArea rows={2} placeholder="请输入备注" />
