@@ -9,6 +9,8 @@ export type SendPlanCounts = {
   readonly emailRecipientCount: number;
   readonly emailExcludedCount: number;
   readonly wecomTargetCount: number;
+  readonly feishuTargetCount: number;
+  readonly dingtalkTargetCount: number;
 };
 
 export type ValidSendPlan = {
@@ -19,7 +21,7 @@ export type ValidSendPlan = {
 
 type InvalidSendPlan = {
   readonly kind: 'INVALID';
-  readonly reason: 'CHANNELS_REQUIRED' | 'RECIPIENTS_REQUIRED' | 'EMAIL_RECIPIENTS_REQUIRED' | 'WECOM_TARGET_REQUIRED';
+  readonly reason: 'CHANNELS_REQUIRED' | 'RECIPIENTS_REQUIRED' | 'EMAIL_RECIPIENTS_REQUIRED' | 'WECOM_TARGET_REQUIRED' | 'FEISHU_TARGET_REQUIRED' | 'DINGTALK_TARGET_REQUIRED';
 };
 
 type SendPlanInput = {
@@ -85,6 +87,8 @@ export function createSendPlan(input: SendPlanInput): ValidSendPlan | InvalidSen
   const includesSite = channelTypes.includes('SITE');
   const includesEmail = channelTypes.includes('EMAIL');
   const includesWecom = channelTypes.includes('WECOM_GROUP_WEBHOOK');
+  const includesFeishu = channelTypes.includes('FEISHU_GROUP_WEBHOOK');
+  const includesDingTalk = channelTypes.includes('DINGTALK_GROUP_WEBHOOK');
   const users = mergeReceiverUsers(input.receiverItems);
   if ((includesSite || includesEmail) && users.length === 0) {
     return { kind: 'INVALID', reason: 'RECIPIENTS_REQUIRED' };
@@ -97,6 +101,14 @@ export function createSendPlan(input: SendPlanInput): ValidSendPlan | InvalidSen
 
   if (includesWecom && !input.channelTargetIds?.WECOM_GROUP_WEBHOOK?.trim()) {
     return { kind: 'INVALID', reason: 'WECOM_TARGET_REQUIRED' };
+  }
+
+  if (includesFeishu && !input.channelTargetIds?.FEISHU_GROUP_WEBHOOK?.trim()) {
+    return { kind: 'INVALID', reason: 'FEISHU_TARGET_REQUIRED' };
+  }
+
+  if (includesDingTalk && !input.channelTargetIds?.DINGTALK_GROUP_WEBHOOK?.trim()) {
+    return { kind: 'INVALID', reason: 'DINGTALK_TARGET_REQUIRED' };
   }
 
   const request: SendNotifyReq = {
@@ -117,6 +129,8 @@ export function createSendPlan(input: SendPlanInput): ValidSendPlan | InvalidSen
       emailRecipientCount: includesEmail ? emailUsers.length : 0,
       emailExcludedCount: includesEmail ? users.length - emailUsers.length : 0,
       wecomTargetCount: includesWecom ? 1 : 0,
+      feishuTargetCount: includesFeishu ? 1 : 0,
+      dingtalkTargetCount: includesDingTalk ? 1 : 0,
     },
   };
 }

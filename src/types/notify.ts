@@ -1,7 +1,7 @@
 import type { NebulaPageReq } from '@/components/nebula-pro-table/params';
 import type { UserResp } from '@/types/auth-management';
 
-export type ChannelType = 'SITE' | 'EMAIL' | 'WECOM_GROUP_WEBHOOK' | (string & Record<never, never>);
+export type ChannelType = 'SITE' | 'EMAIL' | 'WECOM_GROUP_WEBHOOK' | 'FEISHU_GROUP_WEBHOOK' | 'DINGTALK_GROUP_WEBHOOK' | (string & Record<never, never>);
 export type AnnouncementStatus = 0 | 1 | 2;
 export type AnnouncementTargetType = 'ALL' | 'USER' | 'ROLE' | 'ORG';
 export type NotifySendStatus = 'SUCCESS' | 'FAILED';

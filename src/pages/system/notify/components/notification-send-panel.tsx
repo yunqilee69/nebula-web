@@ -21,7 +21,9 @@ import type { ValidSendPlan } from './send-page-helpers';
 import { SendResultTable } from './send-result-table';
 
 const NOTIFY_CHANNEL_TYPE = 'NOTIFY_CHANNEL_TYPE';
-const WECOM_GROUP_WEBHOOK_CHANNEL = 'WECOM_GROUP_WEBHOOK';
+const WECOM_CHANNEL = 'WECOM_GROUP_WEBHOOK';
+const FEISHU_CHANNEL = 'FEISHU_GROUP_WEBHOOK';
+const DINGTALK_CHANNEL = 'DINGTALK_GROUP_WEBHOOK';
 
 type SendFormValues = {
   readonly channelTypes?: readonly ChannelType[];
@@ -60,6 +62,10 @@ function invalidPlanMessage(reason: Exclude<ReturnType<typeof createSendPlan>, V
       return '邮件渠道至少需要一个配置了邮箱的用户';
     case 'WECOM_TARGET_REQUIRED':
       return '企业微信群机器人渠道请选择一个投递目标';
+    case 'FEISHU_TARGET_REQUIRED':
+      return '飞书群机器人渠道请选择一个投递目标';
+    case 'DINGTALK_TARGET_REQUIRED':
+      return '钉钉群机器人渠道请选择一个投递目标';
   }
 }
 
@@ -167,7 +173,7 @@ export function NotificationSendPanel({
   useEffect(() => {
     let active = true;
     setTargetLoading(true);
-    service.pageNotifyChannelTargets({ pageNum: 1, pageSize: 100, channelType: WECOM_GROUP_WEBHOOK_CHANNEL })
+    service.pageNotifyChannelTargets({ pageNum: 1, pageSize: 100 })
       .then((page) => {
         if (active) setChannelTargets(page.data);
       })
@@ -202,7 +208,9 @@ export function NotificationSendPanel({
 
   const selectedChannelTypes = Form.useWatch('channelTypes', form) ?? [];
   const includesUserRecipientChannel = selectedChannelTypes.includes('SITE') || selectedChannelTypes.includes('EMAIL');
-  const includesWecomTargetChannel = selectedChannelTypes.includes(WECOM_GROUP_WEBHOOK_CHANNEL);
+  const includesWecomTargetChannel = selectedChannelTypes.includes(WECOM_CHANNEL);
+  const includesFeishuTargetChannel = selectedChannelTypes.includes(FEISHU_CHANNEL);
+  const includesDingTalkTargetChannel = selectedChannelTypes.includes(DINGTALK_CHANNEL);
   const variables = useMemo(
     () => buildTemplateParamFields(templateDetail, selectedChannelTypes),
     [selectedChannelTypes, templateDetail],
@@ -276,18 +284,62 @@ export function NotificationSendPanel({
 
       {includesWecomTargetChannel ? (
         <Form.Item
-          name={['channelTargetIds', WECOM_GROUP_WEBHOOK_CHANNEL]}
+          name={['channelTargetIds', WECOM_CHANNEL]}
           label="企业微信群机器人目标"
           rules={[{ required: true, message: '请选择企业微信群机器人目标' }]}
         >
           <Select
             aria-label="企业微信群机器人目标"
             loading={targetLoading}
-            options={channelTargets.map((target) => ({
-              value: target.id,
-              label: `${target.targetName} (${target.endpointMask})`,
-            }))}
+            options={channelTargets
+              .filter((target) => target.channelType === WECOM_CHANNEL)
+              .map((target) => ({
+                value: target.id,
+                label: `${target.targetName} (${target.endpointMask})`,
+              }))}
             placeholder="请选择企业微信群机器人目标"
+            showSearch={{ optionFilterProp: 'label' }}
+          />
+        </Form.Item>
+      ) : null}
+
+      {includesFeishuTargetChannel ? (
+        <Form.Item
+          name={['channelTargetIds', FEISHU_CHANNEL]}
+          label="飞书群机器人目标"
+          rules={[{ required: true, message: '请选择飞书群机器人目标' }]}
+        >
+          <Select
+            aria-label="飞书群机器人目标"
+            loading={targetLoading}
+            options={channelTargets
+              .filter((target) => target.channelType === FEISHU_CHANNEL)
+              .map((target) => ({
+                value: target.id,
+                label: `${target.targetName} (${target.endpointMask})`,
+              }))}
+            placeholder="请选择飞书群机器人目标"
+            showSearch={{ optionFilterProp: 'label' }}
+          />
+        </Form.Item>
+      ) : null}
+
+      {includesDingTalkTargetChannel ? (
+        <Form.Item
+          name={['channelTargetIds', DINGTALK_CHANNEL]}
+          label="钉钉群机器人目标"
+          rules={[{ required: true, message: '请选择钉钉群机器人目标' }]}
+        >
+          <Select
+            aria-label="钉钉群机器人目标"
+            loading={targetLoading}
+            options={channelTargets
+              .filter((target) => target.channelType === DINGTALK_CHANNEL)
+              .map((target) => ({
+                value: target.id,
+                label: `${target.targetName} (${target.endpointMask})`,
+              }))}
+            placeholder="请选择钉钉群机器人目标"
             showSearch={{ optionFilterProp: 'label' }}
           />
         </Form.Item>

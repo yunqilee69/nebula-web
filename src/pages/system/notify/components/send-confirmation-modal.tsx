@@ -56,6 +56,12 @@ export function SendConfirmationModal({
             <Descriptions.Item label="企业微信群目标数">
               <span data-count="wecom-targets">{plan.counts.wecomTargetCount}</span>
             </Descriptions.Item>
+            <Descriptions.Item label="飞书群目标数">
+              <span data-count="feishu-targets">{plan.counts.feishuTargetCount}</span>
+            </Descriptions.Item>
+            <Descriptions.Item label="钉钉群目标数">
+              <span data-count="dingtalk-targets">{plan.counts.dingtalkTargetCount}</span>
+            </Descriptions.Item>
           </Descriptions>
         </Space>
       ) : null}
