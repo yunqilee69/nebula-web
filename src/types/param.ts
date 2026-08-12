@@ -109,4 +109,9 @@ export interface GeneralConfigDTO {
   auditRequestMaxLength?: number;
   auditResponseMaxLength?: number;
   auditRetentionDays?: number;
+  notifyEmailSmtpHost?: string;
+  notifyEmailSmtpPort?: number;
+  notifyEmailSecurity?: string;
+  notifyEmailUsername?: string;
+  notifyEmailPassword?: string;
 }

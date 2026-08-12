@@ -121,7 +121,21 @@ export const TAB_CONFIGS: ConfigTab[] = [
   },
   { tabName: '字典', groups: [{ groupName: '字典配置', fields: [] }] },
   { tabName: '参数', groups: [{ groupName: '参数配置', fields: [] }] },
-  { tabName: '通知', groups: [{ groupName: '通知配置', fields: [] }] },
+  {
+    tabName: '通知',
+    groups: [
+      {
+        groupName: '邮件配置',
+        fields: [
+          { field: 'notifyEmailSmtpHost', paramKey: 'notify.email.smtp-host', paramName: 'SMTP服务器地址', description: '邮件SMTP服务器地址，例如 smtp.example.com', dataType: DataType.STRING },
+          { field: 'notifyEmailSmtpPort', paramKey: 'notify.email.smtp-port', paramName: 'SMTP端口', description: '邮件SMTP端口，常见为 465 或 587', dataType: DataType.INT },
+          { field: 'notifyEmailSecurity', paramKey: 'notify.email.security', paramName: 'SMTP加密方式', description: '支持 NONE、STARTTLS、SSL', dataType: DataType.STRING, optionCode: 'notify_email_security' },
+          { field: 'notifyEmailUsername', paramKey: 'notify.email.username', paramName: '邮箱账号', description: 'SMTP登录账号，同时作为邮件发件人', dataType: DataType.STRING },
+          { field: 'notifyEmailPassword', paramKey: 'notify.email.password', paramName: '邮箱密码', description: 'SMTP登录密码或邮箱授权码', dataType: DataType.STRING, optionCode: 'password' },
+        ],
+      },
+    ],
+  },
   { tabName: '通信', groups: [{ groupName: '通信配置', fields: [] }] },
   { tabName: '存储', groups: [{ groupName: '存储配置', fields: [] }] },
   { tabName: '调度', groups: [{ groupName: '调度配置', fields: [] }] },
