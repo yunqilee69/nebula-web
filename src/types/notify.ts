@@ -118,6 +118,7 @@ export interface NotifyTemplateVariantDto {
   readonly channelType: ChannelType;
   readonly subjectTemplate?: string;
   readonly contentTemplate: string;
+  readonly enabled: boolean;
   readonly remark?: string;
   readonly createTime?: string;
   readonly updateTime?: string;
@@ -148,6 +149,7 @@ export interface CreateNotifyTemplateVariantReq {
   readonly channelType: ChannelType;
   readonly subjectTemplate?: string;
   readonly contentTemplate: string;
+  readonly enabled?: boolean;
   readonly remark?: string;
 }
 

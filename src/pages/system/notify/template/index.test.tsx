@@ -122,6 +122,7 @@ const customTemplateDetail: NotifyTemplateDetailResp = {
       channelType: 'EMAIL',
       subjectTemplate: '${recipientName}，订单已审批',
       contentTemplate: '${recipientName} 的订单 ${orderNo} 已于 ${notify.currentDateTime} 审批通过。',
+      enabled: true,
     },
   ],
   remark: '订单审批结果通知',

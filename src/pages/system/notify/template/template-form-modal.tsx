@@ -2,10 +2,10 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Card, Form, Input, Modal, Switch, Tabs, Typography } from 'antd';
 import type { FormInstance } from 'antd';
 import type { ReactNode } from 'react';
-import { DictLabel, DictSelect } from '@/components/dict-select';
+import { DictLabel } from '@/components/dict-select';
 import type { UpdateNotifyTemplateVariantReq } from '@/types/notify';
 import type { NotifyTemplateFormState, NotifyTemplateFormValues } from './template-page-helpers';
-import { NOTIFY_CHANNEL_TYPE } from './template-page-helpers';
+import { DEFAULT_VARIANTS, NOTIFY_CHANNEL_TYPE } from './template-page-helpers';
 import { BuiltinVariableHelp, WeComWebhookHelp, FeishuWebhookHelp, DingTalkWebhookHelp } from './template-variable-panel';
 
 interface TemplateFormModalProps {
@@ -17,8 +17,6 @@ interface TemplateFormModalProps {
   readonly onSubmit: () => void;
   readonly onCancel: () => void;
 }
-
-const DEFAULT_VARIANT = { channelType: 'SITE', contentTemplate: '' } as const;
 
 function variantTabLabel(variant: UpdateNotifyTemplateVariantReq | undefined, _index: number): ReactNode {
   const channelType = variant?.channelType?.trim();
@@ -62,7 +60,7 @@ export function TemplateFormModal({
       onOk={onSubmit}
       onCancel={onCancel}
     >
-      <Form form={form} layout="vertical" disabled={disabled} initialValues={{ fields: [], variants: [DEFAULT_VARIANT] }}>
+      <Form form={form} layout="vertical" disabled={disabled} initialValues={{ fields: [], variants: DEFAULT_VARIANTS }}>
         <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
           <Form.Item
             name="templateCode"
@@ -116,8 +114,8 @@ export function TemplateFormModal({
                             >
                               <Input aria-label="字段编码" placeholder="如 orderNo" />
                             </Form.Item>
-                          </td>
-                          <td className="border-b border-solid border-[var(--nebula-color-border)] px-2 py-2 align-top">
+                           </td>
+                           <td className="border-b border-solid border-[var(--nebula-color-border)] px-2 py-2 align-top">
                             <Form.Item
                               name={[fieldItem.name, 'fieldName']}
                               rules={[{ required: true, whitespace: true, message: '字段名称不能为空' }]}
@@ -130,8 +128,7 @@ export function TemplateFormModal({
                             <Form.Item name={[fieldItem.name, 'defaultValue']} className="mb-0">
                               <Input aria-label="默认值" placeholder="可选默认值" />
                             </Form.Item>
-                          </td>
-                          <td className="border-b border-solid border-[var(--nebula-color-border)] px-2 py-2 align-top">
+                          </td>                          <td className="border-b border-solid border-[var(--nebula-color-border)] px-2 py-2 align-top">
                             <Form.Item name={[fieldItem.name, 'exampleValue']} className="mb-0">
                               <Input aria-label="示例值" placeholder="可选示例值" />
                             </Form.Item>
@@ -139,82 +136,66 @@ export function TemplateFormModal({
                           <td className="border-b border-solid border-[var(--nebula-color-border)] px-2 py-2 align-top">
                             <Form.Item name={[fieldItem.name, 'requiredFlag']} valuePropName="checked" className="mb-0">
                               <Switch aria-label="是否必填" />
-                            </Form.Item>
+                           </Form.Item>
                           </td>
                           <td className="border-b border-solid border-[var(--nebula-color-border)] px-2 py-2 align-top">
                             <Form.Item name={[fieldItem.name, 'remark']} className="mb-0">
-                              <Input aria-label="备注" placeholder="字段说明" />
+                             <Input aria-label="备注" placeholder="字段说明" />
                             </Form.Item>
                           </td>
                           <td className="border-b border-solid border-[var(--nebula-color-border)] px-2 py-2 align-top">
                             <Button danger type="link" icon={<DeleteOutlined />} aria-label="删除字段" onClick={() => remove(fieldItem.name)}>删除</Button>
                           </td>
-                        </tr>
+                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               )}
-            </Card>
+           </Card>
           )}
         </Form.List>
 
-        <Form.List
-          name="variants"
-          rules={[{
-            validator: async (_, value: readonly unknown[] | undefined) => {
-              if (value && value.length > 0) return;
-              throw new Error('至少需要一个渠道变体');
-            },
-          }]}
-        >
-          {(variantItems, { add, remove }, { errors }) => (
+        <Form.List name="variants">
+          {(variantItems) => (
             <Card
               size="small"
               title="渠道变体"
-              extra={<Button type="link" icon={<PlusOutlined />} onClick={() => add(DEFAULT_VARIANT)}>新增变体</Button>}
               className="mb-4"
             >
-              <div className="space-y-3">
-                <Tabs
-                  type="card"
-                  items={variantItems.map((variantItem, index) => ({
-                    key: String(variantItem.key),
-                    label: variantTabLabel(variants[variantItem.name], index),
-                    children: (
-                      <div className="rounded-md border border-solid border-[var(--nebula-color-border)] p-3">
-                        <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
-                          <Form.Item name={[variantItem.name, 'id']} hidden><Input /></Form.Item>
-                          <Form.Item
-                            name={[variantItem.name, 'channelType']}
-                            label="通知渠道"
-                            rules={[{ required: true, message: '请选择通知渠道' }]}
-                          >
-                            <DictSelect dictCode={NOTIFY_CHANNEL_TYPE} placeholder="请选择通知渠道" showDisabled={false} />
-                          </Form.Item>
-                          <Form.Item name={[variantItem.name, 'remark']} label="变体备注">
-                            <Input placeholder="可选备注" />
-                          </Form.Item>
-                        </div>
-                        <Form.Item name={[variantItem.name, 'subjectTemplate']} label="主题模板">
-                          <Input.TextArea rows={2} placeholder="请输入主题模板，可使用 ${variableName} 变量" />
-                        </Form.Item>
+              <Tabs
+                type="card"
+                items={variantItems.map((variantItem, index) => ({
+                  key: String(variantItem.key),
+                  label: variantTabLabel(variants[variantItem.name], index),
+                  children: (
+                    <div className="rounded-md border border-solid border-[var(--nebula-color-border)] p-3">
+                      <div className="flex items-center gap-4 mb-3">
+                        <Form.Item name={[variantItem.name, 'channelType']} hidden><Input /></Form.Item>
+                        <Form.Item name={[variantItem.name, 'id']} hidden><Input /></Form.Item>
+                        <DictLabel dictCode={NOTIFY_CHANNEL_TYPE} value={variants[variantItem.name]?.channelType ?? ''} showTag />
                         <Form.Item
-                          name={[variantItem.name, 'contentTemplate']}
-                          label={<span className="flex items-center gap-2">内容模板 {variants[variantItem.name]?.channelType === 'WECOM_GROUP_WEBHOOK' && <WeComWebhookHelp />}{variants[variantItem.name]?.channelType === 'FEISHU_GROUP_WEBHOOK' && <FeishuWebhookHelp />}{variants[variantItem.name]?.channelType === 'DINGTALK_GROUP_WEBHOOK' && <DingTalkWebhookHelp />}</span>}
-                          rules={[{ required: true, whitespace: true, message: '内容模板不能为空' }]}
+                          name={[variantItem.name, 'enabled']}
+                          valuePropName="checked"
+                          className="mb-0"
                         >
-                          <Input.TextArea rows={5} placeholder="请输入内容模板，可使用 ${variableName} 变量" />
+                          <Switch checkedChildren="启用" unCheckedChildren="禁用" />
                         </Form.Item>
-                        <div className="flex justify-end">
-                          <Button danger type="link" icon={<DeleteOutlined />} onClick={() => remove(variantItem.name)} disabled={variantItems.length <= 1}>删除变体</Button>
-                        </div>
                       </div>
-                    ),
-                  }))}
-                />
-                <Form.ErrorList errors={errors} />
-              </div>
+                      <Form.Item name={[variantItem.name, 'subjectTemplate']} label="主题模板">
+                        <Input.TextArea rows={2} placeholder="请输入主题模板，可使用 ${variableName} 变量" />
+                      </Form.Item>
+                      <Form.Item
+                        name={[variantItem.name, 'contentTemplate']}
+                        label={<span className="flex items-center gap-2">内容模板 {variants[variantItem.name]?.channelType === 'WECOM_GROUP_WEBHOOK' && <WeComWebhookHelp />}{variants[variantItem.name]?.channelType === 'FEISHU_GROUP_WEBHOOK' && <FeishuWebhookHelp />}{variants[variantItem.name]?.channelType === 'DINGTALK_GROUP_WEBHOOK' && <DingTalkWebhookHelp />}</span>}
+                        rules={[{ required: true, whitespace: true, message: '内容模板不能为空' }]}
+                      >
+                        <Input.TextArea rows={5} placeholder={"请输入内容模板，可使用 ${variableName} 变量"} />
+                      </Form.Item>
+                    </div>
+                  ),
+                }))}
+              />
             </Card>
           )}
         </Form.List>
@@ -223,6 +204,6 @@ export function TemplateFormModal({
           <Input.TextArea rows={2} placeholder="请输入备注" />
         </Form.Item>
       </Form>
-    </Modal>
+</Modal>
   );
 }

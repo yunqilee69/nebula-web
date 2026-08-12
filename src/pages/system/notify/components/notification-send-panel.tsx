@@ -3,7 +3,7 @@ import { Button, Card, Flex, Form, Input, Select, Spin, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AuthManagementService } from '@/api/auth-management';
 import { Access } from '@/components/access';
-import { DictSelect } from '@/components/dict-select';
+import { useDictItems } from '@/components/dict-select';
 import { useNotice } from '@/hooks/use-notice';
 import type { NotifyService } from '@/services/notify';
 import type {
@@ -136,7 +136,7 @@ export function NotificationSendPanel({
       const detail = await service.getNotifyTemplate(templateId);
       setTemplateDetail(detail);
       form.setFieldValue('templateParams', defaultTemplateParams(detail));
-      form.setFieldValue('channelTypes', (detail.variants ?? []).map((variant) => variant.channelType));
+      form.setFieldValue('channelTypes', (detail.variants ?? []).filter((variant) => variant.enabled).map((variant) => variant.channelType));
     } catch (error: unknown) {
       if (error instanceof Error) {
         notice.error('通知模板详情加载失败');
@@ -216,6 +216,16 @@ export function NotificationSendPanel({
     [selectedChannelTypes, templateDetail],
   );
 
+  const { options: allChannelOptions, loading: dictLoading } = useDictItems(NOTIFY_CHANNEL_TYPE, true);
+
+  const channelOptions = useMemo(() => {
+    if (!templateDetail) return allChannelOptions;
+    const enabledTypes = new Set(
+      (templateDetail.variants ?? []).filter((v) => v.enabled).map((v) => v.channelType),
+    );
+    return allChannelOptions.filter((opt) => enabledTypes.has(opt.value));
+  }, [allChannelOptions, templateDetail]);
+
   const previewSend = useCallback(async () => {
     const values = await form.validateFields().then(
       (validatedValues) => validatedValues,
@@ -272,13 +282,15 @@ export function NotificationSendPanel({
         label="通知渠道"
         rules={[{ required: true, type: 'array', min: 1, message: '请选择至少一个通知渠道' }]}
       >
-          <DictSelect
-          dictCode={NOTIFY_CHANNEL_TYPE}
+        <Select
           mode="multiple"
-          showDisabled={false}
           aria-label="通知渠道"
           allowClear={false}
-          placeholder="请选择通知渠道"
+          loading={dictLoading}
+          disabled={!templateDetail}
+          options={channelOptions}
+          placeholder={templateDetail ? '请选择通知渠道' : '请先选择通知模板'}
+          showSearch
         />
       </Form.Item>
 

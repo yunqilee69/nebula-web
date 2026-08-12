@@ -18,6 +18,20 @@ export const WECOM_WEBHOOK_HELP_LINK = 'https://developer.work.weixin.qq.com/doc
 export const FEISHU_WEBHOOK_HELP_LINK = 'https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/bot-v3/bot-overview';
 export const DINGTALK_WEBHOOK_HELP_LINK = 'https://open.dingtalk.com/document/orgapp/custom-robot-access';
 
+export const ALL_CHANNEL_TYPES: readonly ChannelType[] = [
+  'SITE',
+  'EMAIL',
+  'WECOM_GROUP_WEBHOOK',
+  'FEISHU_GROUP_WEBHOOK',
+  'DINGTALK_GROUP_WEBHOOK',
+];
+
+export const DEFAULT_VARIANTS: readonly UpdateNotifyTemplateVariantReq[] = ALL_CHANNEL_TYPES.map((channelType) => ({
+  channelType,
+  contentTemplate: '',
+  enabled: false,
+}));
+
 export const SYSTEM_TEMPLATE_VARIABLES = [
   { kind: 'BUILTIN', name: 'notify.currentDateTime', description: '当前日期时间', builtin: true },
   { kind: 'BUILTIN', name: 'notify.currentDate', description: '当前日期', builtin: true },
@@ -181,6 +195,7 @@ function normalizeVariants(values: readonly UpdateNotifyTemplateVariantReq[]): r
     ...(variant.id ? { id: variant.id } : {}),
     channelType: variant.channelType,
     contentTemplate: variant.contentTemplate.trim(),
+    enabled: variant.enabled ?? false,
     ...optionalVariantValues(variant),
   }));
 }
