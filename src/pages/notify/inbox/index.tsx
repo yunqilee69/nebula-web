@@ -1,4 +1,4 @@
-import { Alert, Modal, Skeleton, Tag, Typography } from 'antd';
+import { Alert, Modal, Skeleton, Tabs, Tag, Typography } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { NebulaPageResp } from '@/components/nebula-pro-table';
@@ -9,6 +9,7 @@ import { useNotifyStore } from '@/stores/notify';
 import type { SiteMessageResp } from '@/types/notify';
 import { SiteMessageTable } from './site-message-table';
 import type { SiteMessageTableHandle } from './site-message-table';
+import { CurrentAnnouncementTable } from './current-announcement-table';
 
 export interface InboxService {
   readonly pageSiteMessages: (
@@ -19,6 +20,8 @@ export interface InboxService {
   readonly markSiteMessageUnread: NotifyService['markSiteMessageUnread'];
   readonly markSiteMessagesRead: NotifyService['markSiteMessagesRead'];
   readonly markSiteMessagesUnread: NotifyService['markSiteMessagesUnread'];
+  readonly pageCurrentAnnouncements: NotifyService['pageCurrentAnnouncements'];
+  readonly markAnnouncementRead: NotifyService['markAnnouncementRead'];
 }
 
 export interface NotificationInboxPageProps {
@@ -228,46 +231,57 @@ export function NotificationInboxPage({ service = notifyService }: NotificationI
   }, [decrementUnread, selectedMessage, service]);
 
   return (
-    <section className="flex h-full min-h-0 flex-col gap-4" aria-labelledby="notification-inbox-title">
-      <header className="shrink-0">
-        <Typography.Title id="notification-inbox-title" level={3}>
-          我的消息
-        </Typography.Title>
-        <Typography.Text type="secondary">查看站内通知并跟进未读消息</Typography.Text>
-      </header>
+    <section className="flex h-full min-h-0 flex-col">
+      <Tabs
+        defaultActiveKey="messages"
+        items={[
+          {
+            key: 'messages',
+            label: '站内信',
+            children: (
+              <div className="min-h-0">
+                {readError && <Alert className="mb-3" showIcon title={readError} type="error" />}
+                {deleteError && <Alert className="mb-3" showIcon title={deleteError} type="error" />}
+                <SiteMessageTable
+                  ref={tableRef}
+                  currentUserId={currentUserId}
+                  deletingMessageId={deletingMessageId}
+                  pendingReadStatusAction={pendingReadStatusAction}
+                  selectedMessageId={activeMessageId}
+                  service={service}
+                  onDataLoaded={handleDataLoaded}
+                  onDelete={deleteMessage}
+                  onMarkRead={markMessagesRead}
+                  onMarkUnread={markMessagesUnread}
+                  onSelect={selectMessage}
+                />
 
-      <div className="min-h-0 flex-1">
-        {readError && <Alert className="mb-3" showIcon title={readError} type="error" />}
-        {deleteError && <Alert className="mb-3" showIcon title={deleteError} type="error" />}
-        <SiteMessageTable
-          ref={tableRef}
-          currentUserId={currentUserId}
-          deletingMessageId={deletingMessageId}
-          pendingReadStatusAction={pendingReadStatusAction}
-          selectedMessageId={activeMessageId}
-          service={service}
-          onDataLoaded={handleDataLoaded}
-          onDelete={deleteMessage}
-          onMarkRead={markMessagesRead}
-          onMarkUnread={markMessagesUnread}
-          onSelect={selectMessage}
-        />
-      </div>
-
-      {selectedMessage ? (
-        <Modal
-          title="消息详情"
-          aria-label="消息详情"
-          open
-          footer={null}
-          onCancel={closeDetail}
-          destroyOnHidden
-        >
-          <MessageDetail
-            message={selectedMessage}
-          />
-        </Modal>
-      ) : null}
+                {selectedMessage ? (
+                  <Modal
+                    title="消息详情"
+                    aria-label="消息详情"
+                    open
+                    footer={null}
+                    onCancel={closeDetail}
+                    destroyOnHidden
+                  >
+                    <MessageDetail
+                      message={selectedMessage}
+                    />
+                  </Modal>
+                ) : null}
+              </div>
+            ),
+          },
+          {
+            key: 'announcements',
+            label: '公告',
+            children: (
+              <CurrentAnnouncementTable service={service} />
+            ),
+          },
+        ]}
+      />
     </section>
   );
 }

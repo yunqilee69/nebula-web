@@ -43,6 +43,8 @@ function createService(overrides: Partial<InboxServiceWithDeletion> = {}): Inbox
     markSiteMessagesRead: vi.fn().mockResolvedValue(undefined),
     markSiteMessagesUnread: vi.fn().mockResolvedValue(undefined),
     deleteSiteMessage: vi.fn().mockResolvedValue(undefined),
+    pageCurrentAnnouncements: vi.fn().mockResolvedValue({ data: [], total: 0 }),
+    markAnnouncementRead: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
