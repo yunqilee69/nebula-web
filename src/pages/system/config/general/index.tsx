@@ -4,8 +4,11 @@ import {
   Button,
   Card,
   Empty,
+  Form,
   Input,
   InputNumber,
+  Modal,
+  Select,
   Spin,
   Switch,
   Tabs,
@@ -15,6 +18,7 @@ import type { TabsProps } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DictSelect } from '@/components/dict-select';
 import { useNotice } from '@/hooks/use-notice';
+import { notifyService } from '@/services/notify';
 import { paramService } from '@/services/param';
 import { DataType, type DataType as ParamDataType } from '@/types/param';
 import type { GeneralConfigDTO } from '@/types/param';
@@ -22,6 +26,12 @@ import { TAB_CONFIGS, valueToString } from './advance-config-data';
 import type { AdvanceParamItem, AdvanceTab, ParamGroup } from './advance-config-data';
 
 const { Text } = Typography;
+
+interface TestEmailFormValues {
+  readonly receiver: string;
+  readonly subject: string;
+  readonly content: string;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Helper: build tab structure from backend DTO                       */
@@ -118,6 +128,29 @@ function ParamValueEditor({ dataType, optionCode, value, onChange }: ParamValueE
       );
     case DataType.STRING:
     default:
+      if (optionCode === 'password') {
+        return (
+          <Input.Password
+            style={{ width: 280 }}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        );
+      }
+      if (optionCode === 'notify_email_security') {
+        return (
+          <Select
+            style={{ width: 280 }}
+            value={value || undefined}
+            options={[
+              { label: 'NONE', value: 'NONE' },
+              { label: 'STARTTLS', value: 'STARTTLS' },
+              { label: 'SSL', value: 'SSL' },
+            ]}
+            onChange={(next) => onChange(next)}
+          />
+        );
+      }
       return (
         <Input
           style={{ width: 280 }}
@@ -181,9 +214,10 @@ interface GroupCardProps {
   readonly savingKeys: ReadonlySet<string>;
   readonly onValueChange: (paramKey: string, value: string) => void;
   readonly onSaveParam: (param: AdvanceParamItem) => void;
+  readonly onTestEmail: () => void;
 }
 
-function GroupCard({ group, dirtyMap, savingKeys, onValueChange, onSaveParam }: GroupCardProps) {
+function GroupCard({ group, dirtyMap, savingKeys, onValueChange, onSaveParam, onTestEmail }: GroupCardProps) {
   if (group.params.length === 0) {
     return (
       <Card className="shadow-sm" styles={{ body: { padding: '32px 24px', textAlign: 'center' } }}>
@@ -205,6 +239,13 @@ function GroupCard({ group, dirtyMap, savingKeys, onValueChange, onSaveParam }: 
         </div>
       }
       className="shadow-sm"
+      extra={
+        group.groupName === '邮件配置' ? (
+          <Button type="primary" size="small" onClick={onTestEmail}>
+            测试邮件配置
+          </Button>
+        ) : undefined
+      }
       styles={{ body: { padding: 0 } }}
     >
       {group.params.map((param) => (
@@ -230,12 +271,13 @@ interface TabPanelProps {
   readonly onDirtyUpdate: (paramKey: string, value: string) => void;
   readonly onSaveParam: (param: AdvanceParamItem) => void;
   readonly onBatchSave: () => Promise<void>;
+  readonly onTestEmail: () => void;
   readonly dirtyMap: Record<string, string>;
   readonly savingKeys: ReadonlySet<string>;
   readonly hasChanges: boolean;
 }
 
-function TabPanel({ tab, dirtyMap, savingKeys, onDirtyUpdate, onSaveParam, onBatchSave, hasChanges }: TabPanelProps) {
+function TabPanel({ tab, dirtyMap, savingKeys, onDirtyUpdate, onSaveParam, onBatchSave, onTestEmail, hasChanges }: TabPanelProps) {
 
   return (
     <div className="flex flex-col gap-5">
@@ -247,6 +289,7 @@ function TabPanel({ tab, dirtyMap, savingKeys, onDirtyUpdate, onSaveParam, onBat
           savingKeys={savingKeys}
           onValueChange={onDirtyUpdate}
           onSaveParam={onSaveParam}
+          onTestEmail={onTestEmail}
         />
       ))}
 
@@ -274,6 +317,9 @@ export function GeneralConfigPage() {
   const [error, setError] = useState(false);
   const [dirtyMap, setDirtyMap] = useState<Record<string, string>>({});
   const [savingKeys, setSavingKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const [testEmailOpen, setTestEmailOpen] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testEmailForm] = Form.useForm<TestEmailFormValues>();
   const notice = useNotice();
 
   useEffect(() => {
@@ -356,6 +402,33 @@ export function GeneralConfigPage() {
     }
   }, [dirtyMap, tabs, notice]);
 
+  const openTestEmail = useCallback(() => {
+    testEmailForm.setFieldsValue({
+      subject: 'Nebula SMTP配置测试',
+      content: '这是一封用于验证 Nebula 邮件通知配置是否有效的测试邮件。',
+    });
+    setTestEmailOpen(true);
+  }, [testEmailForm]);
+
+  const sendTestEmail = useCallback(async () => {
+    const values = await testEmailForm.validateFields();
+    setTestingEmail(true);
+    try {
+      await notifyService.testEmailNotify(values);
+      notice.success('测试邮件发送成功');
+      setTestEmailOpen(false);
+      testEmailForm.resetFields();
+    } catch (error) {
+      if (error instanceof Error) {
+        notice.error(error.message || '测试邮件发送失败');
+      } else {
+        notice.error('测试邮件发送失败');
+      }
+    } finally {
+      setTestingEmail(false);
+    }
+  }, [notice, testEmailForm]);
+
   const hasChanges = Object.keys(dirtyMap).length > 0;
 
   const tabItems = useMemo<TabsProps['items']>(
@@ -369,10 +442,11 @@ export function GeneralConfigPage() {
             dirtyMap={dirtyMap}
             savingKeys={savingKeys}
             hasChanges={hasChanges}
-            onDirtyUpdate={handleValueChange}
-            onSaveParam={saveParam}
-            onBatchSave={batchSave}
-          />
+              onDirtyUpdate={handleValueChange}
+              onSaveParam={saveParam}
+              onBatchSave={batchSave}
+              onTestEmail={openTestEmail}
+            />
         ),
       })),
     [tabs, dirtyMap, savingKeys, hasChanges, handleValueChange, saveParam, batchSave],
@@ -404,6 +478,47 @@ export function GeneralConfigPage() {
           tabBarStyle={{ marginBottom: 24 }}
         />
       </div>
+      <Modal
+        title="测试邮件配置"
+        open={testEmailOpen}
+        confirmLoading={testingEmail}
+        okText="发送测试邮件"
+        cancelText="取消"
+        onOk={() => void sendTestEmail()}
+        onCancel={() => setTestEmailOpen(false)}
+        destroyOnHidden
+      >
+        <Form<TestEmailFormValues>
+          form={testEmailForm}
+          layout="vertical"
+          requiredMark={false}
+        >
+          <Form.Item
+            name="receiver"
+            label="收件人"
+            rules={[
+              { required: true, message: '请输入收件人邮箱' },
+              { type: 'email', message: '请输入有效的邮箱地址' },
+            ]}
+          >
+            <Input placeholder="admin@example.com" />
+          </Form.Item>
+          <Form.Item
+            name="subject"
+            label="主题"
+            rules={[{ required: true, message: '请输入邮件主题' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="content"
+            label="内容"
+            rules={[{ required: true, message: '请输入邮件内容' }]}
+          >
+            <Input.TextArea rows={5} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
