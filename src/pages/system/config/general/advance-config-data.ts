@@ -42,7 +42,7 @@ export interface AdvanceParamItem {
   readonly paramKey: string;
   readonly paramName: string;
   readonly description: string;
-  paramValue: string;
+  readonly paramValue: string;
   readonly dataType: DataType;
   readonly optionCode?: string;
 }
@@ -142,21 +142,13 @@ export const TAB_CONFIGS: ConfigTab[] = [
   { tabName: '前端', groups: [{ groupName: '前端配置', fields: [] }] },
 ];
 
+const FIELD_CONFIGS = TAB_CONFIGS.flatMap((tab) => tab.groups.flatMap((group) => group.fields));
+
+const FIELD_BY_PARAM_KEY = new Map(FIELD_CONFIGS.map((field) => [field.paramKey, field]));
+
 /* ------------------------------------------------------------------ */
 /*  工具函数                                                           */
 /* ------------------------------------------------------------------ */
-
-/** 后端 DTO 字段 → paramKey 映射 */
-export function fieldToParamKey(field: keyof GeneralConfigDTO): string {
-  for (const tab of TAB_CONFIGS) {
-    for (const group of tab.groups) {
-      for (const f of group.fields) {
-        if (f.field === field) return f.paramKey;
-      }
-    }
-  }
-  return field;
-}
 
 /** DTO 值 → 字符串（用于发送到后端） */
 export function valueToString(value: boolean | number | string | undefined | null): string {
@@ -172,4 +164,105 @@ export function stringToValue(value: string, dataType: DataType): string | boole
     return Number.isNaN(n) ? 0 : n;
   }
   return value;
+}
+
+export function buildTabs(dto: GeneralConfigDTO): AdvanceTab[] {
+  return TAB_CONFIGS.map((tab) => ({
+    tabName: tab.tabName,
+    groups: tab.groups.map((group) => ({
+      groupName: group.groupName,
+      params: group.fields.map((field) => ({
+        paramKey: field.paramKey,
+        paramName: field.paramName,
+        description: field.description,
+        paramValue: valueToString(dto[field.field]),
+        dataType: field.dataType,
+        optionCode: field.optionCode,
+      })),
+    })),
+  }));
+}
+
+export function hasTabParams(tab: AdvanceTab): boolean {
+  return tab.groups.some((group) => group.params.length > 0);
+}
+
+export function getVisibleTabs(tabs: readonly AdvanceTab[]): readonly AdvanceTab[] {
+  return tabs.filter(hasTabParams);
+}
+
+export function getParamField(paramKey: string): FieldConfig | undefined {
+  return FIELD_BY_PARAM_KEY.get(paramKey);
+}
+
+function parseBooleanValue(value: string): boolean {
+  return value === 'true' || value === '1';
+}
+
+function parseNumberValue(value: string, dataType: DataType): number {
+  const parsed = dataType === DataType.INT ? parseInt(value, 10) : parseFloat(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function assignConfigValue(dto: GeneralConfigDTO, field: keyof GeneralConfigDTO, value: string, dataType: DataType): void {
+  switch (field) {
+    case 'usernameRegisterEnabled':
+    case 'phoneLoginEnabled':
+    case 'phoneRegisterEnabled':
+    case 'emailLoginEnabled':
+    case 'emailRegisterEnabled':
+    case 'oauth2Enabled':
+    case 'oauth2AllowRegister':
+    case 'oauth2WechatMiniProgramEnabled':
+    case 'oauth2WechatWebEnabled':
+    case 'oauth2GithubEnabled':
+      dto[field] = parseBooleanValue(value);
+      return;
+    case 'usernamePasswordMinLength':
+    case 'usernamePasswordMaxLength':
+    case 'usernameLoginFailMaxCount':
+    case 'usernameLockTimeHours':
+    case 'phoneCodeExpireMinutes':
+    case 'phoneSendIntervalSeconds':
+    case 'emailCodeExpireMinutes':
+    case 'emailSendIntervalSeconds':
+    case 'auditRequestMaxLength':
+    case 'auditResponseMaxLength':
+    case 'auditRetentionDays':
+    case 'notifyEmailSmtpPort':
+      dto[field] = parseNumberValue(value, dataType);
+      return;
+    case 'oauth2WechatWebType':
+    case 'notifyEmailSmtpHost':
+    case 'notifyEmailSecurity':
+    case 'notifyEmailUsername':
+    case 'notifyEmailPassword':
+      dto[field] = value;
+      return;
+  }
+}
+
+export function buildGeneralConfigPatch(dirtyMap: Readonly<Record<string, string>>): GeneralConfigDTO {
+  const dto: GeneralConfigDTO = {};
+
+  for (const [paramKey, value] of Object.entries(dirtyMap)) {
+    const field = getParamField(paramKey);
+    if (field === undefined) continue;
+    assignConfigValue(dto, field.field, value, field.dataType);
+  }
+
+  return dto;
+}
+
+export function updateTabParamValues(tabs: readonly AdvanceTab[], dirtyMap: Readonly<Record<string, string>>): AdvanceTab[] {
+  return tabs.map((tab) => ({
+    ...tab,
+    groups: tab.groups.map((group) => ({
+      ...group,
+      params: group.params.map((param) => {
+        const value = dirtyMap[param.paramKey];
+        return value === undefined ? param : { ...param, paramValue: value };
+      }),
+    })),
+  }));
 }
