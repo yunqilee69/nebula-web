@@ -76,7 +76,6 @@ describe('notifyService', () => {
       execute: () => notifyService.createNotifyTemplate({
         templateCode: 'ORDER_PAID',
         templateName: 'Order paid',
-        variants: [{ channelType: 'SITE', contentTemplate: 'Order ${orderNo} was paid' }],
       }),
       expected: {
         method: 'POST',
@@ -84,7 +83,6 @@ describe('notifyService', () => {
         data: {
           templateCode: 'ORDER_PAID',
           templateName: 'Order paid',
-          variants: [{ channelType: 'SITE', contentTemplate: 'Order ${orderNo} was paid' }],
         },
       },
     },

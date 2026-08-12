@@ -162,7 +162,6 @@ export interface CreateNotifyTemplateReq {
   readonly templateName: string;
   readonly remark?: string;
   readonly fields?: readonly NotifyTemplateFieldReq[];
-  readonly variants: readonly CreateNotifyTemplateVariantReq[];
 }
 
 export interface UpdateNotifyTemplateReq {
