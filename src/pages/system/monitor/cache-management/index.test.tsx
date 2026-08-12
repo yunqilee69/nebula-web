@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
@@ -61,54 +61,101 @@ async function confirmPopover(title: string) {
   await userEvent.click(within(popover).getByRole('button', { name: /删\s*除/ }));
 }
 
+function getCacheNameButton(cacheName: string): HTMLElement {
+  return screen.getByRole('button', { name: `选择缓存名称 ${cacheName}` });
+}
+
+async function findCacheNameButton(cacheName: string): Promise<HTMLElement> {
+  return screen.findByRole('button', { name: `选择缓存名称 ${cacheName}` });
+}
+
+function getCacheKeyButton(cacheName: string, cacheKey: string): HTMLElement {
+  return screen.getByRole('button', { name: `选择缓存 Key ${cacheName} ${cacheKey}` });
+}
+
 describe('CacheManagementPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     cleanup();
   });
 
-  it('renders a left key list and formats selected JSON values on the right', async () => {
+  it('browses cache entries through cascading cache name, key, and value columns', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(await screen.findByRole('button', { name: '选择缓存 lock:alice' }));
+    expect(screen.getByText('缓存名称')).toBeInTheDocument();
+    expect(screen.getByText('缓存 Key')).toBeInTheDocument();
+    expect(screen.getByText('缓存值')).toBeInTheDocument();
+    expect(screen.queryByText('缓存浏览')).not.toBeInTheDocument();
 
-    expect(screen.getByText('login-lock')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '选择缓存 lock:alice' })).toBeInTheDocument();
-    expect(screen.getByRole('row', { name: '缓存 Key lock:alice' })).toBeInTheDocument();
+    await user.click(await findCacheNameButton('login-lock'));
+
+    expect(getCacheKeyButton('login-lock', 'lock:alice')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '选择缓存 Key token-session session:bob' })).not.toBeInTheDocument();
+    expect(screen.getByText('请选择缓存 Key')).toBeInTheDocument();
+
+    await user.click(getCacheKeyButton('login-lock', 'lock:alice'));
+
     expect(screen.getByText('LockState')).toBeInTheDocument();
     expect(screen.getByText((content) => content.includes('"locked": true'))).toBeInTheDocument();
   });
 
-  it('filters the key list from the top search fields', async () => {
+  it('filters cascading cache columns from the top search fields', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await screen.findByRole('button', { name: '选择缓存 lock:alice' });
+    await findCacheNameButton('login-lock');
+    expect(screen.getByText('共 2 项')).toBeInTheDocument();
+
     await user.type(screen.getByLabelText('缓存键'), 'session');
 
-    expect(screen.queryByRole('button', { name: '选择缓存 lock:alice' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '选择缓存 session:bob' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '选择缓存名称 login-lock' })).not.toBeInTheDocument();
+    expect(getCacheNameButton('token-session')).toBeInTheDocument();
+    expect(screen.getByText('共 1 项')).toBeInTheDocument();
+
+    await user.click(getCacheNameButton('token-session'));
+    expect(getCacheKeyButton('token-session', 'session:bob')).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText('缓存键'));
     await user.type(screen.getByLabelText('缓存名称'), 'missing');
 
     expect(screen.getByText('未找到匹配缓存项')).toBeInTheDocument();
+    expect(screen.getByText('共 0 项')).toBeInTheDocument();
   });
 
-  it('deletes the selected key and refreshes the list', async () => {
+  it('shows TTL metadata and decreases remaining TTL over time', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await findCacheNameButton('login-lock'));
+    vi.useFakeTimers();
+    fireEvent.click(getCacheKeyButton('login-lock', 'lock:alice'));
+
+    expect(screen.getByText('过期时间 3600s')).toBeInTheDocument();
+    expect(screen.getByText('剩余 120s')).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(screen.getByText('剩余 118s')).toBeInTheDocument();
+  });
+
+  it('deletes the selected cascading key and refreshes the list', async () => {
     const user = userEvent.setup();
     const service = renderPage();
 
-    await user.click(await screen.findByRole('button', { name: '选择缓存 lock:alice' }));
+    await user.click(await findCacheNameButton('token-session'));
+    await user.click(getCacheKeyButton('token-session', 'session:bob'));
     await user.click(screen.getByRole('button', { name: '删除当前 Key' }));
     await confirmPopover('确认删除当前缓存项？');
 
     await waitFor(() => {
-      expect(service.deleteCacheEntry).toHaveBeenCalledWith({ cacheName: 'login-lock', cacheKey: 'lock:alice' });
+      expect(service.deleteCacheEntry).toHaveBeenCalledWith({ cacheName: 'token-session', cacheKey: 'session:bob' });
     });
     await waitFor(() => expect(service.listCaches).toHaveBeenCalledTimes(2));
   });
@@ -117,7 +164,7 @@ describe('CacheManagementPage', () => {
     const user = userEvent.setup();
     const service = renderPage();
 
-    await screen.findByRole('button', { name: '选择缓存 lock:alice' });
+    await findCacheNameButton('login-lock');
     await user.click(screen.getByRole('button', { name: '删除全部' }));
     await confirmPopover('确认删除当前筛选结果中的全部缓存项？');
 

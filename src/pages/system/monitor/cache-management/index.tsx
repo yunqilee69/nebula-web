@@ -1,87 +1,14 @@
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Button, Card, Descriptions, Empty, Flex, Input, Popconfirm, Space, Spin, Tag, Typography } from 'antd';
-import { createStyles } from 'antd-style';
+import { Button, Card, Flex, Input, Popconfirm, Space, Tag } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNotice } from '@/hooks/use-notice';
 import { cacheService, type CacheService } from '@/services/cache';
-import type { CacheEntryResp, CacheResp } from '@/types/cache';
+import type { CacheResp } from '@/types/cache';
+import { CacheCascadeBrowser, flattenCaches, getCacheEntryId } from './cache-cascade-browser';
+import type { CacheEntryItem } from './cache-cascade-browser';
 
 export interface CacheManagementPageProps {
   readonly service?: CacheService;
-}
-
-type CacheEntryItem = {
-  readonly cacheName: string;
-  readonly defaultTtlSeconds?: number;
-  readonly entry: CacheEntryResp;
-};
-
-const useStyles = createStyles(({ token }) => ({
-  inspector: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(280px, 34%) minmax(0, 1fr)',
-    gap: token.marginMD,
-    minHeight: 0,
-    flex: 1,
-    '@media (max-width: 768px)': {
-      gridTemplateColumns: '1fr',
-    },
-  },
-  pane: {
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-  scrollBody: {
-    minHeight: 0,
-    overflow: 'auto',
-  },
-  keyButton: {
-    width: '100%',
-    height: 'auto',
-    justifyContent: 'flex-start',
-    paddingBlock: token.paddingSM,
-    textAlign: 'left',
-  },
-  codeBlock: {
-    minHeight: 280,
-    margin: 0,
-    padding: token.padding,
-    border: `1px solid ${token.colorBorderSecondary}`,
-    borderRadius: token.borderRadiusLG,
-    background: token.colorBgLayout,
-    color: token.colorText,
-    fontFamily: token.fontFamilyCode,
-    overflow: 'auto',
-    overflowWrap: 'anywhere',
-    whiteSpace: 'pre-wrap',
-  },
-}));
-
-function formatSeconds(value: number | undefined): string {
-  return value === undefined ? '-' : `${value}s`;
-}
-
-function getEntryId(item: CacheEntryItem): string {
-  return `${item.cacheName}:${item.entry.cacheKey}`;
-}
-
-function formatCacheValue(value: string | undefined): string {
-  if (!value) return '-';
-  try {
-    const parsed: unknown = JSON.parse(value);
-    return JSON.stringify(parsed, null, 2) ?? value;
-  } catch (error: unknown) {
-    if (error instanceof SyntaxError) return value;
-    throw error;
-  }
-}
-
-function flattenCaches(caches: readonly CacheResp[]): readonly CacheEntryItem[] {
-  return caches.flatMap((cache) => cache.entries.map((entry) => ({
-    cacheName: cache.cacheName,
-    defaultTtlSeconds: cache.defaultTtlSeconds,
-    entry,
-  })));
 }
 
 function includesText(value: string | undefined, keyword: string): boolean {
@@ -91,23 +18,34 @@ function includesText(value: string | undefined, keyword: string): boolean {
 export function CacheManagementPage({ service: serviceProp }: CacheManagementPageProps) {
   const service = serviceProp ?? cacheService;
   const notice = useNotice();
-  const { styles } = useStyles();
 
   const [caches, setCaches] = useState<readonly CacheResp[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [cacheNameFilter, setCacheNameFilter] = useState('');
   const [cacheKeyFilter, setCacheKeyFilter] = useState('');
+  const [selectedCacheName, setSelectedCacheName] = useState<string>();
   const [selectedId, setSelectedId] = useState<string>();
 
-  const allEntries = useMemo(() => flattenCaches(caches), [caches]);
-  const filteredEntries = useMemo(() => allEntries.filter((item) => {
-    const cacheNameMatched = cacheNameFilter.trim() === '' || includesText(item.cacheName, cacheNameFilter.trim());
-    const cacheKeyMatched = cacheKeyFilter.trim() === '' || includesText(item.entry.cacheKey, cacheKeyFilter.trim());
-    return cacheNameMatched && cacheKeyMatched;
-  }), [allEntries, cacheKeyFilter, cacheNameFilter]);
-  const selectedEntry = filteredEntries.find((item) => getEntryId(item) === selectedId) ?? filteredEntries[0];
-  const selectedEntryId = selectedEntry ? getEntryId(selectedEntry) : undefined;
+  const filteredCaches = useMemo(() => {
+    const cacheNameKeyword = cacheNameFilter.trim();
+    const cacheKeyKeyword = cacheKeyFilter.trim();
+
+    return caches
+      .filter((cache) => cacheNameKeyword === '' || includesText(cache.cacheName, cacheNameKeyword))
+      .map((cache) => ({
+        ...cache,
+        entries: cache.entries.filter((entry) => cacheKeyKeyword === '' || includesText(entry.cacheKey, cacheKeyKeyword)),
+      }))
+      .filter((cache) => cache.entries.length > 0);
+  }, [cacheKeyFilter, cacheNameFilter, caches]);
+  const filteredEntries = useMemo(() => flattenCaches(filteredCaches), [filteredCaches]);
+  const selectedCache = filteredCaches.find((cache) => cache.cacheName === selectedCacheName);
+  const selectedCacheEntries = useMemo(() => (
+    selectedCache ? flattenCaches([selectedCache]) : []
+  ), [selectedCache]);
+  const selectedEntry = selectedId ? filteredEntries.find((item) => getCacheEntryId(item) === selectedId) : undefined;
+  const selectedEntryId = selectedEntry ? getCacheEntryId(selectedEntry) : undefined;
 
   const loadCaches = useCallback(async () => {
     setLoading(true);
@@ -155,6 +93,16 @@ export function CacheManagementPage({ service: serviceProp }: CacheManagementPag
     return deleteEntries([selectedEntry], '缓存项已删除');
   }, [deleteEntries, selectedEntry]);
 
+  const selectCache = useCallback((cacheName: string) => {
+    setSelectedCacheName(cacheName);
+    setSelectedId(undefined);
+  }, []);
+
+  const selectEntry = useCallback((item: CacheEntryItem) => {
+    setSelectedCacheName(item.cacheName);
+    setSelectedId(getCacheEntryId(item));
+  }, []);
+
   return (
     <div className="h-full min-h-0 flex flex-col gap-4">
       <Card>
@@ -176,6 +124,7 @@ export function CacheManagementPage({ service: serviceProp }: CacheManagementPag
               allowClear
               style={{ width: 260 }}
             />
+            <Tag color="blue">共 {filteredEntries.length} 项</Tag>
           </Flex>
           <Space wrap>
             <Button aria-label="刷新" icon={<ReloadOutlined />} onClick={() => void loadCaches()} loading={loading}>刷新</Button>
@@ -194,53 +143,16 @@ export function CacheManagementPage({ service: serviceProp }: CacheManagementPag
         </Flex>
       </Card>
 
-      <div className={styles.inspector}>
-        <Card className={styles.pane} styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 } }}>
-          <Flex justify="space-between" align="center" className="mb-3">
-            <Typography.Text strong>缓存 Key</Typography.Text>
-            <Tag color="blue">{filteredEntries.length} 项</Tag>
-          </Flex>
-          <Spin spinning={loading} classNames={{ root: 'min-h-0 flex-1' }}>
-            <Space orientation="vertical" size="small" className={`${styles.scrollBody} w-full`}>
-              {filteredEntries.map((item) => {
-                const itemId = getEntryId(item);
-                return (
-                  <Button
-                    key={itemId}
-                    aria-label={`选择缓存 ${item.entry.cacheKey}`}
-                    className={styles.keyButton}
-                    type={itemId === selectedEntryId ? 'primary' : 'text'}
-                    onClick={() => setSelectedId(itemId)}
-                  >
-                    <Space orientation="vertical" size={2} className="w-full">
-                      <Typography.Text code ellipsis>{item.entry.cacheKey}</Typography.Text>
-                    </Space>
-                  </Button>
-                );
-              })}
-              {filteredEntries.length === 0 && !loading ? <Empty description="未找到匹配缓存项" /> : null}
-            </Space>
-          </Spin>
-        </Card>
-
-        <Card className={styles.pane} styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 } }}>
-          {selectedEntry ? (
-            <Space orientation="vertical" size="middle" className="min-h-0 w-full flex-1">
-              <Descriptions size="small" column={2} bordered>
-                <Descriptions.Item label="缓存名称">{selectedEntry.cacheName}</Descriptions.Item>
-                <Descriptions.Item label="值类型">{selectedEntry.entry.cacheValueType ? <Tag>{selectedEntry.entry.cacheValueType}</Tag> : '-'}</Descriptions.Item>
-                <Descriptions.Item label="缓存 Key" span={2}><Typography.Text code>{selectedEntry.entry.cacheKey}</Typography.Text></Descriptions.Item>
-                <Descriptions.Item label="默认 TTL">{formatSeconds(selectedEntry.defaultTtlSeconds)}</Descriptions.Item>
-                <Descriptions.Item label="写入 TTL">{formatSeconds(selectedEntry.entry.ttlSeconds)}</Descriptions.Item>
-                <Descriptions.Item label="剩余 TTL">{formatSeconds(selectedEntry.entry.remainingTtlSeconds)}</Descriptions.Item>
-              </Descriptions>
-              <pre className={styles.codeBlock}>{formatCacheValue(selectedEntry.entry.cacheValueJson)}</pre>
-            </Space>
-          ) : (
-            <Empty description="请选择左侧缓存 Key" />
-          )}
-        </Card>
-      </div>
+      <CacheCascadeBrowser
+        filteredCaches={filteredCaches}
+        selectedCacheName={selectedCacheName}
+        selectedCacheEntries={selectedCacheEntries}
+        selectedEntry={selectedEntry}
+        selectedEntryId={selectedEntryId}
+        loading={loading}
+        onSelectCache={selectCache}
+        onSelectEntry={selectEntry}
+      />
     </div>
   );
 }
