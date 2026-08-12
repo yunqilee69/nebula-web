@@ -233,7 +233,7 @@ export interface NotifyChannelTargetDto {
   readonly id: string;
   readonly targetName: string;
   readonly channelType: ChannelType;
-  readonly endpointMask: string;
+  readonly endpointUrl: string;
   readonly configJson?: string;
   readonly remark?: string;
   readonly createTime?: string;

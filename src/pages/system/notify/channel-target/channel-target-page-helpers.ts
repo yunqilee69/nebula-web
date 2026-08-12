@@ -71,7 +71,7 @@ export function toChannelTargetFormValues(
   return {
     targetName: detail.targetName,
     channelType: detail.channelType,
-    endpointUrl: '',
+    endpointUrl: detail.endpointUrl,
     ...(detail.configJson ? { configJson: detail.configJson } : {}),
     ...(detail.remark ? { remark: detail.remark } : {}),
   };

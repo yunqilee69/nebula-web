@@ -61,10 +61,9 @@ export function ChannelTargetFormModal({
         <Form.Item
           name="endpointUrl"
           label="目标地址"
-          extra={formState.mode === 'update' ? '密钥地址不会回显；保存时请重新输入完整目标地址。' : undefined}
           rules={[{ required: true, whitespace: true, message: '目标地址不能为空' }]}
         >
-          <Input.Password placeholder="请输入完整 webhook URL 或目标地址" autoComplete="off" />
+          <Input placeholder="请输入完整 webhook URL 或目标地址" autoComplete="off" />
         </Form.Item>
 
         <Form.Item name="configJson" label="扩展配置 JSON">

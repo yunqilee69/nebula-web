@@ -142,12 +142,12 @@ export function ChannelTargetManagementPage({
     },
     {
       title: '目标地址',
-      dataIndex: 'endpointMask',
+      dataIndex: 'endpointUrl',
       width: 300,
       search: false,
       render: (_, record) => (
-        <Typography.Text copyable={{ text: record.endpointMask }} ellipsis={{ tooltip: record.endpointMask }}>
-          {record.endpointMask}
+        <Typography.Text copyable={{ text: record.endpointUrl }} ellipsis={{ tooltip: record.endpointUrl }}>
+          {record.endpointUrl}
         </Typography.Text>
       ),
     },

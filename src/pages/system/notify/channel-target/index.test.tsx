@@ -31,7 +31,7 @@ const TARGET: NotifyChannelTargetResp = {
   id: 'target-a',
   targetName: 'Ops Group',
   channelType: 'WECOM_GROUP_WEBHOOK',
-  endpointMask: 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=****abcd',
+  endpointUrl: 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=secret-abcd',
   configJson: '{"rateLimit":20}',
   remark: '运营群',
   createTime: '2026-08-10T10:00:00',
@@ -95,6 +95,7 @@ describe('ChannelTargetManagementPage', () => {
     const service = renderPage();
 
     expect(await screen.findByText('Ops Group')).toBeInTheDocument();
+    expect(screen.getByText('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=secret-abcd')).toBeInTheDocument();
     await user.type(screen.getByRole('textbox', { name: '目标名称' }), ' Ops ');
     await user.click(screen.getByRole('combobox', { name: '通知渠道' }));
     await user.click(await screen.findByText('企业微信群机器人', { selector: '.ant-select-item-option-content' }));
@@ -143,8 +144,10 @@ describe('ChannelTargetManagementPage', () => {
     await user.click(screen.getByRole('button', { name: '编辑 Ops Group' }));
     await waitFor(() => expect(service.getNotifyChannelTarget).toHaveBeenCalledWith('target-a'));
     const modal = getModalByTitle('编辑渠道目标');
+    expect(within(modal).getByDisplayValue('https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=secret-abcd')).toBeInTheDocument();
     await user.clear(within(modal).getByPlaceholderText('请输入目标名称'));
     await user.type(within(modal).getByPlaceholderText('请输入目标名称'), ' Ops Group Updated ');
+    await user.clear(within(modal).getByPlaceholderText('请输入完整 webhook URL 或目标地址'));
     await user.type(within(modal).getByPlaceholderText('请输入完整 webhook URL 或目标地址'), ' https://example.test/webhook ');
     await user.click(within(modal).getByRole('button', { name: /保\s*存/ }));
 

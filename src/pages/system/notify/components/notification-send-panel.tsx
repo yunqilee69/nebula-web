@@ -307,7 +307,7 @@ export function NotificationSendPanel({
               .filter((target) => target.channelType === WECOM_CHANNEL)
               .map((target) => ({
                 value: target.id,
-                label: `${target.targetName} (${target.endpointMask})`,
+                label: `${target.targetName} (${target.endpointUrl})`,
               }))}
             placeholder="请选择企业微信群机器人目标"
             showSearch={{ optionFilterProp: 'label' }}
@@ -328,7 +328,7 @@ export function NotificationSendPanel({
               .filter((target) => target.channelType === FEISHU_CHANNEL)
               .map((target) => ({
                 value: target.id,
-                label: `${target.targetName} (${target.endpointMask})`,
+                label: `${target.targetName} (${target.endpointUrl})`,
               }))}
             placeholder="请选择飞书群机器人目标"
             showSearch={{ optionFilterProp: 'label' }}
@@ -349,7 +349,7 @@ export function NotificationSendPanel({
               .filter((target) => target.channelType === DINGTALK_CHANNEL)
               .map((target) => ({
                 value: target.id,
-                label: `${target.targetName} (${target.endpointMask})`,
+                label: `${target.targetName} (${target.endpointUrl})`,
               }))}
             placeholder="请选择钉钉群机器人目标"
             showSearch={{ optionFilterProp: 'label' }}
