@@ -29,6 +29,7 @@ const builtInLabels: Record<BuiltInLoginMethodKey, string> = {
 };
 
 type LoginResult = LoginResp | WechatWebLoginStatusResp;
+type FormLoginMethodKey = Extract<BuiltInLoginMethodKey, 'password' | 'phone' | 'email'>;
 
 type LoginMethodDescriptor =
   | { key: BuiltInLoginMethodKey; label: string; kind: 'built-in'; method: BuiltInLoginMethodKey }
@@ -36,6 +37,22 @@ type LoginMethodDescriptor =
 
 type LoginSuccessHandler = (result: LoginResult) => void | Promise<void>;
 type ExtraSuccessHandler = (result?: LoginResult) => void | Promise<void>;
+
+const formLoginMethodKeys = new Set<BuiltInLoginMethodKey>(['password', 'phone', 'email']);
+
+function isFormLoginMethod(method: BuiltInLoginMethodKey): method is FormLoginMethodKey {
+  return formLoginMethodKeys.has(method);
+}
+
+function isFormLoginDescriptor(
+  method: LoginMethodDescriptor,
+): method is Extract<LoginMethodDescriptor, { kind: 'built-in' }> & { method: FormLoginMethodKey } {
+  return method.kind === 'built-in' && isFormLoginMethod(method.method);
+}
+
+function isOAuthLoginDescriptor(method: LoginMethodDescriptor): boolean {
+  return method.kind === 'extra' || !isFormLoginDescriptor(method);
+}
 
 function buildLoginMethodDescriptors(
   keys: string[],
@@ -237,55 +254,118 @@ function LoginMethodSwitcher({
   onExtraSuccess,
 }: LoginMethodSwitcherProps) {
   const { token } = theme.useToken();
-  const initialMethodKey = useMemo(() => methods.find((method) => method.key === 'password')?.key ?? methods[0]?.key, [methods]);
-  const [activeMethodKey, setActiveMethodKey] = useState(initialMethodKey);
+  const formMethods = useMemo(() => methods.filter(isFormLoginDescriptor), [methods]);
+  const oauthMethods = useMemo(() => methods.filter(isOAuthLoginDescriptor), [methods]);
+  const initialFormMethodKey = useMemo(
+    () => formMethods.find((method) => method.key === 'password')?.key ?? formMethods[0]?.key,
+    [formMethods],
+  );
+  const initialOAuthMethodKey = useMemo(() => (initialFormMethodKey ? null : oauthMethods[0]?.key ?? null), [initialFormMethodKey, oauthMethods]);
+  const [activeFormMethodKey, setActiveFormMethodKey] = useState<string | undefined>(initialFormMethodKey);
+  const [activeOAuthMethodKey, setActiveOAuthMethodKey] = useState<string | null>(initialOAuthMethodKey);
 
   useEffect(() => {
-    setActiveMethodKey(initialMethodKey);
-  }, [initialMethodKey]);
+    setActiveFormMethodKey(initialFormMethodKey);
+    setActiveOAuthMethodKey(initialOAuthMethodKey);
+  }, [initialFormMethodKey, initialOAuthMethodKey]);
 
-  const activeMethod = methods.find((method) => method.key === activeMethodKey) ?? methods[0];
+  const activeFormMethod = formMethods.find((method) => method.key === activeFormMethodKey) ?? formMethods[0];
+  const activeOAuthMethod = activeOAuthMethodKey ? oauthMethods.find((method) => method.key === activeOAuthMethodKey) ?? null : null;
 
   const tabItems = useMemo(
     () =>
-      methods.map((method) => ({
+      formMethods.map((method) => ({
         key: method.key,
         label: method.label,
         icon: getLoginMethodIcon(method),
-        children:
-          method.kind === 'built-in' && authService ? (
-            <LoginMethodPanel
-              method={method.method}
-              authService={authService}
-              onSuccess={onLoginSuccess}
-              config={config}
-            />
-          ) : method.kind === 'extra' ? (
-            <ExtraBadgePanel
-              badge={method.badge}
-              onSuccess={onExtraSuccess}
-              loginBadgeContext={loginBadgeContext}
-            />
-          ) : null,
+        children: null,
       })),
-    [authService, config, loginBadgeContext, methods, onExtraSuccess, onLoginSuccess],
+    [formMethods],
   );
 
-  if (!activeMethod) {
+  if (!activeFormMethod && !activeOAuthMethod && oauthMethods.length === 0) {
     return <Alert type="info" title="暂无可用登录方式" description="当前认证服务未返回可用登录方式，请联系系统管理员检查登录管理配置。" showIcon />;
   }
 
+  const handleFormMethodChange = (key: string) => {
+    setActiveFormMethodKey(key);
+    setActiveOAuthMethodKey(null);
+  };
+
+  const renderActivePanel = () => {
+    if (activeOAuthMethod) {
+      if (activeOAuthMethod.kind === 'extra') {
+        return (
+          <ExtraBadgePanel
+            badge={activeOAuthMethod.badge}
+            onSuccess={onExtraSuccess}
+            loginBadgeContext={loginBadgeContext}
+          />
+        );
+      }
+
+      return authService ? (
+        <LoginMethodPanel
+          method={activeOAuthMethod.method}
+          authService={authService}
+          onSuccess={onLoginSuccess}
+          config={config}
+        />
+      ) : null;
+    }
+
+    return activeFormMethod && authService ? (
+      <LoginMethodPanel
+        method={activeFormMethod.method}
+        authService={authService}
+        onSuccess={onLoginSuccess}
+        config={config}
+      />
+    ) : null;
+  };
+
   return (
     <Flex vertical gap={token.marginMD}>
-      <Tabs
-        activeKey={activeMethod.key}
-        centered
-        items={tabItems}
-        tabBarGutter={token.marginMD}
-        tabBarStyle={{ marginBottom: token.marginMD }}
-        type="line"
-        onChange={setActiveMethodKey}
-      />
+      {tabItems.length > 0 && (
+        <Tabs
+          activeKey={activeFormMethod?.key}
+          centered
+          items={tabItems}
+          tabBarGutter={token.marginMD}
+          tabBarStyle={{ marginBottom: token.marginMD }}
+          type="line"
+          onChange={handleFormMethodChange}
+          onTabClick={handleFormMethodChange}
+        />
+      )}
+
+      {renderActivePanel()}
+
+      {oauthMethods.length > 0 && (
+        <Flex align="center" justify="center" gap={token.marginXS} wrap="wrap" style={{ marginTop: token.marginXS }}>
+          <Typography.Text type="secondary">其他登录方式：</Typography.Text>
+          {oauthMethods.map((method) => {
+            const active = activeOAuthMethod?.key === method.key;
+            return (
+              <Button
+                key={method.key}
+                aria-label={method.label}
+                shape="circle"
+                size="large"
+                type="text"
+                icon={getLoginMethodIcon(method)}
+                onClick={() => setActiveOAuthMethodKey(method.key)}
+                style={{
+                  color: active ? token.colorPrimary : token.colorTextSecondary,
+                  fontSize: token.fontSizeHeading4,
+                  width: token.controlHeightLG,
+                  height: token.controlHeightLG,
+                }}
+              />
+            );
+          })}
+        </Flex>
+      )}
     </Flex>
   );
 }

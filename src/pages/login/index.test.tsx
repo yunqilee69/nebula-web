@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
@@ -126,7 +126,7 @@ describe('LoginPage', () => {
     redirectToAuthorizeUrlMock.mockClear();
   });
 
-  it('loads config, shows password login by default, and renders login methods as tabs', async () => {
+  it('loads config, shows password login by default, and renders only form methods as tabs', async () => {
     const user = userEvent.setup();
     const authService = createMockAuthService({
       getAuthConfig: vi.fn().mockResolvedValue(fullConfig),
@@ -140,17 +140,17 @@ describe('LoginPage', () => {
 
     expect(screen.getByLabelText('密码')).toBeInTheDocument();
     expect(screen.queryByText(/当前登录方式/)).not.toBeInTheDocument();
-    expect(screen.queryByText('其他登录方式')).not.toBeInTheDocument();
     const passwordTab = screen.getByRole('tab', { name: '账号密码' });
     const phoneTab = screen.getByRole('tab', { name: '手机验证码' });
     const emailTab = screen.getByRole('tab', { name: '邮箱验证码' });
-    const wechatTab = screen.getByRole('tab', { name: '微信扫码' });
-    const githubTab = screen.getByRole('tab', { name: 'GitHub' });
     expect(passwordTab).toHaveAttribute('aria-selected', 'true');
     expect(phoneTab.querySelector('.anticon-mobile')).toBeInTheDocument();
     expect(emailTab.querySelector('.anticon-mail')).toBeInTheDocument();
-    expect(wechatTab.querySelector('.anticon-wechat')).toBeInTheDocument();
-    expect(githubTab.querySelector('.anticon-github')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: '微信扫码' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'GitHub' })).not.toBeInTheDocument();
+    expect(screen.getByText(/其他登录方式/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '微信扫码' }).querySelector('.anticon-wechat')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'GitHub' }).querySelector('.anticon-github')).toBeInTheDocument();
 
     await user.click(phoneTab);
 
@@ -178,9 +178,9 @@ describe('LoginPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: '企业 SSO' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '企业 SSO' })).toBeInTheDocument();
     });
-    expect(screen.getByRole('tab', { name: '企业 SSO' }).querySelector('.anticon-login')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '企业 SSO' }).querySelector('.anticon-login')).toBeInTheDocument();
   });
 
   it('shows loading state while config is loading', () => {
@@ -243,7 +243,9 @@ describe('LoginPage', () => {
       </MemoryRouter>,
     );
 
-    await user.click(await screen.findByRole('button', { name: 'SSO 登录' }));
+    expect(await screen.findByRole('button', { name: 'SSO' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'SSO 登录' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'SSO 登录' }));
 
     expect(onLoginSuccess).toHaveBeenCalledWith(extraResp);
     expect(screen.queryByText(/未配置认证服务/i)).not.toBeInTheDocument();
@@ -419,10 +421,10 @@ describe('LoginPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'SSO' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'SSO' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('tab', { name: 'SSO' }));
+    await user.click(screen.getByRole('button', { name: 'SSO' }));
 
     await user.click(await screen.findByRole('button', { name: 'SSO 登录' }));
 
@@ -455,10 +457,10 @@ describe('LoginPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'SSO' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'SSO' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('tab', { name: 'SSO' }));
+    await user.click(screen.getByRole('button', { name: 'SSO' }));
 
     await user.click(await screen.findByRole('button', { name: 'SSO 无载荷' }));
 
@@ -498,10 +500,10 @@ describe('LoginPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'SSO' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'SSO' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('tab', { name: 'SSO' }));
+    await user.click(screen.getByRole('button', { name: 'SSO' }));
     await user.click(await screen.findByRole('button', { name: 'SSO 登录' }));
 
     await waitFor(() => {
@@ -531,10 +533,10 @@ describe('LoginPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'SSO' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'SSO' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('tab', { name: 'SSO' }));
+    await user.click(screen.getByRole('button', { name: 'SSO' }));
     await user.click(await screen.findByRole('button', { name: 'SSO 无载荷' }));
 
     await waitFor(() => {
@@ -628,7 +630,7 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService });
 
-    await user.click(await screen.findByRole('tab', { name: '微信扫码' }));
+    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
 
     await waitFor(() => {
       expect(authService.createWechatWebQrCode).toHaveBeenCalled();
@@ -664,14 +666,16 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService });
 
-    await user.click(await screen.findByRole('tab', { name: '微信扫码' }));
+    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
     const iframe = await waitFor(() => {
       const mountedIframe = document.querySelector<HTMLIFrameElement>('#wechat-login-qr iframe');
       expect(mountedIframe).toBeInTheDocument();
       if (!mountedIframe) throw new Error('WxLogin iframe was not mounted.');
       return mountedIframe;
     });
-    iframe.dispatchEvent(new Event('load'));
+    act(() => {
+      iframe.dispatchEvent(new Event('load'));
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('wechat-login-ready')).toBeInTheDocument();
@@ -696,7 +700,7 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService });
 
-    await user.click(await screen.findByRole('tab', { name: '微信扫码' }));
+    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
     const script = await waitFor(() => {
       const loadedScript = document.querySelector<HTMLScriptElement>('script[src="https://res.wx.qq.com/connect/zh_CN/htmledition/js/wxLogin.js"]');
       expect(loadedScript).toBeInTheDocument();
@@ -730,7 +734,7 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService });
 
-    await user.click(await screen.findByRole('tab', { name: '微信扫码' }));
+    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
     await waitFor(() => {
       expect(document.querySelector('#wechat-login-qr iframe')).toBeInTheDocument();
     });
@@ -773,7 +777,7 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService, onLoginSuccess });
 
-    await user.click(await screen.findByRole('tab', { name: '微信扫码' }));
+    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
     await waitFor(() => {
       expect(document.querySelector('#wechat-login-qr iframe')).toBeInTheDocument();
     });
@@ -815,7 +819,7 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService });
 
-    await user.click(await screen.findByRole('tab', { name: '微信扫码' }));
+    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
     await waitFor(() => {
       expect(document.querySelector('#wechat-login-qr iframe')).toBeInTheDocument();
     });
@@ -839,7 +843,7 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService });
 
-    await user.click(await screen.findByRole('tab', { name: '微信扫码' }));
+    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
     await user.click(screen.getByTestId('wechat-redirect-login'));
 
     await waitFor(() => {
@@ -862,7 +866,7 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService });
 
-    await user.click(await screen.findByRole('tab', { name: 'GitHub' }));
+    await user.click(await screen.findByRole('button', { name: 'GitHub' }));
     await user.click(screen.getByTestId('github-redirect-login'));
 
     await waitFor(() => {
