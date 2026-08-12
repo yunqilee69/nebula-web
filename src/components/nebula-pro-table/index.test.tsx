@@ -1,7 +1,7 @@
 import { Button } from 'antd';
-import { render } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NebulaProTable } from '.';
 import type { NebulaProColumns } from '.';
 
@@ -14,6 +14,43 @@ const columns: NebulaProColumns<DemoRecord>[] = [
   { title: 'Name', dataIndex: 'name' },
 ];
 
+class TestResizeObserver implements ResizeObserver {
+  static instances: TestResizeObserver[] = [];
+
+  constructor(private readonly callback: ResizeObserverCallback) {
+    TestResizeObserver.instances.push(this);
+  }
+
+  observe() {}
+
+  unobserve() {}
+
+  disconnect() {}
+
+  trigger() {
+    this.callback([], this);
+  }
+}
+
+function setRect(element: Element | null, top: number, height: number) {
+  if (!element) return;
+
+  Object.defineProperty(element, 'getBoundingClientRect', {
+    configurable: true,
+    value: () => ({
+      bottom: top + height,
+      height,
+      left: 0,
+      right: 100,
+      toJSON: () => ({}),
+      top,
+      width: 100,
+      x: 0,
+      y: top,
+    }),
+  });
+}
+
 function renderTable(props: Partial<React.ComponentProps<typeof NebulaProTable<DemoRecord>>> = {}) {
   return render(
     <NebulaProTable<DemoRecord>
@@ -25,6 +62,15 @@ function renderTable(props: Partial<React.ComponentProps<typeof NebulaProTable<D
     />,
   );
 }
+
+beforeEach(() => {
+  TestResizeObserver.instances = [];
+  vi.stubGlobal('ResizeObserver', TestResizeObserver);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('NebulaProTable layout', () => {
   it('wraps ProTable in a scoped flex container', () => {
@@ -41,21 +87,38 @@ describe('NebulaProTable layout', () => {
     const layoutCss = readFileSync(`${process.cwd()}/src/components/nebula-pro-table/layout.css`, 'utf8');
 
     expect(layoutCss).toContain('.nebula-pro-table-wrapper');
-    expect(layoutCss).toMatch(/\.nebula-pro-table-wrapper \{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;/s);
+    expect(layoutCss).toMatch(/\.nebula-pro-table-wrapper \{[^}]*flex-direction:\s*column;[^}]*overflow:\s*hidden;/s);
+    expect(layoutCss).toMatch(/\.nebula-pro-table-wrapper \.ant-pro-table-search \{[^}]*flex:\s*0 0 auto;/s);
+    expect(layoutCss).toContain('.nebula-pro-table-wrapper .ant-pro-table > .ant-pro-card:not(.ant-pro-table-search)');
+    expect(layoutCss).toMatch(/\.ant-table-container \{[^}]*flex:\s*1 1 auto;/s);
     expect(layoutCss).toMatch(/\.nebula-pro-table-wrapper \.ant-table-body \{[^}]*overflow-y:\s*auto;/s);
     expect(layoutCss).not.toMatch(/^\.ant-table-body/m);
   });
 
-  it('manages vertical table scrolling while preserving consumer horizontal scroll', () => {
+  it('measures vertical table scrolling while preserving consumer horizontal scroll', async () => {
     const { container } = renderTable({
       toolbar: false,
       scroll: { x: 640, y: 120 },
     });
 
+    const wrapper = container.querySelector('.nebula-pro-table-wrapper');
     const tableBody = container.querySelector<HTMLElement>('.ant-table-body');
+    const pagination = container.querySelector('.ant-table-pagination');
+
+    setRect(wrapper, 120, 580);
+    setRect(tableBody, 220, 300);
+    setRect(pagination, 650, 48);
+
+    act(() => {
+      for (const observer of TestResizeObserver.instances) {
+        observer.trigger();
+      }
+    });
 
     expect(tableBody).toBeInTheDocument();
-    expect(tableBody).toHaveStyle({ maxHeight: '100%' });
+    await waitFor(() => {
+      expect(tableBody).toHaveStyle({ maxHeight: '480px' });
+    });
     expect(tableBody).toHaveStyle({ overflowX: 'auto' });
   });
 });

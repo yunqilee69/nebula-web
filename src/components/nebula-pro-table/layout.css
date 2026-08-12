@@ -8,14 +8,16 @@
 
 .nebula-pro-table-wrapper {
   display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
   width: 100%;
 }
 
 .nebula-pro-table-wrapper .ant-pro-table,
-.nebula-pro-table-wrapper .ant-pro-card,
-.nebula-pro-table-wrapper .ant-pro-card-body,
+.nebula-pro-table-wrapper .ant-pro-table > .ant-pro-card:not(.ant-pro-table-search),
+.nebula-pro-table-wrapper .ant-pro-table > .ant-pro-card:not(.ant-pro-table-search) > .ant-pro-card-body,
 .nebula-pro-table-wrapper .ant-table-wrapper,
 .nebula-pro-table-wrapper .ant-spin-nested-loading,
 .nebula-pro-table-wrapper .ant-spin-container,
@@ -28,8 +30,8 @@
 }
 
 .nebula-pro-table-wrapper .ant-pro-table,
-.nebula-pro-table-wrapper .ant-pro-card,
-.nebula-pro-table-wrapper .ant-pro-card-body,
+.nebula-pro-table-wrapper .ant-pro-table > .ant-pro-card:not(.ant-pro-table-search),
+.nebula-pro-table-wrapper .ant-pro-table > .ant-pro-card:not(.ant-pro-table-search) > .ant-pro-card-body,
 .nebula-pro-table-wrapper .ant-table-wrapper,
 .nebula-pro-table-wrapper .ant-spin-nested-loading,
 .nebula-pro-table-wrapper .ant-spin-container,
@@ -38,7 +40,11 @@
   flex-direction: column;
 }
 
-.nebula-pro-table-wrapper .ant-pro-card-body {
+.nebula-pro-table-wrapper .ant-pro-table-search {
+  flex: 0 0 auto;
+}
+
+.nebula-pro-table-wrapper .ant-pro-table > .ant-pro-card:not(.ant-pro-table-search) > .ant-pro-card-body {
   overflow: hidden;
 }
 
