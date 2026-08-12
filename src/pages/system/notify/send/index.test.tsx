@@ -115,6 +115,7 @@ function createNotifyService(overrides: Partial<NotifyService> = {}): NotifyServ
     getNotifyChannelTarget: vi.fn(),
     pageNotifyChannelTargets: vi.fn().mockResolvedValue({ data: [], total: 0 }),
     sendNotify: vi.fn().mockResolvedValue([]),
+    testEmailNotify: vi.fn(),
     getNotifyRecord: vi.fn(),
     pageNotifyRecords: vi.fn(),
     pageSiteMessages: vi.fn(),

@@ -21,6 +21,7 @@ import type {
   SendNotifyReq,
   SiteMessageReadStatusBatchReq,
   SiteMessagePageReq,
+  TestEmailNotifyReq,
   SiteMessageResp,
   UnreadSiteMessageCount,
   UpdateAnnouncementReq,
@@ -52,6 +53,7 @@ export interface NotifyService {
     data: NotifyChannelTargetPageReq,
   ) => Promise<NebulaPageResp<NotifyChannelTargetResp>>;
   readonly sendNotify: (data: SendNotifyReq) => Promise<NotifySendResultList>;
+  readonly testEmailNotify: (data: TestEmailNotifyReq) => Promise<void>;
   readonly getNotifyRecord: (id: string) => Promise<NotifyRecordDetailResp>;
   readonly pageNotifyRecords: (data: NotifyRecordPageReq) => Promise<NebulaPageResp<NotifyRecordResp>>;
   readonly pageSiteMessages: (data: SiteMessagePageReq) => Promise<NebulaPageResp<SiteMessageResp>>;
@@ -118,6 +120,8 @@ export const notifyService: NotifyService = {
     }),
   sendNotify: (data) =>
     request<NotifySendResultList>({ method: 'POST', url: '/api/notify/send', data }),
+  testEmailNotify: (data) =>
+    request<void>({ method: 'POST', url: '/api/notify/email/test', data }),
   getNotifyRecord: (id) =>
     request<NotifyRecordDetailResp>({ method: 'GET', url: `/api/notify/records/${id}` }),
   pageNotifyRecords: (data) =>

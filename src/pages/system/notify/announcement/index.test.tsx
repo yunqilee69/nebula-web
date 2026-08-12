@@ -69,6 +69,7 @@ function createNotifyService(overrides: Partial<NotifyService> = {}): NotifyServ
     getNotifyChannelTarget: vi.fn(),
     pageNotifyChannelTargets: vi.fn(),
     sendNotify: vi.fn(),
+    testEmailNotify: vi.fn(),
     getNotifyRecord: vi.fn(),
     pageNotifyRecords: vi.fn(),
     pageSiteMessages: vi.fn(),

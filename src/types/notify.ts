@@ -182,6 +182,12 @@ export interface SendNotifyReq {
   readonly extJson?: string;
 }
 
+export interface TestEmailNotifyReq {
+  readonly receiver: string;
+  readonly subject: string;
+  readonly content: string;
+}
+
 export interface NotifySendResultDto {
   readonly recordId: string;
   readonly siteMessageId?: string;

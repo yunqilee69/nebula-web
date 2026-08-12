@@ -192,6 +192,23 @@ describe('notifyService', () => {
       },
     },
     {
+      name: 'tests SMTP email configuration in the request body',
+      execute: () => notifyService.testEmailNotify({
+        receiver: 'admin@example.com',
+        subject: 'SMTP测试',
+        content: '这是一封SMTP配置测试邮件',
+      }),
+      expected: {
+        method: 'POST',
+        url: '/api/notify/email/test',
+        data: {
+          receiver: 'admin@example.com',
+          subject: 'SMTP测试',
+          content: '这是一封SMTP配置测试邮件',
+        },
+      },
+    },
+    {
       name: 'gets notification record detail by path ID',
       execute: () => notifyService.getNotifyRecord('record-1'),
       expected: { method: 'GET', url: '/api/notify/records/record-1' },
