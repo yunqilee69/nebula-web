@@ -468,7 +468,7 @@ describe('NebulaLayout', () => {
       throw new Error('Expected sidebar menu to have a scroll container parent');
     }
 
-    expect(navigation).toHaveStyle('display: flex; flex-direction: column; height: 100dvh; overflow: hidden;');
+    expect(navigation).toHaveStyle('display: flex; flex-direction: column; height: 100dvh; overflow: visible;');
     expect(siderChildren).toHaveStyle('display: flex; flex-direction: column; height: 100%; min-height: 0;');
     expect(menuWrapper).toHaveStyle('flex: 1; min-height: 0; overflow: hidden auto;');
   });
@@ -483,6 +483,8 @@ describe('NebulaLayout', () => {
 
     expect(within(navigation).getByText('Nebula Web')).toBeInTheDocument();
     expect(collapseButton).toHaveStyle('position: absolute; inset-inline-end: -16px; top: 50%; border-radius: 50%;');
+    expect(collapseButton).toHaveStyle('display: inline-flex; align-items: center; justify-content: center;');
+    expect(navigation).toHaveStyle('overflow: visible;');
 
     await user.click(collapseButton);
 
