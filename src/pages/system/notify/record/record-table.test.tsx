@@ -12,6 +12,7 @@ import { buildNotifyRecordPageReq } from './record-table';
 const CHANNEL_OPTIONS = [
   { label: '站内信', value: 'SITE' },
   { label: '邮件', value: 'EMAIL' },
+  { label: '企业微信群机器人', value: 'WECOM_GROUP_WEBHOOK' },
 ] as const;
 
 vi.mock('@/components/dict-select', () => ({
@@ -31,10 +32,29 @@ const RECORDS = [
     id: 'record-1',
     channelType: 'SITE',
     templateCode: 'ORDER_PAID',
-    receiver: 'user-1',
+    templateVariantId: 'variant-site',
+    templateVariantName: '站内信模板',
+    targetId: 'target-site',
+    targetName: '站内信默认目标',
+    receiver: 'user-buyer-id',
+    receiverUserId: 'user-buyer-id',
+    receiverUserName: '采购员王小明',
     sendStatus: 'SUCCESS',
     sendTime: '2026-08-09T10:00:00',
     createTime: '2026-08-09T09:59:59',
+  },
+  {
+    id: 'record-2',
+    channelType: 'WECOM_GROUP_WEBHOOK',
+    templateCode: 'ORDER_FAILED',
+    templateVariantId: 'variant-wecom',
+    templateVariantName: '企业微信失败告警',
+    targetId: 'target-ops',
+    targetName: '运维告警群',
+    receiver: 'target-ops',
+    sendStatus: 'FAILED',
+    sendTime: '2026-08-09T10:05:00',
+    createTime: '2026-08-09T10:04:59',
   },
 ] as const satisfies readonly NotifyRecordResp[];
 
@@ -84,6 +104,17 @@ describe('buildNotifyRecordPageReq', () => {
 });
 
 describe('NotifyRecordPage filters', () => {
+  it('renders recipient names and group targets instead of opaque IDs', async () => {
+    renderPage();
+
+    expect(await screen.findByText('采购员王小明')).toBeInTheDocument();
+    expect(screen.getAllByText('运维告警群').length).toBeGreaterThan(0);
+    expect(screen.getByText('站内信模板')).toBeInTheDocument();
+    expect(screen.queryByText('user-buyer-id')).not.toBeInTheDocument();
+    expect(screen.queryByText('variant-site')).not.toBeInTheDocument();
+    expect(screen.queryByText('target-ops')).not.toBeInTheDocument();
+  });
+
   it('submits channel, template, status, receiver, and receiver user filters', async () => {
     const user = userEvent.setup();
     const service = renderPage();

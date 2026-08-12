@@ -17,6 +17,8 @@ const SUCCESS_RECORD = {
   channelType: 'EMAIL',
   templateCode: 'ORDER_PAID',
   receiver: 'buyer@example.com',
+  receiverUserId: 'user-buyer',
+  receiverUserName: '采购员王小明',
   sendStatus: 'SUCCESS',
   sendTime: '2026-08-09T10:00:00',
   createTime: '2026-08-09T09:59:59',
@@ -27,6 +29,8 @@ const FAILED_RECORD = {
   channelType: 'EMAIL',
   templateCode: 'ORDER_FAILED',
   receiver: 'ops@example.com',
+  receiverUserId: 'user-ops',
+  receiverUserName: '运维管理员',
   sendStatus: 'FAILED',
   createTime: '2026-08-09T11:00:00',
 } as const satisfies NotifyRecordResp;
@@ -34,8 +38,9 @@ const FAILED_RECORD = {
 const SUCCESS_DETAIL = {
   ...SUCCESS_RECORD,
   templateVariantId: 'variant-email',
+  templateVariantName: '支付成功邮件模板',
   targetId: 'target-email',
-  receiverUserId: 'user-buyer',
+  targetName: '默认邮件通道',
   subjectText: '订单支付成功',
   contentText: '订单 ORDER-20260809 已支付。\n请及时安排发货。',
   extJson: '{"traceId":"trace-1"}',
@@ -44,8 +49,9 @@ const SUCCESS_DETAIL = {
 const FAILED_DETAIL = {
   ...FAILED_RECORD,
   templateVariantId: 'variant-failed-email',
+  templateVariantName: '失败邮件模板',
   targetId: 'target-email',
-  receiverUserId: 'user-ops',
+  targetName: '默认邮件通道',
   subjectText: '订单处理失败',
   contentText: '订单处理失败，请联系管理员。',
   failReason: 'SMTP connection timed out',
@@ -114,9 +120,12 @@ describe('NotifyRecordPage details', () => {
     const dialog = getDetailDialog();
     expect(within(dialog).getByText('订单支付成功')).toBeInTheDocument();
     expect(within(dialog).getByText(/请及时安排发货/)).toBeInTheDocument();
-    expect(within(dialog).getByText('variant-email')).toBeInTheDocument();
-    expect(within(dialog).getByText('target-email')).toBeInTheDocument();
-    expect(within(dialog).getByText('user-buyer')).toBeInTheDocument();
+    expect(within(dialog).getByText('支付成功邮件模板')).toBeInTheDocument();
+    expect(within(dialog).getByText('默认邮件通道')).toBeInTheDocument();
+    expect(within(dialog).getByText('采购员王小明')).toBeInTheDocument();
+    expect(within(dialog).queryByText('variant-email')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('target-email')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('user-buyer')).not.toBeInTheDocument();
     expect(within(dialog).getByText('{"traceId":"trace-1"}')).toBeInTheDocument();
   });
 

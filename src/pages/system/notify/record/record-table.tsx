@@ -1,5 +1,5 @@
 import { EyeOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Alert, Button, Empty, Typography } from 'antd';
+import { Alert, Button, Empty } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Access } from '@/components/access';
 import { DictLabel, DictSelect } from '@/components/dict-select';
@@ -15,6 +15,9 @@ import type {
 import {
   CopyableRecordText,
   formatRecordDateTime,
+  getRecordChannelTargetDisplay,
+  getRecordRecipientDisplay,
+  getRecordTemplateVariantDisplay,
   NotifySendStatusTag,
   SEND_STATUS_VALUE_ENUM,
 } from './record-presentation';
@@ -108,32 +111,27 @@ export function NotifyRecordTable({ service, onDetail }: NotifyRecordTableProps)
       dataIndex: 'receiver',
       width: 220,
       fieldProps: { 'aria-label': '接收人', placeholder: '请输入接收人' },
-      render: (_, record) => (
-        <Typography.Text copyable={{ text: record.receiver }} ellipsis={{ tooltip: record.receiver }}>
-          {record.receiver}
-        </Typography.Text>
-      ),
+      render: (_, record) => <CopyableRecordText value={getRecordRecipientDisplay(record)} />,
     },
     {
       title: '接收用户 ID',
       dataIndex: 'receiverUserId',
-      width: 180,
+      hideInTable: true,
       fieldProps: { 'aria-label': '接收用户 ID', placeholder: '请输入接收用户 ID' },
-      render: (_, record) => <CopyableRecordText value={record.receiverUserId} />,
     },
     {
-      title: '模板变体 ID',
+      title: '模板变体',
       dataIndex: 'templateVariantId',
       width: 180,
       search: false,
-      render: (_, record) => <CopyableRecordText value={record.templateVariantId} />,
+      render: (_, record) => <CopyableRecordText value={getRecordTemplateVariantDisplay(record)} />,
     },
     {
-      title: '渠道目标 ID',
+      title: '渠道目标',
       dataIndex: 'targetId',
       width: 180,
       search: false,
-      render: (_, record) => <CopyableRecordText value={record.targetId} />,
+      render: (_, record) => <CopyableRecordText value={getRecordChannelTargetDisplay(record)} />,
     },
     {
       title: '发送时间',

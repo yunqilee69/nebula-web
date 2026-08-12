@@ -205,8 +205,11 @@ export interface NotifyRecordDto {
   readonly channelType: ChannelType;
   readonly templateCode?: string;
   readonly templateVariantId?: string;
+  readonly templateVariantName?: string;
   readonly targetId?: string;
+  readonly targetName?: string;
   readonly receiverUserId?: string;
+  readonly receiverUserName?: string;
   readonly subjectText?: string;
   readonly receiver: string;
   readonly sendStatus: NotifySendStatus;

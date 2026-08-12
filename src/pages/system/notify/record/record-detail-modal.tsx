@@ -7,6 +7,9 @@ import {
   CopyableRecordText,
   formatOptionalText,
   formatRecordDateTime,
+  getRecordChannelTargetDisplay,
+  getRecordRecipientDisplay,
+  getRecordTemplateVariantDisplay,
   NotifySendStatusTag,
 } from './record-presentation';
 
@@ -81,19 +84,16 @@ export function RecordDetailModal({ state, onClose, onRetry }: RecordDetailModal
               <NotifySendStatusTag status={detail.sendStatus} />
             </Descriptions.Item>
             <Descriptions.Item label="接收人" span="filled">
-              <CopyableRecordText value={detail.receiver} />
+              <CopyableRecordText value={getRecordRecipientDisplay(detail)} />
             </Descriptions.Item>
             <Descriptions.Item label="模板编码">
               <CopyableRecordText value={detail.templateCode} />
             </Descriptions.Item>
-            <Descriptions.Item label="模板变体 ID">
-              <CopyableRecordText value={detail.templateVariantId} />
+            <Descriptions.Item label="模板变体">
+              <CopyableRecordText value={getRecordTemplateVariantDisplay(detail)} />
             </Descriptions.Item>
-            <Descriptions.Item label="渠道目标 ID">
-              <CopyableRecordText value={detail.targetId} />
-            </Descriptions.Item>
-            <Descriptions.Item label="接收用户 ID">
-              <CopyableRecordText value={detail.receiverUserId} />
+            <Descriptions.Item label="渠道目标">
+              <CopyableRecordText value={getRecordChannelTargetDisplay(detail)} />
             </Descriptions.Item>
             <Descriptions.Item label="发送时间">
               {formatRecordDateTime(detail.sendTime)}
