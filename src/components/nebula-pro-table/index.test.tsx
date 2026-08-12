@@ -26,6 +26,40 @@ function renderTable(props: Partial<React.ComponentProps<typeof NebulaProTable<D
   );
 }
 
+describe('NebulaProTable layout', () => {
+  it('wraps ProTable in a scoped flex container', () => {
+    const { container } = renderTable();
+
+    const wrapper = container.querySelector('.nebula-pro-table-wrapper');
+    const proTable = wrapper?.querySelector('.nebula-pro-table-toolbar');
+
+    expect(wrapper).toBeInTheDocument();
+    expect(proTable).toBeInTheDocument();
+  });
+
+  it('keeps layout CSS scoped to NebulaProTable wrapper', () => {
+    const layoutCss = readFileSync(`${process.cwd()}/src/components/nebula-pro-table/layout.css`, 'utf8');
+
+    expect(layoutCss).toContain('.nebula-pro-table-wrapper');
+    expect(layoutCss).toMatch(/\.nebula-pro-table-wrapper \{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;/s);
+    expect(layoutCss).toMatch(/\.nebula-pro-table-wrapper \.ant-table-body \{[^}]*overflow-y:\s*auto;/s);
+    expect(layoutCss).not.toMatch(/^\.ant-table-body/m);
+  });
+
+  it('manages vertical table scrolling while preserving consumer horizontal scroll', () => {
+    const { container } = renderTable({
+      toolbar: false,
+      scroll: { x: 640, y: 120 },
+    });
+
+    const tableBody = container.querySelector<HTMLElement>('.ant-table-body');
+
+    expect(tableBody).toBeInTheDocument();
+    expect(tableBody).toHaveStyle({ maxHeight: '100%' });
+    expect(container.querySelector('.ant-table-content')).toHaveStyle({ overflowX: 'auto' });
+  });
+});
+
 describe('NebulaProTable toolbar', () => {
   it('keeps built-in toolbar actions on the right when there are no custom buttons', () => {
     const toolbarCss = readFileSync(`${process.cwd()}/src/components/nebula-pro-table/toolbar.css`, 'utf8');
