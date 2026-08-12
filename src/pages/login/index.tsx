@@ -1,5 +1,5 @@
 import { GithubOutlined, KeyOutlined, LoginOutlined, MailOutlined, MobileOutlined, WechatOutlined } from '@ant-design/icons';
-import { Alert, Button, Flex, Form, Input, Spin, Tabs, Typography, theme } from 'antd';
+import { Alert, Button, Checkbox, Flex, Form, Input, Spin, Tabs, Typography, theme } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toCurrentUser } from '@/utils/auth/current-user';
@@ -9,6 +9,7 @@ import { getBuiltInLoginMethods, mergeLoginBadges } from '@/utils/auth/auth-meth
 import type {
   AuthInitResp,
   BuiltInLoginMethodKey,
+  LoginReq,
   LoginResp,
   NebulaExtraLoginBadge,
   WechatWebLoginStatusResp,
@@ -323,7 +324,7 @@ function PasswordPanel({ authService, onSuccess }: PasswordPanelProps) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  const handleSubmit = async (values: { username: string; password: string }) => {
+  const handleSubmit = async (values: LoginReq) => {
     setLoading(true);
     try {
       const result = await authService.login(values);
@@ -336,14 +337,17 @@ function PasswordPanel({ authService, onSuccess }: PasswordPanelProps) {
   };
 
   return (
-    <Form form={form} onFinish={handleSubmit} layout="vertical">
+    <Form form={form} onFinish={handleSubmit} layout="vertical" initialValues={{ autoLogin: true }}>
       <Form.Item label="用户名" name="username" rules={[{ required: true, message: '请输入用户名' }]}>
         <Input />
       </Form.Item>
       <Form.Item label="密码" name="password" rules={[{ required: true, message: '请输入密码' }]}>
         <Input.Password />
       </Form.Item>
-      <Flex justify="end" className="mb-4">
+      <Flex justify="space-between" align="center" className="mb-4">
+        <Form.Item name="autoLogin" valuePropName="checked" noStyle>
+          <Checkbox>自动登录</Checkbox>
+        </Form.Item>
         <Typography.Text type="secondary">
           <Link to="/forgot-password">忘记密码？</Link>
         </Typography.Text>

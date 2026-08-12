@@ -281,7 +281,7 @@ describe('LoginPage', () => {
     expect(screen.queryByLabelText('用户名')).not.toBeInTheDocument();
   });
 
-  it('password login calls authService.login and onLoginSuccess with LoginResp', async () => {
+  it('password login sends checked autoLogin by default and calls onLoginSuccess with LoginResp', async () => {
     const user = userEvent.setup();
     const authService = createMockAuthService({
       getAuthConfig: vi.fn().mockResolvedValue(passwordOnlyConfig),
@@ -294,6 +294,7 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('用户名')).toBeInTheDocument();
     });
+    expect(screen.getByRole('checkbox', { name: '自动登录' })).toBeChecked();
 
     await user.type(screen.getByLabelText('用户名'), 'admin');
     await user.type(screen.getByLabelText('密码'), 'password123');
@@ -303,10 +304,38 @@ describe('LoginPage', () => {
       expect(authService.login).toHaveBeenCalledWith({
         username: 'admin',
         password: 'password123',
+        autoLogin: true,
       });
     });
 
     expect(onLoginSuccess).toHaveBeenCalledWith(loginResp);
+  });
+
+  it('password login sends unchecked autoLogin when the user disables automatic login', async () => {
+    const user = userEvent.setup();
+    const authService = createMockAuthService({
+      getAuthConfig: vi.fn().mockResolvedValue(passwordOnlyConfig),
+      login: vi.fn().mockResolvedValue(loginResp),
+    });
+
+    renderLoginPage({ authService });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('用户名')).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText('用户名'), 'admin');
+    await user.type(screen.getByLabelText('密码'), 'password123');
+    await user.click(screen.getByRole('checkbox', { name: '自动登录' }));
+    await user.click(screen.getByRole('button', { name: /登\s*录/ }));
+
+    await waitFor(() => {
+      expect(authService.login).toHaveBeenCalledWith({
+        username: 'admin',
+        password: 'password123',
+        autoLogin: false,
+      });
+    });
   });
 
   it('saves auth tokens after password login', async () => {
@@ -352,6 +381,7 @@ describe('LoginPage', () => {
       expect(authService.login).toHaveBeenCalledWith({
         username: 'admin',
         password: 'wrong-password',
+        autoLogin: true,
       });
     });
 

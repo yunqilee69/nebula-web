@@ -14,6 +14,8 @@ import type {
 
 export const NOTIFY_CHANNEL_TYPE = 'NOTIFY_CHANNEL_TYPE';
 
+export const WECOM_WEBHOOK_HELP_LINK = 'https://developer.work.weixin.qq.com/document/path/99110';
+
 export const SYSTEM_TEMPLATE_VARIABLES = [
   { kind: 'BUILTIN', name: 'notify.currentDateTime', description: '当前日期时间', builtin: true },
   { kind: 'BUILTIN', name: 'notify.currentDate', description: '当前日期', builtin: true },

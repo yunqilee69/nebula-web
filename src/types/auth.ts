@@ -123,6 +123,7 @@ export interface FrontendInitResp {
 export interface LoginReq {
   username: string;
   password: string;
+  autoLogin?: boolean;
 }
 
 export interface LoginResp {

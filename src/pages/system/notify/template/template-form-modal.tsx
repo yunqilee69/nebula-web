@@ -5,7 +5,7 @@ import { DictSelect } from '@/components/dict-select';
 import type { UpdateNotifyTemplateVariantReq } from '@/types/notify';
 import type { NotifyTemplateFormState, NotifyTemplateFormValues } from './template-page-helpers';
 import { NOTIFY_CHANNEL_TYPE } from './template-page-helpers';
-import { BuiltinVariableHelp } from './template-variable-panel';
+import { BuiltinVariableHelp, WeComWebhookHelp } from './template-variable-panel';
 
 interface TemplateFormModalProps {
   readonly form: FormInstance<NotifyTemplateFormValues>;
@@ -197,7 +197,7 @@ export function TemplateFormModal({
                         </Form.Item>
                         <Form.Item
                           name={[variantItem.name, 'contentTemplate']}
-                          label="内容模板"
+                          label={<span className="flex items-center gap-2">内容模板 {variants[variantItem.name]?.channelType === 'WECOM_GROUP_WEBHOOK' && <WeComWebhookHelp />}</span>}
                           rules={[{ required: true, whitespace: true, message: '内容模板不能为空' }]}
                         >
                           <Input.TextArea rows={5} placeholder="请输入内容模板，可使用 ${variableName} 变量" />
