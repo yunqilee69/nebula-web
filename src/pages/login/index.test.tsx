@@ -140,9 +140,9 @@ describe('LoginPage', () => {
 
     expect(screen.getByLabelText('密码')).toBeInTheDocument();
     expect(screen.queryByText(/当前登录方式/)).not.toBeInTheDocument();
-    const passwordTab = screen.getByRole('tab', { name: '账号密码' });
-    const phoneTab = screen.getByRole('tab', { name: '手机验证码' });
-    const emailTab = screen.getByRole('tab', { name: '邮箱验证码' });
+    const passwordTab = screen.getByRole('tab', { name: '账号密码登录' });
+    const phoneTab = screen.getByRole('tab', { name: '手机号登录' });
+    const emailTab = screen.getByRole('tab', { name: '邮箱登录' });
     expect(passwordTab).toHaveAttribute('aria-selected', 'true');
     expect(phoneTab.querySelector('.anticon-mobile')).toBeInTheDocument();
     expect(emailTab.querySelector('.anticon-mail')).toBeInTheDocument();
@@ -262,7 +262,7 @@ describe('LoginPage', () => {
       expect(screen.getByLabelText('用户名')).toBeInTheDocument();
     });
     expect(screen.getByLabelText('密码')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '账号密码' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: '账号密码登录' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByText(/加载认证配置失败/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/database password/i)).not.toBeInTheDocument();
   });
@@ -279,11 +279,11 @@ describe('LoginPage', () => {
     });
     expect(screen.getByText('验证码')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '发送验证码' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '手机验证码' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: '手机号登录' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByLabelText('用户名')).not.toBeInTheDocument();
   });
 
-  it('password login sends checked autoLogin by default and calls onLoginSuccess with LoginResp', async () => {
+  it('password login calls onLoginSuccess with LoginResp', async () => {
     const user = userEvent.setup();
     const authService = createMockAuthService({
       getAuthConfig: vi.fn().mockResolvedValue(passwordOnlyConfig),
@@ -296,7 +296,6 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('用户名')).toBeInTheDocument();
     });
-    expect(screen.getByRole('checkbox', { name: '自动登录' })).toBeChecked();
 
     await user.type(screen.getByLabelText('用户名'), 'admin');
     await user.type(screen.getByLabelText('密码'), 'password123');
@@ -306,38 +305,10 @@ describe('LoginPage', () => {
       expect(authService.login).toHaveBeenCalledWith({
         username: 'admin',
         password: 'password123',
-        autoLogin: true,
       });
     });
 
     expect(onLoginSuccess).toHaveBeenCalledWith(loginResp);
-  });
-
-  it('password login sends unchecked autoLogin when the user disables automatic login', async () => {
-    const user = userEvent.setup();
-    const authService = createMockAuthService({
-      getAuthConfig: vi.fn().mockResolvedValue(passwordOnlyConfig),
-      login: vi.fn().mockResolvedValue(loginResp),
-    });
-
-    renderLoginPage({ authService });
-
-    await waitFor(() => {
-      expect(screen.getByLabelText('用户名')).toBeInTheDocument();
-    });
-
-    await user.type(screen.getByLabelText('用户名'), 'admin');
-    await user.type(screen.getByLabelText('密码'), 'password123');
-    await user.click(screen.getByRole('checkbox', { name: '自动登录' }));
-    await user.click(screen.getByRole('button', { name: /登\s*录/ }));
-
-    await waitFor(() => {
-      expect(authService.login).toHaveBeenCalledWith({
-        username: 'admin',
-        password: 'password123',
-        autoLogin: false,
-      });
-    });
   });
 
   it('saves auth tokens after password login', async () => {
@@ -383,7 +354,6 @@ describe('LoginPage', () => {
       expect(authService.login).toHaveBeenCalledWith({
         username: 'admin',
         password: 'wrong-password',
-        autoLogin: true,
       });
     });
 
@@ -738,7 +708,7 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(document.querySelector('#wechat-login-qr iframe')).toBeInTheDocument();
     });
-    await user.click(screen.getByRole('tab', { name: '账号密码' }));
+    await user.click(screen.getByRole('tab', { name: '账号密码登录' }));
 
     await waitFor(() => {
       expect(document.querySelector('#wechat-login-qr iframe')).not.toBeInTheDocument();

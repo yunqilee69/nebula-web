@@ -1,5 +1,5 @@
 import { GithubOutlined, KeyOutlined, LoginOutlined, MailOutlined, MobileOutlined, WechatOutlined } from '@ant-design/icons';
-import { Alert, Button, Checkbox, Flex, Form, Input, Spin, Tabs, Typography, theme } from 'antd';
+import { Alert, Button, Flex, Form, Input, Spin, Tabs, Typography, theme } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toCurrentUser } from '@/utils/auth/current-user';
@@ -21,9 +21,9 @@ import { OAuthRedirectPanel } from './oauth-redirect-panel';
 import { WechatQrPanel } from './wechat-qr-panel';
 
 const builtInLabels: Record<BuiltInLoginMethodKey, string> = {
-  password: '账号密码',
-  phone: '手机验证码',
-  email: '邮箱验证码',
+  password: '账号密码登录',
+  phone: '手机号登录',
+  email: '邮箱登录',
   'wechat-web': '微信扫码',
   github: 'GitHub',
 };
@@ -200,6 +200,7 @@ export function LoginPage() {
             authService={null}
             config={null}
             loginBadgeContext={loginBadge}
+            registerPath={loginBadge.registerPath}
             onLoginSuccess={handleLoginSuccess}
             onExtraSuccess={handleExtraSuccess}
           />
@@ -220,18 +221,10 @@ export function LoginPage() {
         authService={authService}
         config={config}
         loginBadgeContext={loginBadge}
+        registerPath={loginBadge.registerPath}
         onLoginSuccess={handleLoginSuccess}
         onExtraSuccess={handleExtraSuccess}
       />
-
-      {loginBadge.registerPath && (
-        <Flex justify="center" className="mt-4">
-          <Typography.Text type="secondary">
-            没有账号？
-            <Link to={loginBadge.registerPath}>立即注册</Link>
-          </Typography.Text>
-        </Flex>
-      )}
     </AuthShell>
   );
 }
@@ -241,6 +234,7 @@ interface LoginMethodSwitcherProps {
   authService: AuthService | null;
   config: AuthInitResp | null;
   loginBadgeContext: ReturnType<typeof useNebulaLoginBadge>;
+  registerPath: string | undefined;
   onLoginSuccess: (result: LoginResult) => void;
   onExtraSuccess: ExtraSuccessHandler;
 }
@@ -250,6 +244,7 @@ function LoginMethodSwitcher({
   authService,
   config,
   loginBadgeContext,
+  registerPath,
   onLoginSuccess,
   onExtraSuccess,
 }: LoginMethodSwitcherProps) {
@@ -341,6 +336,22 @@ function LoginMethodSwitcher({
 
       {renderActivePanel()}
 
+      {(activeFormMethod && registerPath) || (activeFormMethod && authService) ? (
+        <Flex justify="space-between" align="center">
+          {activeFormMethod && registerPath ? (
+            <Typography.Text type="secondary">
+              没有账号？
+              <Link to={registerPath}>立即注册</Link>
+            </Typography.Text>
+          ) : <span />}
+          {activeFormMethod && authService ? (
+            <Typography.Text type="secondary">
+              <Link to="/forgot-password">忘记密码？</Link>
+            </Typography.Text>
+          ) : <span />}
+        </Flex>
+      ) : null}
+
       {oauthMethods.length > 0 && (
         <Flex align="center" justify="center" gap={token.marginXS} wrap="wrap" style={{ marginTop: token.marginXS }}>
           <Typography.Text type="secondary">其他登录方式：</Typography.Text>
@@ -417,21 +428,13 @@ function PasswordPanel({ authService, onSuccess }: PasswordPanelProps) {
   };
 
   return (
-    <Form form={form} onFinish={handleSubmit} layout="vertical" initialValues={{ autoLogin: true }}>
+    <Form form={form} onFinish={handleSubmit} layout="vertical">
       <Form.Item label="用户名" name="username" rules={[{ required: true, message: '请输入用户名' }]}>
         <Input />
       </Form.Item>
       <Form.Item label="密码" name="password" rules={[{ required: true, message: '请输入密码' }]}>
         <Input.Password />
       </Form.Item>
-      <Flex justify="space-between" align="center" className="mb-4">
-        <Form.Item name="autoLogin" valuePropName="checked" noStyle>
-          <Checkbox>自动登录</Checkbox>
-        </Form.Item>
-        <Typography.Text type="secondary">
-          <Link to="/forgot-password">忘记密码？</Link>
-        </Typography.Text>
-      </Flex>
       <Form.Item>
         <Button type="primary" htmlType="submit" loading={loading} block>
           登录
