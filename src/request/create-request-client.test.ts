@@ -324,22 +324,22 @@ describe('createRequestClient', () => {
     expect(onBusinessError).toHaveBeenCalledWith('接口请求出错，请联系管理员');
   });
 
-  it('routes auth-expired ApiResult responses through unauthorized handling without business notice', async () => {
+  it('routes auth business ApiResult responses through normal business-error handling', async () => {
     const onBusinessError = vi.fn();
     const onUnauthorized = vi.fn();
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const client = createRequestClient({ onBusinessError, onUnauthorized });
 
     client.defaults.adapter = mockAdapter((config) => makeResponse(config, 200, {
-      code: '10006',
+      code: 'AUTH_EXPIRED',
       message: '未登录或登录已过期',
       data: null,
     }));
 
     await expect(client.post('/api/auth/refresh', { refreshToken: 'stale-token' })).rejects.toThrow('未登录或登录已过期');
 
-    expect(onUnauthorized).toHaveBeenCalledTimes(1);
-    expect(onBusinessError).not.toHaveBeenCalled();
+    expect(onUnauthorized).not.toHaveBeenCalled();
+    expect(onBusinessError).toHaveBeenCalledWith('未登录或登录已过期');
   });
 
   it('does not fall back to browser alert when no business error handler is provided', async () => {

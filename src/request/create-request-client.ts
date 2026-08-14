@@ -15,7 +15,6 @@ interface ApiResultPayload {
 }
 
 const defaultBusinessErrorMessage = '接口请求出错，请联系管理员';
-const authExpiredBusinessCode = '10006';
 
 function isApiResult(value: unknown): value is ApiResultPayload {
   if (!value || typeof value !== 'object') return false;
@@ -40,10 +39,6 @@ function showBusinessError(message: string, options: RequestClientOptions) {
   if (options.onBusinessError) {
     options.onBusinessError(message);
   }
-}
-
-function isAuthExpiredBusinessCode(code: string): boolean {
-  return code === authExpiredBusinessCode;
 }
 
 export function createRequestClient(options: RequestClientOptions = {}) {
@@ -88,11 +83,6 @@ export function createRequestClient(options: RequestClientOptions = {}) {
         message,
         url: response.config.url,
       });
-
-      if (isAuthExpiredBusinessCode(code)) {
-        options.onUnauthorized?.();
-        return Promise.reject(new Error(message));
-      }
 
       showBusinessError(message, options);
 
