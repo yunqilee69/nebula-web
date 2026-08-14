@@ -35,6 +35,7 @@ export { NebulaLayout } from './layouts/nebula-layout';
 export { LoginPage } from './pages/login';
 export { GitHubCallbackPage } from './pages/login/github-callback';
 export { WechatCallbackPage } from './pages/login/wechat-callback';
+export { ProfileBindCallbackPage } from './pages/profile/bind-callback';
 export { RegisterPage } from './pages/register';
 export { DashboardPage } from './pages/dashboard';
 export { ProfileInfoPage } from './pages/profile/info';
@@ -154,11 +155,15 @@ export type {
 export type { PageResp as AuthManagementPageResp } from './types/auth-management';
 export type {
   BindOAuth2Req,
+  BindOAuth2Resp,
+  BindOAuth2Status,
   LoginRecordPageReq,
   LoginRecordResp,
   OAuth2BindingListResp,
   OAuth2BindingResp,
   PageResp as ProfilePageResp,
+  PrepareBindOAuth2Req,
+  PrepareBindOAuth2Resp,
   ProfileResp,
   UpdateProfileReq,
 } from './types/profile';

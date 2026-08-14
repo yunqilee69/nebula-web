@@ -12,6 +12,7 @@ import type {
   LoginRecordResp,
   OAuth2BindingListResp,
   PageResp,
+  PrepareBindOAuth2Req,
   ProfileResp,
   UpdateProfileReq,
 } from '@/types/profile';
@@ -88,13 +89,25 @@ describe('profileService', () => {
   });
 
   it('bindOAuth2 calls POST /api/auth/profile/oauth2/bindings with provider auth data', async () => {
-    const data: BindOAuth2Req = { providerId: 'wechat-web', code: 'auth-code', state: 'state-token' };
-    mockedRequest.mockResolvedValueOnce('binding-1');
+    const data: BindOAuth2Req = { providerId: 'wechat-web', code: 'auth-code', state: 'state-token', takeover: true };
+    const bindResult = { bindingId: 'binding-1', status: 'BOUND' as const };
+    mockedRequest.mockResolvedValueOnce(bindResult);
 
     const result = await profileService.bindOAuth2(data);
 
-    expect(result).toBe('binding-1');
+    expect(result).toBe(bindResult);
     expect(mockedRequest).toHaveBeenCalledWith({ method: 'POST', url: '/api/auth/profile/oauth2/bindings', data });
+  });
+
+  it('prepareOAuth2Bind calls POST /api/auth/profile/oauth2/bindings/prepare with provider id', async () => {
+    const data: PrepareBindOAuth2Req = { providerId: 'github' };
+    const prepareResult = { providerId: 'github', state: 'state-token', authorizeUrl: 'https://github.com/login/oauth/authorize?state=state-token' };
+    mockedRequest.mockResolvedValueOnce(prepareResult);
+
+    const result = await profileService.prepareOAuth2Bind(data);
+
+    expect(result).toBe(prepareResult);
+    expect(mockedRequest).toHaveBeenCalledWith({ method: 'POST', url: '/api/auth/profile/oauth2/bindings/prepare', data });
   });
 
   it('unbindOAuth2 calls DELETE /api/auth/profile/oauth2/bindings/{providerId}', async () => {
@@ -111,12 +124,12 @@ describe('profileService', () => {
     const page: PageResp<LoginRecordResp> = {
       data: [
         {
-          id: 'record-1',
+          loginAccount: 'yunqi',
           loginType: 'PASSWORD',
           loginIp: '127.0.0.1',
-          userAgent: 'Chrome',
+          deviceInfo: 'Chrome / Mac',
           loginTime: '2026-06-06 12:00:00',
-          success: true,
+          loginResult: 'SUCCESS',
         },
       ],
       total: 1,

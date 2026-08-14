@@ -42,6 +42,25 @@ export interface BindOAuth2Req {
   providerId: string;
   code: string;
   state: string;
+  takeover?: boolean;
+}
+
+export interface PrepareBindOAuth2Req {
+  providerId: string;
+}
+
+export interface PrepareBindOAuth2Resp {
+  providerId: string;
+  state: string;
+  authorizeUrl: string;
+  expiresInSeconds?: number;
+}
+
+export type BindOAuth2Status = 'BOUND' | 'TAKEOVER_CONFIRMATION_REQUIRED';
+
+export interface BindOAuth2Resp {
+  bindingId?: string | null;
+  status: BindOAuth2Status;
 }
 
 export interface LoginRecordPageReq {
@@ -49,17 +68,14 @@ export interface LoginRecordPageReq {
   pageSize: number;
 }
 
+export type LoginRecordResult = 'SUCCESS' | 'FAILED';
+
 export interface LoginRecordResp {
-  id: string;
-  loginType?: string;
-  loginIp?: string;
-  ip?: string;
-  userAgent?: string;
-  browser?: string;
-  os?: string;
-  location?: string;
   loginTime?: string;
-  success?: boolean;
-  successFlag?: boolean;
+  loginAccount?: string;
+  loginType?: string;
+  loginResult?: LoginRecordResult;
+  loginIp?: string;
+  deviceInfo?: string;
   failReason?: string;
 }
