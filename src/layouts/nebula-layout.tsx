@@ -246,6 +246,27 @@ function createInitialTabs(items: NebulaMenuItem[], currentPath: string, current
   ];
 }
 
+function upsertRouteTab(currentTabs: RouteTab[], path: string, label: string): RouteTab[] {
+  const existingTab = currentTabs.find((tab) => tab.path === path);
+  if (existingTab) {
+    if (existingTab.renamed || existingTab.label === label) {
+      return currentTabs;
+    }
+    return currentTabs.map((tab) => (tab.path === path ? { ...tab, label } : tab));
+  }
+  return [...currentTabs, { path, label, closable: true, renamed: false }];
+}
+
+function resolveVisibleRouteTabLabel(
+  items: NebulaMenuItem[],
+  path: string,
+  builtInLabels: Readonly<Record<string, string>>,
+): string | undefined {
+  const item = findMenuItem(items, path);
+  if (!item) return builtInLabels[path];
+  return isNavigableMenuItem(item) && isVisibleInRouteTabs(item) ? item.name : undefined;
+}
+
 function getTabKeyFromElement(element: HTMLElement): string | null {
   const tabEl = element.closest('[role="tab"]');
   if (!tabEl) return null;
@@ -386,6 +407,19 @@ export function NebulaLayout({
   );
   const openMenuKeys = selectedMenuHierarchy.slice(0, -1).map((item) => toTabKey(item.path));
 
+  const builtInRouteTabLabels = useMemo<Readonly<Record<string, string>>>(
+    () => ({
+      '/profile/info': t('layout.headerUser.profile'),
+      '/notify/inbox': t('layout.notificationInbox'),
+    }),
+    [t],
+  );
+
+  const currentRouteTabLabel = useMemo(
+    () => resolveVisibleRouteTabLabel(menuItems, location.pathname, builtInRouteTabLabels),
+    [builtInRouteTabLabels, location.pathname, menuItems],
+  );
+
   const [tabs, setTabs] = useState<RouteTab[]>(() => createInitialTabs(menuItems, location.pathname, currentTitle));
 
   const [editingTabKey, setEditingTabKey] = useState<string | null>(null);
@@ -442,6 +476,11 @@ export function NebulaLayout({
   }, [menuItems]);
 
   useEffect(() => {
+    if (!currentRouteTabLabel) return;
+    setTabs((currentTabs) => upsertRouteTab(currentTabs, location.pathname, currentRouteTabLabel));
+  }, [currentRouteTabLabel, location.pathname]);
+
+  useEffect(() => {
     if (pendingRefreshPath !== location.pathname) return;
 
     setRouteRefreshKeys((current) => ({
@@ -471,16 +510,7 @@ export function NebulaLayout({
   }
 
   function addRouteTabWithLabel(path: string, label: string) {
-    setTabs((currentTabs) => {
-      const existingTab = currentTabs.find((tab) => tab.path === path);
-      if (existingTab) {
-        if (existingTab.renamed || existingTab.label === label) {
-          return currentTabs;
-        }
-        return currentTabs.map((tab) => (tab.path === path ? { ...tab, label } : tab));
-      }
-      return [...currentTabs, { path, label, closable: true, renamed: false }];
-    });
+    setTabs((currentTabs) => upsertRouteTab(currentTabs, path, label));
   }
 
   function openRouteWithLabel(path: string, label: string) {

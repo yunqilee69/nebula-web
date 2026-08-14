@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent, { PointerEventsCheckLevel } from '@testing-library/user-event';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { useRef } from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Grid } from 'antd';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import { NebulaLayout } from './nebula-layout';
@@ -315,6 +315,32 @@ describe('NebulaLayout', () => {
         expect(screen.getByRole('tab', { name: '个人信息' })).toHaveAttribute('aria-selected', 'true');
       });
       expect(screen.queryByRole('tab', { name: '/profile/info' })).not.toBeInTheDocument();
+    });
+
+    it('shows profile info as the active route tab when mounted directly on the profile route', async () => {
+      renderLayoutWithoutRightContent('/profile/info');
+
+      expect(await screen.findByRole('tab', { name: '个人信息' })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('tab', { name: '工作台' })).toHaveAttribute('aria-selected', 'false');
+      expect(screen.getByRole('main')).toHaveTextContent('个人信息内容');
+    });
+
+    it('shows profile info as the active route tab after programmatic navigation', async () => {
+      render(
+        <MemoryRouter initialEntries={['/redirect-source']}>
+          <NebulaLayout title="Nebula Web" menuItems={menuItems}>
+            <Routes>
+              <Route path="/" element={<h1>工作台内容</h1>} />
+              <Route path="/redirect-source" element={<Navigate to="/profile/info" replace />} />
+              <Route path="/profile/info" element={<h1>个人信息内容</h1>} />
+            </Routes>
+          </NebulaLayout>
+        </MemoryRouter>,
+      );
+
+      expect(await screen.findByRole('tab', { name: '个人信息' })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('tab', { name: '工作台' })).toHaveAttribute('aria-selected', 'false');
+      expect(screen.getByRole('main')).toHaveTextContent('个人信息内容');
     });
 
     it('clears the current user when logout is selected', async () => {
