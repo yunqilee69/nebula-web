@@ -29,14 +29,18 @@ function getHttpErrorMessage(error: AxiosError) {
 }
 
 function handleSessionExpired() {
-  const hasStoredTokens = Boolean(getStoredAccessToken() || getStoredRefreshToken());
+  const refreshToken = getStoredRefreshToken();
+  const hasStoredTokens = Boolean(getStoredAccessToken() || refreshToken);
   const hasActiveUser = Boolean(useAuthStore.getState().user);
 
   if (!hasStoredTokens && !hasActiveUser) return;
   if (notifying) return;
   notifying = true;
   clearAuthTokens();
-  notifySessionExpired();
+  useAuthStore.getState().clearUser();
+  if (refreshToken) {
+    notifySessionExpired();
+  }
   setTimeout(() => { notifying = false; }, 0);
 }
 

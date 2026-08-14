@@ -197,7 +197,7 @@ describe('global request instance', () => {
     expect(saveAuthTokens).not.toHaveBeenCalled();
   });
 
-  it('clears tokens and notifies session expired when refresh returns auth-expired business code', async () => {
+  it('surfaces refresh business errors and notifies session expired when refresh token is stored', async () => {
     vi.mocked(getStoredAccessToken).mockReturnValue('old-access-token');
     vi.mocked(getStoredRefreshToken).mockReturnValue('stale-refresh-token');
 
@@ -206,7 +206,7 @@ describe('global request instance', () => {
 
       if (url === '/api/auth/refresh') {
         return makeResponse(config, 200, {
-          code: '10006',
+          code: 'AUTH_EXPIRED',
           message: '未登录或登录已过期',
           data: null,
         });
@@ -219,7 +219,7 @@ describe('global request instance', () => {
 
     expect(clearAuthTokens).toHaveBeenCalledTimes(1);
     expect(notifySessionExpired).toHaveBeenCalledTimes(1);
-    expect(notice.error).not.toHaveBeenCalled();
+    expect(notice.error).toHaveBeenCalledWith('未登录或登录已过期');
   });
 
   it('skips session-expired notification when no access or refresh token is stored', async () => {
@@ -236,7 +236,7 @@ describe('global request instance', () => {
     expect(notifySessionExpired).not.toHaveBeenCalled();
   });
 
-  it('notifies session expired when a business-page request returns 401 after stored tokens are removed', async () => {
+  it('silently clears active user when a business-page request returns 401 after stored tokens are removed', async () => {
     vi.mocked(getStoredAccessToken).mockReturnValue(null);
     vi.mocked(getStoredRefreshToken).mockReturnValue(null);
     useAuthStore.getState().setUser({
@@ -253,10 +253,11 @@ describe('global request instance', () => {
     await expect(request({ method: 'GET', url: '/business/page' })).rejects.toThrow('Unauthorized');
 
     expect(clearAuthTokens).toHaveBeenCalledTimes(1);
-    expect(notifySessionExpired).toHaveBeenCalledTimes(1);
+    expect(useAuthStore.getState().user).toBeNull();
+    expect(notifySessionExpired).not.toHaveBeenCalled();
   });
 
-  it('notifies session expired when only access token is stored and refresh fails', async () => {
+  it('silently clears tokens when only access token is stored and refresh fails', async () => {
     vi.mocked(getStoredAccessToken).mockReturnValue('expired-access-token');
     vi.mocked(getStoredRefreshToken).mockReturnValue(null);
 
@@ -267,7 +268,7 @@ describe('global request instance', () => {
     await expect(request({ method: 'GET', url: '/protected' })).rejects.toThrow('Unauthorized');
 
     expect(clearAuthTokens).toHaveBeenCalledTimes(1);
-    expect(notifySessionExpired).toHaveBeenCalledTimes(1);
+    expect(notifySessionExpired).not.toHaveBeenCalled();
   });
 
   it('notifies session expired when only refresh token is stored and refresh fails', async () => {
