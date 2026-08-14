@@ -1,9 +1,8 @@
 import { Button, Flex, Typography } from 'antd';
 import { useState } from 'react';
 import type { AuthService } from '@/api/auth';
+import { prepareOAuthRedirect, type OAuthRedirectProvider } from './oauth-redirect';
 import { redirectToAuthorizeUrl } from './wechat-redirect-navigation';
-
-type OAuthRedirectProvider = 'github';
 
 interface OAuthRedirectPanelProps {
   readonly authService: AuthService;
@@ -19,16 +18,6 @@ const redirectText: Record<OAuthRedirectProvider, { readonly description: string
   },
 };
 
-function getCurrentReturnPath(): string {
-  if (typeof window === 'undefined') return '/';
-  return `${window.location.pathname}${window.location.search}` || '/';
-}
-
-async function prepareRedirect(provider: OAuthRedirectProvider, authService: AuthService): Promise<string> {
-  const data = { redirectAfterLogin: getCurrentReturnPath() };
-  return (await authService.prepareGitHubRedirect(data)).authorizeUrl;
-}
-
 export function OAuthRedirectPanel({ authService, provider }: OAuthRedirectPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +27,7 @@ export function OAuthRedirectPanel({ authService, provider }: OAuthRedirectPanel
     setLoading(true);
     setError(null);
     try {
-      redirectToAuthorizeUrl(await prepareRedirect(provider, authService));
+      redirectToAuthorizeUrl(await prepareOAuthRedirect(provider, authService));
     } catch (caught: unknown) {
       if (!(caught instanceof Error)) throw caught;
       setError(text.error);

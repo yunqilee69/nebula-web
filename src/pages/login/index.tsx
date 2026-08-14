@@ -1,7 +1,7 @@
 import { GithubOutlined, KeyOutlined, LoginOutlined, MailOutlined, MobileOutlined } from '@ant-design/icons';
 import { Alert, Button, Flex, Form, Input, Tabs, Typography, theme } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toCurrentUser } from '@/utils/auth/current-user';
 import { useNebulaLoginBadge } from '@/providers/login-badge-provider';
 import { saveAuthTokens } from '@/utils/auth/token-session';
@@ -17,8 +17,11 @@ import type {
 import type { AuthService } from '@/api/auth';
 import { AuthShell } from '@/layouts/auth-shell';
 import { useAuthStore } from '@/stores/auth-store';
+import { prepareOAuthRedirect } from './oauth-redirect';
 import { OAuthRedirectPanel } from './oauth-redirect-panel';
 import { AuthLoadingState } from './auth-loading-state';
+import { normalizeAuthReturnPath } from './auth-return-path';
+import { redirectToAuthorizeUrl } from './wechat-redirect-navigation';
 
 const builtInLabels: Record<BuiltInLoginMethodKey, string> = {
   password: '账号密码登录',
@@ -52,6 +55,12 @@ function isFormLoginDescriptor(
 
 function isOAuthLoginDescriptor(method: LoginMethodDescriptor): boolean {
   return method.kind === 'extra' || !isFormLoginDescriptor(method);
+}
+
+function isDirectRedirectOAuthDescriptor(
+  method: LoginMethodDescriptor,
+): method is Extract<LoginMethodDescriptor, { kind: 'built-in' }> & { method: 'github' } {
+  return method.kind === 'built-in' && method.method === 'github';
 }
 
 function buildLoginMethodDescriptors(
@@ -94,6 +103,8 @@ function getLoginMethodIcon(method: LoginMethodDescriptor): ReactNode {
 export function LoginPage() {
   const loginBadge = useNebulaLoginBadge();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const loginRedirectPath = normalizeAuthReturnPath(searchParams.get('redirect') ?? undefined);
   const setUser = useAuthStore((state) => state.setUser);
 
   const [config, setConfig] = useState<AuthInitResp | null>(null);
@@ -140,7 +151,7 @@ export function LoginPage() {
   );
 
   const handleExtraSuccess = useCallback(
-    async (result?: LoginResult) => {
+    async (result?: ExtraLoginResult) => {
       if (result) {
         saveAuthTokens(result);
         if (loginBadge.onLoginSuccess) {
@@ -150,11 +161,11 @@ export function LoginPage() {
             const currentUser = await loginBadge.authService.getCurrentUser();
             setUser(toCurrentUser(currentUser));
           }
-          navigate('/');
+          navigate(loginRedirectPath, { replace: true });
         }
       }
     },
-    [loginBadge.authService, loginBadge.onLoginSuccess, navigate, setUser],
+    [loginBadge.authService, loginBadge.onLoginSuccess, loginRedirectPath, navigate, setUser],
   );
 
   const handleLoginSuccess = useCallback(
@@ -167,10 +178,10 @@ export function LoginPage() {
           const currentUser = await loginBadge.authService.getCurrentUser();
           setUser(toCurrentUser(currentUser));
         }
-        navigate('/');
+        navigate(loginRedirectPath, { replace: true });
       }
     },
-    [loginBadge.authService, loginBadge.onLoginSuccess, navigate, setUser],
+    [loginBadge.authService, loginBadge.onLoginSuccess, loginRedirectPath, navigate, setUser],
   );
 
   if (configLoading) {
@@ -249,9 +260,14 @@ function LoginMethodSwitcher({
     () => formMethods.find((method) => method.key === 'password')?.key ?? formMethods[0]?.key,
     [formMethods],
   );
-  const initialOAuthMethodKey = useMemo(() => (initialFormMethodKey ? null : oauthMethods[0]?.key ?? null), [initialFormMethodKey, oauthMethods]);
+  const initialOAuthMethodKey = useMemo(
+    () => (initialFormMethodKey ? null : oauthMethods.find((method) => !isDirectRedirectOAuthDescriptor(method))?.key ?? null),
+    [initialFormMethodKey, oauthMethods],
+  );
   const [activeFormMethodKey, setActiveFormMethodKey] = useState<string | undefined>(initialFormMethodKey);
   const [activeOAuthMethodKey, setActiveOAuthMethodKey] = useState<string | null>(initialOAuthMethodKey);
+  const [directRedirectLoadingKey, setDirectRedirectLoadingKey] = useState<string | null>(null);
+  const [directRedirectError, setDirectRedirectError] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveFormMethodKey(initialFormMethodKey);
@@ -279,6 +295,27 @@ function LoginMethodSwitcher({
   const handleFormMethodChange = (key: string) => {
     setActiveFormMethodKey(key);
     setActiveOAuthMethodKey(null);
+    setDirectRedirectError(null);
+  };
+
+  const handleOAuthMethodClick = async (method: LoginMethodDescriptor) => {
+    if (authService && isDirectRedirectOAuthDescriptor(method)) {
+      setDirectRedirectLoadingKey(method.key);
+      setDirectRedirectError(null);
+      setActiveOAuthMethodKey(null);
+
+      try {
+        redirectToAuthorizeUrl(await prepareOAuthRedirect('github', authService));
+      } catch (caught: unknown) {
+        if (!(caught instanceof Error)) throw caught;
+        setDirectRedirectError('GitHub 登录发起失败，请稍后重试。');
+        setDirectRedirectLoadingKey(null);
+      }
+      return;
+    }
+
+    setDirectRedirectError(null);
+    setActiveOAuthMethodKey(method.key);
   };
 
   const renderActivePanel = () => {
@@ -359,7 +396,11 @@ function LoginMethodSwitcher({
                 size="large"
                 type="text"
                 icon={getLoginMethodIcon(method)}
-                onClick={() => setActiveOAuthMethodKey(method.key)}
+                loading={directRedirectLoadingKey === method.key}
+                disabled={directRedirectLoadingKey !== null && directRedirectLoadingKey !== method.key}
+                onClick={() => {
+                  void handleOAuthMethodClick(method);
+                }}
                 style={{
                   color: active ? token.colorPrimary : token.colorTextSecondary,
                   fontSize: token.fontSizeHeading4,
@@ -371,6 +412,7 @@ function LoginMethodSwitcher({
           })}
         </Flex>
       )}
+      {directRedirectError ? <Typography.Text type="danger" data-testid="github-direct-redirect-error">{directRedirectError}</Typography.Text> : null}
     </Flex>
   );
 }

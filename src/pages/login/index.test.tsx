@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import { useAuthStore } from '@/stores/auth-store';
@@ -16,7 +16,6 @@ import { saveAuthTokens } from '@/utils/auth/token-session';
 import { LoginPage } from './index';
 
 const redirectToAuthorizeUrlMock = vi.hoisted(() => vi.fn());
-
 
 vi.mock('@/utils/auth/token-session', () => ({
   saveAuthTokens: vi.fn(),
@@ -72,12 +71,38 @@ const loginResp: LoginResp = {
   refreshTokenExpiresIn: 604800,
 };
 
+const currentUserResp = {
+  id: 'user-1',
+  username: 'alice',
+  nickname: 'Alice',
+  roleCodeList: ['ADMIN'],
+  permissionCodeList: ['MENU:dashboard:Allow'],
+  orgCodeList: ['TECH'],
+  menuList: [
+    {
+      id: 'dashboard-menu',
+      code: 'dashboard',
+      name: 'Dashboard',
+      path: '/dashboard',
+      component: 'DashboardPage',
+      status: 1,
+    },
+  ],
+};
+
+function LocationSnapshot() {
+  const location = useLocation();
+
+  return <span data-testid="current-location">{`${location.pathname}${location.search}${location.hash}`}</span>;
+}
+
 function renderLoginPage(
   overrides: {
     authService?: AuthService;
     onLoginSuccess?: Mock;
     extraLoginBadges?: NebulaExtraLoginBadge[];
     defaultLoginMethods?: BuiltInLoginMethodKey[];
+    initialEntry?: string;
   } = {},
 ) {
   const authService = overrides.authService ?? createMockAuthService();
@@ -87,7 +112,7 @@ function renderLoginPage(
     authService,
     onLoginSuccess,
     ...render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={overrides.initialEntry ? [overrides.initialEntry] : undefined}>
         <NebulaProvider
           loginBadge={{
             authService,
@@ -101,6 +126,38 @@ function renderLoginPage(
       </MemoryRouter>,
     ),
   };
+}
+
+function createPasswordLoginAuthService(): AuthService {
+  return createMockAuthService({
+    getAuthConfig: vi.fn().mockResolvedValue(passwordOnlyConfig),
+    login: vi.fn().mockResolvedValue(loginResp),
+    getCurrentUser: vi.fn().mockResolvedValue(currentUserResp),
+  });
+}
+
+async function submitPasswordLogin(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await waitFor(() => {
+    expect(screen.getByLabelText('用户名')).toBeInTheDocument();
+  });
+
+  await user.type(screen.getByLabelText('用户名'), 'admin');
+  await user.type(screen.getByLabelText('密码'), 'password123');
+  await user.click(screen.getByRole('button', { name: /登\s*录/ }));
+}
+
+function renderPasswordLoginRoutes(initialEntry: string, authService: AuthService) {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <NebulaProvider loginBadge={{ authService }}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<div>Workspace Home</div>} />
+          <Route path="/dashboard" element={<><div>Dashboard Target</div><LocationSnapshot /></>} />
+        </Routes>
+      </NebulaProvider>
+    </MemoryRouter>,
+  );
 }
 
 describe('LoginPage', () => {
@@ -544,24 +601,7 @@ describe('LoginPage', () => {
     const authService = createMockAuthService({
       getAuthConfig: vi.fn().mockResolvedValue(passwordOnlyConfig),
       login: vi.fn().mockResolvedValue(loginResp),
-      getCurrentUser: vi.fn().mockResolvedValue({
-        id: 'user-1',
-        username: 'alice',
-        nickname: 'Alice',
-        roleCodeList: ['ADMIN'],
-        permissionCodeList: ['MENU:dashboard:Allow'],
-        orgCodeList: ['TECH'],
-        menuList: [
-          {
-            id: 'dashboard-menu',
-            code: 'dashboard',
-            name: 'Dashboard',
-            path: '/dashboard',
-            component: 'DashboardPage',
-            status: 1,
-          },
-        ],
-      }),
+      getCurrentUser: vi.fn().mockResolvedValue(currentUserResp),
     });
 
     render(
@@ -603,7 +643,43 @@ describe('LoginPage', () => {
     expect(await screen.findByText('Workspace Home')).toBeInTheDocument();
   });
 
-  it('starts GitHub redirect login with the backend authorize URL when GitHub is enabled', async () => {
+  it('returns to the requested route after successful password login', async () => {
+    const user = userEvent.setup();
+    useAuthStore.getState().clearUser();
+    const authService = createPasswordLoginAuthService();
+
+    renderPasswordLoginRoutes('/login?redirect=%2Fdashboard%3Ftab%3Dhome%23section', authService);
+
+    await submitPasswordLogin(user);
+
+    await waitFor(() => {
+      expect(authService.getCurrentUser).toHaveBeenCalledOnce();
+    });
+    expect(await screen.findByText('Dashboard Target')).toBeInTheDocument();
+    expect(screen.getByTestId('current-location')).toHaveTextContent('/dashboard?tab=home#section');
+  });
+
+  it.each([
+    '//evil.example/dashboard',
+    'https://evil.example/dashboard',
+    '/login?redirect=/dashboard',
+  ])('normalizes unsafe redirect %s to the workspace route after password login', async (redirect) => {
+    const user = userEvent.setup();
+    useAuthStore.getState().clearUser();
+    const authService = createPasswordLoginAuthService();
+
+    renderPasswordLoginRoutes(`/login?redirect=${encodeURIComponent(redirect)}`, authService);
+
+    await submitPasswordLogin(user);
+
+    await waitFor(() => {
+      expect(authService.getCurrentUser).toHaveBeenCalledOnce();
+    });
+    expect(await screen.findByText('Workspace Home')).toBeInTheDocument();
+    expect(screen.queryByText('Dashboard Target')).not.toBeInTheDocument();
+  });
+
+  it('directly starts GitHub redirect login with the backend authorize URL when GitHub is enabled', async () => {
     const user = userEvent.setup();
     const authService = createMockAuthService({
       getAuthConfig: vi.fn().mockResolvedValue({ ...passwordOnlyConfig, githubEnabled: true }),
@@ -618,7 +694,8 @@ describe('LoginPage', () => {
     renderLoginPage({ authService });
 
     await user.click(await screen.findByRole('button', { name: 'GitHub' }));
-    await user.click(screen.getByTestId('github-redirect-login'));
+
+    expect(screen.queryByTestId('github-redirect-login')).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(authService.prepareGitHubRedirect).toHaveBeenCalledWith({ redirectAfterLogin: '/' });
