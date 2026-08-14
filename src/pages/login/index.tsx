@@ -1,4 +1,4 @@
-import { GithubOutlined, KeyOutlined, LoginOutlined, MailOutlined, MobileOutlined, WechatOutlined } from '@ant-design/icons';
+import { GithubOutlined, KeyOutlined, LoginOutlined, MailOutlined, MobileOutlined } from '@ant-design/icons';
 import { Alert, Button, Flex, Form, Input, Tabs, Typography, theme } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -12,24 +12,23 @@ import type {
   LoginReq,
   LoginResp,
   NebulaExtraLoginBadge,
-  WechatWebLoginStatusResp,
+  GitHubLoginStatusResp,
 } from '@/types/auth';
 import type { AuthService } from '@/api/auth';
 import { AuthShell } from '@/layouts/auth-shell';
 import { useAuthStore } from '@/stores/auth-store';
 import { OAuthRedirectPanel } from './oauth-redirect-panel';
-import { WechatQrPanel } from './wechat-qr-panel';
 import { AuthLoadingState } from './auth-loading-state';
 
 const builtInLabels: Record<BuiltInLoginMethodKey, string> = {
   password: '账号密码登录',
   phone: '手机号登录',
   email: '邮箱登录',
-  'wechat-web': '微信扫码',
   github: 'GitHub',
 };
 
-type LoginResult = LoginResp | WechatWebLoginStatusResp;
+type LoginResult = LoginResp;
+type ExtraLoginResult = LoginResp | GitHubLoginStatusResp;
 type FormLoginMethodKey = Extract<BuiltInLoginMethodKey, 'password' | 'phone' | 'email'>;
 
 type LoginMethodDescriptor =
@@ -37,7 +36,7 @@ type LoginMethodDescriptor =
   | { key: string; label: string; kind: 'extra'; badge: NebulaExtraLoginBadge };
 
 type LoginSuccessHandler = (result: LoginResult) => void | Promise<void>;
-type ExtraSuccessHandler = (result?: LoginResult) => void | Promise<void>;
+type ExtraSuccessHandler = (result?: ExtraLoginResult) => void | Promise<void>;
 
 const formLoginMethodKeys = new Set<BuiltInLoginMethodKey>(['password', 'phone', 'email']);
 
@@ -87,8 +86,6 @@ function getLoginMethodIcon(method: LoginMethodDescriptor): ReactNode {
       return <MobileOutlined aria-hidden />;
     case 'email':
       return <MailOutlined aria-hidden />;
-    case 'wechat-web':
-      return <WechatOutlined aria-hidden />;
     case 'github':
       return <GithubOutlined aria-hidden />;
   }
@@ -393,11 +390,6 @@ function LoginMethodPanel({ method, authService, onSuccess, config }: LoginMetho
       return <PhonePanel authService={authService} onSuccess={onSuccess} sendInterval={config?.phoneSendIntervalSeconds ?? 60} />;
     case 'email':
       return <EmailPanel authService={authService} onSuccess={onSuccess} sendInterval={config?.emailSendIntervalSeconds ?? 60} />;
-    case 'wechat-web':
-      if (config?.wechatWebType === 'redirect') {
-        return <OAuthRedirectPanel authService={authService} provider="wechat-web" />;
-      }
-      return <WechatQrPanel authService={authService} onSuccess={onSuccess} />;
     case 'github':
       return <OAuthRedirectPanel authService={authService} provider="github" />;
   }
@@ -599,7 +591,7 @@ interface ExtraBadgePanelProps {
 
 function ExtraBadgePanel({ badge, onSuccess, loginBadgeContext }: ExtraBadgePanelProps) {
   const handleBadgeSuccess = useCallback(
-    async (response?: LoginResult) => {
+    async (response?: ExtraLoginResult) => {
       await onSuccess(response);
     },
     [onSuccess],

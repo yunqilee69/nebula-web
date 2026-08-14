@@ -20,13 +20,6 @@ import type {
   GitHubLoginStatusResp,
   GitHubRedirectPrepareReq,
   GitHubRedirectPrepareResp,
-  WechatWebCallbackReq,
-  WechatWebCallbackResp,
-  WechatWebQrCodeCreateReq,
-  WechatWebQrCodeResp,
-  WechatWebLoginStatusResp,
-  WechatWebRedirectPrepareReq,
-  WechatWebRedirectPrepareResp,
 } from '@/types/auth';
 
 export interface AuthService {
@@ -43,10 +36,6 @@ export interface AuthService {
   refreshToken: (data: RefreshTokenReq) => Promise<LoginResp>;
   logout: () => Promise<void>;
   getCurrentUser: () => Promise<CurrentUserResp>;
-  createWechatWebQrCode: (data: WechatWebQrCodeCreateReq) => Promise<WechatWebQrCodeResp>;
-  getWechatWebLoginStatus: (loginId: string) => Promise<WechatWebLoginStatusResp>;
-  prepareWechatWebRedirect: (data: WechatWebRedirectPrepareReq) => Promise<WechatWebRedirectPrepareResp>;
-  completeWechatWebRedirectCallback: (data: WechatWebCallbackReq) => Promise<WechatWebCallbackResp>;
   prepareGitHubRedirect: (data: GitHubRedirectPrepareReq) => Promise<GitHubRedirectPrepareResp>;
   getGitHubLoginStatus: (loginId: string) => Promise<GitHubLoginStatusResp>;
   completeGitHubRedirectCallback: (data: GitHubCallbackReq) => Promise<GitHubCallbackResp>;
@@ -142,34 +131,6 @@ export const authService: AuthService = {
     request<CurrentUserResp>({
       method: 'GET',
       url: '/api/auth/current-user',
-    }),
-
-  createWechatWebQrCode: (data: WechatWebQrCodeCreateReq) =>
-    request<WechatWebQrCodeResp>({
-      method: 'POST',
-      url: '/api/auth/wechat/web/qrcode',
-      data,
-    }),
-
-  getWechatWebLoginStatus: (loginId: string) =>
-    request<WechatWebLoginStatusResp>({
-      method: 'GET',
-      url: '/api/auth/wechat/web/status',
-      params: { loginId },
-    }),
-
-  prepareWechatWebRedirect: (data: WechatWebRedirectPrepareReq) =>
-    request<WechatWebRedirectPrepareResp>({
-      method: 'POST',
-      url: '/api/auth/wechat/web/redirect/prepare',
-      data,
-    }),
-
-  completeWechatWebRedirectCallback: (data: WechatWebCallbackReq) =>
-    request<WechatWebCallbackResp>({
-      method: 'POST',
-      url: '/api/auth/wechat/web/redirect/callback',
-      data,
     }),
 
   prepareGitHubRedirect: (data: GitHubRedirectPrepareReq) =>

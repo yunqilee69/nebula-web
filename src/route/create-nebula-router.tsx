@@ -5,7 +5,6 @@ import { NebulaLayout } from '@/layouts/nebula-layout';
 import { ForgotPasswordPage } from '@/pages/forgot-password';
 import { GitHubCallbackPage } from '@/pages/login/github-callback';
 import { LoginPage } from '@/pages/login';
-import { WechatCallbackPage } from '@/pages/login/wechat-callback';
 import { NotificationInboxPage } from '@/pages/notify/inbox';
 import { ProfileBindCallbackPage } from '@/pages/profile/bind-callback';
 import { ProfileInfoPage } from '@/pages/profile/info';
@@ -14,7 +13,7 @@ import { buildMenuRoutes } from './build-menu-routes';
 import { RouteGuard } from './route-guard';
 import type { CreateNebulaRouterOptions, NebulaRouteObject } from './types';
 
-const authPagePaths = new Set(['/login', '/login/wechat-callback', '/login/github-callback', '/profile/bind-callback', '/register', '/forgot-password']);
+const authPagePaths = new Set(['/login', '/login/github-callback', '/profile/bind-callback', '/register', '/forgot-password']);
 const redirectPathPrefix = '/redirect';
 
 function RedirectRoute() {
@@ -83,9 +82,6 @@ export function createNebulaRouter(options: CreateNebulaRouterOptions) {
   const builtInLayoutRoutes: RouteObject[] = [];
   if (!sourceRoutePaths.has('/login')) {
     builtInAuthRoutes.push({ path: '/login', element: <LoginPage /> });
-  }
-  if (!sourceRoutePaths.has('/login/wechat-callback')) {
-    builtInAuthRoutes.push({ path: '/login/wechat-callback', element: <WechatCallbackPage /> });
   }
   if (!sourceRoutePaths.has('/login/github-callback')) {
     builtInAuthRoutes.push({ path: '/login/github-callback', element: <GitHubCallbackPage /> });

@@ -101,9 +101,6 @@ export interface GeneralConfigDTO {
   // OAuth2
   oauth2Enabled?: boolean;
   oauth2AllowRegister?: boolean;
-  oauth2WechatMiniProgramEnabled?: boolean;
-  oauth2WechatWebEnabled?: boolean;
-  oauth2WechatWebType?: string;
   oauth2GithubEnabled?: boolean;
   // 审计
   auditRequestMaxLength?: number;

@@ -1,4 +1,4 @@
-const authPagePathnames = new Set(['/login', '/login/wechat-callback', '/login/github-callback', '/profile/bind-callback', '/register', '/forgot-password']);
+const authPagePathnames = new Set(['/login', '/login/github-callback', '/profile/bind-callback', '/register', '/forgot-password']);
 
 function getPathname(returnPath: string): string {
   const [pathname = returnPath] = returnPath.split(/[?#]/, 1);

@@ -98,9 +98,6 @@ export const TAB_CONFIGS: ConfigTab[] = [
         fields: [
           { field: 'oauth2Enabled', paramKey: 'login.oauth2.enabled', paramName: 'OAuth2 登录开关', description: 'OAuth2 登录总开关', dataType: DataType.BOOLEAN },
           { field: 'oauth2AllowRegister', paramKey: 'login.oauth2.allow-register', paramName: 'OAuth2 注册开关', description: 'OAuth2 注册开关', dataType: DataType.BOOLEAN },
-          { field: 'oauth2WechatMiniProgramEnabled', paramKey: 'login.oauth2.provider.wechat-mini-program.enabled', paramName: '微信小程序登录', description: '微信小程序登录提供商开关', dataType: DataType.BOOLEAN },
-          { field: 'oauth2WechatWebEnabled', paramKey: 'login.oauth2.provider.wechat-web.enabled', paramName: '微信网站登录', description: '微信网站登录提供商开关', dataType: DataType.BOOLEAN },
-          { field: 'oauth2WechatWebType', paramKey: 'login.oauth2.provider.wechat-web.type', paramName: '微信网站登录类型', description: '微信网站登录方式', dataType: DataType.SINGLE, optionCode: 'login_oauth2_wechat_web_type' },
           { field: 'oauth2GithubEnabled', paramKey: 'login.oauth2.provider.github.enabled', paramName: 'GitHub 登录', description: 'GitHub 登录提供商开关', dataType: DataType.BOOLEAN },
         ],
       },
@@ -213,8 +210,6 @@ function assignConfigValue(dto: GeneralConfigDTO, field: keyof GeneralConfigDTO,
     case 'emailRegisterEnabled':
     case 'oauth2Enabled':
     case 'oauth2AllowRegister':
-    case 'oauth2WechatMiniProgramEnabled':
-    case 'oauth2WechatWebEnabled':
     case 'oauth2GithubEnabled':
       dto[field] = parseBooleanValue(value);
       return;
@@ -232,7 +227,6 @@ function assignConfigValue(dto: GeneralConfigDTO, field: keyof GeneralConfigDTO,
     case 'notifyEmailSmtpPort':
       dto[field] = parseNumberValue(value, dataType);
       return;
-    case 'oauth2WechatWebType':
     case 'notifyEmailSmtpHost':
     case 'notifyEmailSecurity':
     case 'notifyEmailUsername':

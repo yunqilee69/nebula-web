@@ -34,7 +34,6 @@ export { NebulaContentOnlyLayout } from './layouts/nebula-content-only-layout';
 export { NebulaLayout } from './layouts/nebula-layout';
 export { LoginPage } from './pages/login';
 export { GitHubCallbackPage } from './pages/login/github-callback';
-export { WechatCallbackPage } from './pages/login/wechat-callback';
 export { ProfileBindCallbackPage } from './pages/profile/bind-callback';
 export { RegisterPage } from './pages/register';
 export { DashboardPage } from './pages/dashboard';
@@ -86,15 +85,6 @@ export type {
   SendEmailCodeReq,
   SendPhoneCodeReq,
   UserPreferences,
-  WechatWebCallbackErrorCode,
-  WechatWebCallbackReq,
-  WechatWebCallbackResp,
-  WechatWebLoginStatus,
-  WechatWebLoginStatusResp,
-  WechatWebQrCodeCreateReq,
-  WechatWebQrCodeResp,
-  WechatWebRedirectPrepareReq,
-  WechatWebRedirectPrepareResp,
 } from './types/auth';
 export type { AuthService } from './api/auth';
 export type { AuthManagementService } from './api/auth-management';

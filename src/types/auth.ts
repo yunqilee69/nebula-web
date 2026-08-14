@@ -37,13 +37,13 @@ export interface NebulaLoginBadgeContextValue {
   defaultLoginMethods: BuiltInLoginMethodKey[];
   extraLoginBadges: NebulaExtraLoginBadge[];
   authService?: AuthService;
-  onLoginSuccess?: (response: LoginResp | WechatWebLoginStatusResp | GitHubLoginStatusResp) => void | Promise<void>;
+  onLoginSuccess?: (response: LoginResp | GitHubLoginStatusResp) => void | Promise<void>;
   onLogoutSuccess?: () => void | Promise<void>;
   onRegisterSuccess?: () => void | Promise<void>;
 }
 
 export interface NebulaExtraLoginBadgeRenderContext {
-  onSuccess: (response?: LoginResp | WechatWebLoginStatusResp | GitHubLoginStatusResp) => void | Promise<void>;
+  onSuccess: (response?: LoginResp | GitHubLoginStatusResp) => void | Promise<void>;
   loginBadge: NebulaLoginBadgeContextValue;
 }
 
@@ -59,7 +59,7 @@ export interface LoginBadgeOptions {
   defaultLoginMethods?: BuiltInLoginMethodKey[];
   extraLoginBadges?: NebulaExtraLoginBadge[];
   authService?: AuthService;
-  onLoginSuccess?: (response: LoginResp | WechatWebLoginStatusResp | GitHubLoginStatusResp) => void | Promise<void>;
+  onLoginSuccess?: (response: LoginResp | GitHubLoginStatusResp) => void | Promise<void>;
   onLogoutSuccess?: () => void | Promise<void>;
   onRegisterSuccess?: () => void | Promise<void>;
 }
@@ -74,8 +74,6 @@ export interface AuthInitResp {
   usernameEnabled?: boolean;
   phoneEnabled?: boolean;
   emailEnabled?: boolean;
-  wechatWebEnabled?: boolean;
-  wechatWebType?: string;
   usernameRegisterAllowed?: boolean;
   usernamePasswordMinLength?: number;
   usernamePasswordMaxLength?: number;
@@ -87,7 +85,6 @@ export interface AuthInitResp {
   emailSendIntervalSeconds?: number;
   oauth2Enabled?: boolean;
   oauth2RegisterAllowed?: boolean;
-  wechatMiniProgramEnabled?: boolean;
   githubEnabled?: boolean;
 }
 
@@ -195,61 +192,6 @@ export interface CurrentUserResp {
   menuList?: BackendMenuItem[];
 }
 
-export interface WechatWebQrCodeCreateReq {
-  redirectAfterLogin?: string;
-}
-
-export type WechatWebLoginStatus = 'WAITING' | 'SCANNED' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CONSUMED';
-
-export type WechatWebCallbackErrorCode =
-  | 'missing_callback_parameter'
-  | 'invalid_state'
-  | 'expired_state'
-  | 'replayed_state'
-  | 'provider_error';
-
-export interface WechatWebQrCodeResp {
-  loginId: string;
-  state: string;
-  appId: string;
-  scope: string;
-  redirectUri: string;
-  status: WechatWebLoginStatus;
-  qrCodeUrl: string;
-  expiresInSeconds: number;
-}
-
-export interface WechatWebLoginStatusResp {
-  loginId: string;
-  status: WechatWebLoginStatus;
-  state: string;
-  loginResult?: LoginResp;
-  returnPath?: string;
-}
-
-export interface WechatWebRedirectPrepareReq {
-  redirectAfterLogin?: string;
-}
-
-export interface WechatWebRedirectPrepareResp {
-  loginId: string;
-  state: string;
-  status: WechatWebLoginStatus;
-  authorizeUrl: string;
-}
-
-export interface WechatWebCallbackReq {
-  code: string;
-  state: string;
-}
-
-export interface WechatWebCallbackResp {
-  loginId: string;
-  status: WechatWebLoginStatus;
-  returnPath?: string;
-  errorCode?: WechatWebCallbackErrorCode;
-}
-
 export type GitHubLoginStatus = 'WAITING' | 'SCANNED' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CONSUMED';
 
 export type GitHubCallbackErrorCode =
@@ -290,4 +232,4 @@ export interface GitHubCallbackResp {
   errorCode?: GitHubCallbackErrorCode;
 }
 
-export type BuiltInLoginMethodKey = 'password' | 'phone' | 'email' | 'wechat-web' | 'github';
+export type BuiltInLoginMethodKey = 'password' | 'phone' | 'email' | 'github';
