@@ -8,6 +8,7 @@ import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import { profileService as defaultProfileService } from '@/api/profile';
 import type { ProfileService } from '@/api/profile';
+import { redirectToAuthorizeUrl } from '@/pages/login/wechat-redirect-navigation';
 import type { LoginRecordResp, OAuth2BindingResp, ProfileResp, UpdateProfileReq } from '@/types/profile';
 
 export interface ProfileInfoPageProps {
@@ -38,14 +39,6 @@ function normalizeOptionalText(value: string | undefined) {
   return nextValue ? nextValue : undefined;
 }
 
-function resolveLoginIp(record: LoginRecordResp) {
-  return record.loginIp ?? record.ip;
-}
-
-function resolveLoginSuccess(record: LoginRecordResp) {
-  return record.success ?? record.successFlag ?? false;
-}
-
 function buildLoginRecordPageReq(params: NebulaPageReq) {
   return {
     pageNum: params.pageNum,
@@ -69,6 +62,7 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
   const [bindings, setBindings] = useState<OAuth2BindingResp[]>([]);
   const [bindingsLoading, setBindingsLoading] = useState(false);
   const [unbindProviderId, setUnbindProviderId] = useState<string>();
+  const [bindProviderId, setBindProviderId] = useState<string>();
 
   const loginRecordColumns = useMemo<NebulaProColumns<LoginRecordResp>[]>(() => [
     {
@@ -78,13 +72,13 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
     },
     {
       title: t('auth.profileInfo.columns.loginIp'),
-      key: 'loginIp',
-      render: (_, record) => renderNotProvided(resolveLoginIp(record)),
+      dataIndex: 'loginIp',
+      render: (_, record) => renderNotProvided(record.loginIp),
     },
     {
-      title: t('auth.profileInfo.columns.userAgent'),
-      dataIndex: 'userAgent',
-      render: (_, record) => renderNotProvided(record.userAgent),
+      title: t('auth.profileInfo.columns.deviceInfo'),
+      dataIndex: 'deviceInfo',
+      render: (_, record) => renderNotProvided(record.deviceInfo),
     },
     {
       title: t('auth.profileInfo.columns.loginTime'),
@@ -95,7 +89,7 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
       title: t('auth.profileInfo.columns.success'),
       key: 'success',
       render: (_, record) => {
-        const success = resolveLoginSuccess(record);
+        const success = record.loginResult === 'SUCCESS';
         return <Tag color={success ? 'success' : 'error'}>{success ? t('auth.profileInfo.status.success') : t('auth.profileInfo.status.failed')}</Tag>;
       },
     },
@@ -191,6 +185,22 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
       }
     },
     [loadBindings, notice, service, t],
+  );
+
+  const startOAuth2Bind = useCallback(
+    async (providerId: string) => {
+      setBindProviderId(providerId);
+      try {
+        const prepareResult = await service.prepareOAuth2Bind({ providerId });
+        redirectToAuthorizeUrl(prepareResult.authorizeUrl);
+      } catch (error: unknown) {
+        notice.error(t('auth.profileInfo.feedback.bindFailed'));
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('OAuth2 bind prepare failed', message);
+        setBindProviderId(undefined);
+      }
+    },
+    [notice, service, t],
   );
 
   const submitPassword = useCallback(
@@ -298,7 +308,7 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
                         <Button danger loading={unbindProviderId === binding.providerId}>{t('auth.profileInfo.actions.unbind')}</Button>
                       </Popconfirm>
                     ) : (
-                      <Button onClick={() => notice.warning(t('auth.profileInfo.feedback.bindUnavailable'))}>{t('auth.profileInfo.actions.bind')}</Button>
+                      <Button loading={bindProviderId === binding.providerId} onClick={() => void startOAuth2Bind(binding.providerId)}>{t('auth.profileInfo.actions.bind')}</Button>
                     )}
                   </Space>
                 </Card>
@@ -312,6 +322,7 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
         <Card title={t('auth.profileInfo.sections.loginRecords')}>
           <NebulaProTable<LoginRecordResp>
             columns={loginRecordColumns}
+            rowKey={(record) => [record.loginTime, record.loginAccount, record.loginType, record.loginIp].filter((value) => value !== undefined && value !== '').join('-')}
             search={false}
             request={(params) => service.pageLoginRecords(buildLoginRecordPageReq(params))}
             onRequestError={(error) => {

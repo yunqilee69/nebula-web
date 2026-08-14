@@ -5,7 +5,12 @@ import { NebulaProvider } from '@/providers/nebula-provider';
 import type { ProfileService } from '@/api/profile';
 import { useLocaleStore } from '@/stores/locale-store';
 import type { LoginRecordResp, PageResp, ProfileResp } from '@/types/profile';
+import { redirectToAuthorizeUrl } from '@/pages/login/wechat-redirect-navigation';
 import { ProfileInfoPage } from './index';
+
+vi.mock('@/pages/login/wechat-redirect-navigation', () => ({
+  redirectToAuthorizeUrl: vi.fn(),
+}));
 
 const profile: ProfileResp = {
   id: 'user-1',
@@ -21,12 +26,12 @@ const profile: ProfileResp = {
 const loginRecords: PageResp<LoginRecordResp> = {
   data: [
     {
-      id: 'record-1',
+      loginAccount: 'yunqi',
       loginType: 'PASSWORD',
       loginIp: '127.0.0.1',
-      userAgent: 'Chrome on macOS',
+      deviceInfo: 'Chrome / Mac',
       loginTime: '2026-06-06 12:00:00',
-      success: true,
+      loginResult: 'SUCCESS',
     },
   ],
   total: 1,
@@ -42,7 +47,12 @@ function createService(overrides: Partial<ProfileService> = {}): ProfileService 
         { providerId: 'github', providerName: 'GitHub', bound: false },
       ],
     }),
-    bindOAuth2: vi.fn().mockResolvedValue('binding-1'),
+    prepareOAuth2Bind: vi.fn().mockResolvedValue({
+      providerId: 'github',
+      state: 'state-token',
+      authorizeUrl: 'https://github.com/login/oauth/authorize?state=state-token',
+    }),
+    bindOAuth2: vi.fn().mockResolvedValue({ bindingId: 'binding-1', status: 'BOUND' }),
     unbindOAuth2: vi.fn().mockResolvedValue(true),
     changePassword: vi.fn().mockResolvedValue(undefined),
     pageLoginRecords: vi.fn().mockResolvedValue(loginRecords),
@@ -50,10 +60,10 @@ function createService(overrides: Partial<ProfileService> = {}): ProfileService 
   };
 }
 
-function renderPage(service = createService()) {
+function renderPage(service = createService(), props: Partial<Parameters<typeof ProfileInfoPage>[0]> = {}) {
   render(
     <NebulaProvider>
-      <ProfileInfoPage service={service} />
+      <ProfileInfoPage service={service} {...props} />
     </NebulaProvider>,
   );
   return service;
@@ -62,6 +72,7 @@ function renderPage(service = createService()) {
 describe('ProfileInfoPage', () => {
   afterEach(() => {
     cleanup();
+    vi.clearAllMocks();
     act(() => {
       useLocaleStore.getState().setLocale('zh-CN');
     });
@@ -75,6 +86,9 @@ describe('ProfileInfoPage', () => {
     expect(screen.getByText('微信网页')).toBeInTheDocument();
     expect(screen.getByText('已绑定')).toBeInTheDocument();
     expect(await screen.findByText('127.0.0.1')).toBeInTheDocument();
+    expect(screen.getByText('Chrome / Mac')).toBeInTheDocument();
+    expect(screen.getByText('成功')).toBeInTheDocument();
+    expect(screen.queryByText('失败')).not.toBeInTheDocument();
     expect(service.getProfile).toHaveBeenCalledTimes(1);
     expect(service.listOAuth2Bindings).toHaveBeenCalledTimes(1);
     expect(service.pageLoginRecords).toHaveBeenCalledWith({ pageNum: 1, pageSize: 10 });
@@ -112,6 +126,21 @@ describe('ProfileInfoPage', () => {
     await waitFor(() => {
       expect(service.unbindOAuth2).toHaveBeenCalledWith('wechat-web');
       expect(service.listOAuth2Bindings).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('starts provider authorization when binding an unbound OAuth2 provider', async () => {
+    const user = userEvent.setup();
+    const service = createService();
+    renderPage(service);
+
+    await screen.findByText('GitHub');
+    const providerCard = screen.getByTestId('oauth2-provider-github');
+    await user.click(within(providerCard).getByRole('button', { name: /绑\s*定/ }));
+
+    await waitFor(() => {
+      expect(service.prepareOAuth2Bind).toHaveBeenCalledWith({ providerId: 'github' });
+      expect(redirectToAuthorizeUrl).toHaveBeenCalledWith('https://github.com/login/oauth/authorize?state=state-token');
     });
   });
 
