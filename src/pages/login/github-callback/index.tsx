@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import type { GitHubCallbackErrorCode, GitHubLoginStatusResp } from '@/types/auth';
 import { toCurrentUser } from '@/utils/auth/current-user';
 import { saveAuthTokens } from '@/utils/auth/token-session';
+import { normalizeAuthReturnPath } from '../auth-return-path';
 
 const callbackErrorMessages: Record<GitHubCallbackErrorCode, string> = {
   missing_callback_parameter: 'GitHub 回调参数缺失，请重新发起登录。',
@@ -35,15 +36,11 @@ function getCallbackError(value: string | null): GitHubCallbackErrorCode | null 
   return isCallbackErrorCode(value) ? value : 'invalid_state';
 }
 
-function getSafeReturnPath(value: string | undefined): string {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/';
-  return value;
-}
-
 export function GitHubCallbackPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const loginBadge = useNebulaLoginBadge();
+  const { authService, onLoginSuccess } = loginBadge;
   const setUser = useAuthStore((state) => state.setUser);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('正在完成 GitHub 登录');
@@ -54,19 +51,19 @@ export function GitHubCallbackPage() {
 
   const recoverLogin = useCallback(async (claimedStatus: GitHubLoginStatusResp) => {
     saveAuthTokens(claimedStatus);
-    if (loginBadge.onLoginSuccess) {
-      await loginBadge.onLoginSuccess(claimedStatus);
+    if (onLoginSuccess) {
+      await onLoginSuccess(claimedStatus);
       setStatus('success');
       setMessage('GitHub 登录已完成');
       return;
     }
 
-    if (loginBadge.authService) {
-      const currentUser = await loginBadge.authService.getCurrentUser();
+    if (authService) {
+      const currentUser = await authService.getCurrentUser();
       setUser(toCurrentUser(currentUser));
     }
-    navigate(getSafeReturnPath(claimedStatus.returnPath), { replace: true });
-  }, [loginBadge, navigate, setUser]);
+    navigate(normalizeAuthReturnPath(claimedStatus.returnPath), { replace: true });
+  }, [authService, navigate, onLoginSuccess, setUser]);
 
   useEffect(() => {
     if (callbackError) {
@@ -81,7 +78,7 @@ export function GitHubCallbackPage() {
       return;
     }
 
-    if (!loginBadge.authService) {
+    if (!authService) {
       setStatus('error');
       setMessage('当前认证服务不可用，请稍后重试。');
       return;
@@ -89,7 +86,7 @@ export function GitHubCallbackPage() {
 
     let active = true;
 
-    loginBadge.authService.getGitHubLoginStatus(loginId)
+    authService.getGitHubLoginStatus(loginId)
       .then(async (result) => {
         if (!active) return;
         switch (result.status) {
@@ -126,7 +123,7 @@ export function GitHubCallbackPage() {
     return () => {
       active = false;
     };
-  }, [callbackError, loginBadge.authService, loginId, recoverLogin]);
+  }, [authService, callbackError, loginId, recoverLogin]);
 
   return (
     <AuthShell>

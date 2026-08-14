@@ -92,6 +92,41 @@ describe('GitHubCallbackPage', () => {
     expect(await screen.findByText('Dashboard Home')).toBeInTheDocument();
   });
 
+  it('navigates to the workspace root when the server returnPath points back to the login page', async () => {
+    const statusResp: GitHubLoginStatusResp = {
+      loginId: 'callback-login',
+      state: 'callback-state',
+      status: 'SUCCESS',
+      returnPath: '/login',
+      loginResult: {
+        accessToken: 'callback-access',
+        refreshToken: 'callback-refresh',
+        accessTokenExpiresIn: 7200,
+        refreshTokenExpiresIn: 604800,
+      },
+    };
+    const authService = createMockAuthService({
+      getGitHubLoginStatus: vi.fn().mockResolvedValue(statusResp),
+      getCurrentUser: vi.fn().mockResolvedValue({
+        id: 'user-1',
+        username: 'alice',
+        nickname: 'Alice',
+        roleCodeList: ['ADMIN'],
+        permissionCodeList: ['DASHBOARD:READ'],
+        orgCodeList: ['TECH'],
+      }),
+    });
+
+    renderCallbackPage('/login/github-callback?loginId=callback-login', authService);
+
+    await waitFor(() => {
+      expect(authService.getGitHubLoginStatus).toHaveBeenCalledWith('callback-login');
+      expect(saveAuthTokens).toHaveBeenCalledWith(statusResp);
+      expect(authService.getCurrentUser).toHaveBeenCalledOnce();
+    });
+    expect(await screen.findByText('Workspace Home')).toBeInTheDocument();
+  });
+
   it('does not save tokens when loginId is missing', async () => {
     const authService = createMockAuthService();
 
