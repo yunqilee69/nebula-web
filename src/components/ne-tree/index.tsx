@@ -1,33 +1,8 @@
 import { DownOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons';
 import { Empty, Flex, Input, Typography, theme as antdTheme } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
-import type { CSSProperties } from 'react';
+import { collectExpandableKeys, createIndentStyle, filterTree } from './tree-helpers';
 import type { NeTreeNode, NeTreeProps } from './types';
-
-function collectExpandableKeys(nodes: NeTreeNode[]): string[] {
-  return nodes.flatMap((node) => {
-    const childKeys = collectExpandableKeys(node.children ?? []);
-    return node.children?.length ? [node.key, ...childKeys] : childKeys;
-  });
-}
-
-function filterTree(nodes: NeTreeNode[], keyword: string): NeTreeNode[] {
-  const normalizedKeyword = keyword.trim().toLowerCase();
-  if (!normalizedKeyword) return nodes;
-
-  return nodes.flatMap((node) => {
-    const children = filterTree(node.children ?? [], normalizedKeyword);
-    const searchableText = node.searchText ?? node.title;
-    const matched = searchableText.toLowerCase().includes(normalizedKeyword);
-
-    if (!matched && children.length === 0) return [];
-    return [{ ...node, children }];
-  });
-}
-
-function createIndentStyle(level: number, indentSize: number): CSSProperties {
-  return { paddingInlineStart: level * indentSize };
-}
 
 interface NeTreeNodeListProps {
   nodes: NeTreeNode[];
@@ -217,6 +192,9 @@ export function NeTree({
       gap={token.marginSM}
       className={className}
       style={{
+        minWidth: 0,
+        minHeight: 0,
+        overflow: 'hidden',
         padding: token.paddingMD,
         border: `1px solid ${token.colorBorderSecondary}`,
         borderRadius: token.borderRadiusLG,
@@ -225,7 +203,7 @@ export function NeTree({
       }}
     >
       {showHeader ? (
-        <Flex align="center" justify="space-between" gap={token.marginSM} wrap>
+        <Flex align="center" justify="space-between" gap={token.marginSM} wrap style={{ flexShrink: 0 }}>
           {title !== null && title !== undefined ? <Typography.Text strong>{title}</Typography.Text> : null}
           {extra !== null && extra !== undefined ? <span>{extra}</span> : null}
         </Flex>
@@ -237,24 +215,35 @@ export function NeTree({
           prefix={<SearchOutlined />}
           placeholder={searchPlaceholder}
           allowClear
+          style={{ flexShrink: 0 }}
           onChange={(event) => setKeyword(event.target.value)}
         />
       ) : null}
 
-      {hasData ? (
-        <NeTreeNodeList
-          nodes={filteredData}
-          level={0}
-          selectedKey={effectiveSelectedKey}
-          expandedKeys={new Set(effectiveExpandedKeys)}
-          indentSize={18}
-          searchActive={searchActive}
-          onSelect={handleSelect}
-          onToggleExpand={handleToggleExpand}
-        />
-      ) : (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyText} />
-      )}
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowX: 'hidden',
+          overflowY: 'auto',
+          paddingInlineEnd: token.paddingXXS,
+        }}
+      >
+        {hasData ? (
+          <NeTreeNodeList
+            nodes={filteredData}
+            level={0}
+            selectedKey={effectiveSelectedKey}
+            expandedKeys={new Set(effectiveExpandedKeys)}
+            indentSize={18}
+            searchActive={searchActive}
+            onSelect={handleSelect}
+            onToggleExpand={handleToggleExpand}
+          />
+        ) : (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyText} />
+        )}
+      </div>
     </Flex>
   );
 }

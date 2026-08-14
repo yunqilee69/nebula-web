@@ -25,7 +25,7 @@ const treeData: NeTreeNode[] = [
 
 describe('NeTree', () => {
   it('renders a reusable tree panel with title, extra content, and selected item', () => {
-    render(
+    const { container } = render(
       <NeTree
         title="按组织过滤"
         dataSource={treeData}
@@ -41,6 +41,8 @@ describe('NeTree', () => {
     expect(screen.getByText('平台工程组')).toBeInTheDocument();
     expect(screen.getByText('全部')).toBeInTheDocument();
     expect(screen.getByRole('treeitem', { name: /全部组织/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tree').parentElement).toHaveStyle({ overflowY: 'auto' });
+    expect(container.firstElementChild).toHaveStyle({ overflow: 'hidden' });
   });
 
   it('calls onSelect with the selected tree node', async () => {
