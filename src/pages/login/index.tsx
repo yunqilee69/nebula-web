@@ -1,5 +1,5 @@
 import { GithubOutlined, KeyOutlined, LoginOutlined, MailOutlined, MobileOutlined, WechatOutlined } from '@ant-design/icons';
-import { Alert, Button, Flex, Form, Input, Spin, Tabs, Typography, theme } from 'antd';
+import { Alert, Button, Flex, Form, Input, Tabs, Typography, theme } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toCurrentUser } from '@/utils/auth/current-user';
@@ -19,6 +19,7 @@ import { AuthShell } from '@/layouts/auth-shell';
 import { useAuthStore } from '@/stores/auth-store';
 import { OAuthRedirectPanel } from './oauth-redirect-panel';
 import { WechatQrPanel } from './wechat-qr-panel';
+import { AuthLoadingState } from './auth-loading-state';
 
 const builtInLabels: Record<BuiltInLoginMethodKey, string> = {
   password: '账号密码登录',
@@ -178,11 +179,7 @@ export function LoginPage() {
   if (configLoading) {
     return (
       <AuthShell>
-        <Flex justify="center" className="p-6">
-          <Spin description="加载中">
-            <div />
-          </Spin>
-        </Flex>
+        <AuthLoadingState />
       </AuthShell>
     );
   }

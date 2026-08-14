@@ -190,7 +190,46 @@ describe('LoginPage', () => {
 
     renderLoginPage({ authService });
 
-    expect(screen.getByText('加载中')).toBeInTheDocument();
+    expect(screen.getByText('正在加载登录方式')).toBeInTheDocument();
+    expect(screen.queryByText('后端服务未启动')).not.toBeInTheDocument();
+  });
+
+  it('shows backend startup hint after three seconds while config is loading', async () => {
+    vi.useFakeTimers();
+    const authService = createMockAuthService({
+      getAuthConfig: vi.fn().mockReturnValue(new Promise(() => {})),
+    });
+
+    renderLoginPage({ authService });
+
+    expect(screen.queryByText('后端服务未启动')).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(screen.getByText('后端服务未启动')).toBeInTheDocument();
+    expect(screen.getByText('登录初始化接口超过 3 秒未返回，请确认后端服务已启动。')).toBeInTheDocument();
+  });
+
+  it('does not show backend startup hint when config loads before three seconds', async () => {
+    vi.useFakeTimers();
+    const authService = createMockAuthService({
+      getAuthConfig: vi.fn().mockImplementation(
+        () => new Promise<AuthInitResp>((resolve) => {
+          setTimeout(() => resolve(passwordOnlyConfig), 1000);
+        }),
+      ),
+    });
+
+    renderLoginPage({ authService });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(screen.getByLabelText('用户名')).toBeInTheDocument();
+    expect(screen.queryByText('后端服务未启动')).not.toBeInTheDocument();
   });
 
   it('shows an empty login state instead of requiring authService', async () => {
