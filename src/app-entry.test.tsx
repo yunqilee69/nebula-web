@@ -1,4 +1,5 @@
 import { cleanup, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -102,6 +103,91 @@ describe('app entry wiring', () => {
     });
 
     expect(requestedUrls).not.toContain('/api/auth/current-user');
+  });
+
+  it('renders the requested route after login redirects into the authenticated layout', async () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    window.history.pushState({}, '', '/login?redirect=%2Fprofile%2Finfo');
+
+    vi.doMock('./request/create-request-client', () => ({
+      createRequestClient: () => ({
+        request: async (config: { url?: string }): Promise<unknown> => {
+          switch (config.url) {
+            case '/api/frontend/init':
+              return {
+                loginConfig: {
+                  usernameEnabled: true,
+                  phoneEnabled: false,
+                  emailEnabled: false,
+                  githubEnabled: false,
+                },
+              };
+            case '/api/auth/login':
+              return {
+                accessToken: 'login-access-token',
+                refreshToken: 'login-refresh-token',
+                accessTokenExpiresIn: 3600,
+                refreshTokenExpiresIn: 86400,
+              };
+            case '/api/auth/current-user':
+              return {
+                id: 'admin',
+                username: 'admin',
+                nickname: 'Administrator',
+                roleCodeList: ['ADMIN'],
+                permissionCodeList: ['MENU:dashboard:Allow'],
+                orgCodeList: ['ROOT'],
+                menuList: [
+                  {
+                    id: 'dashboard-menu',
+                    code: 'dashboard',
+                    name: 'Dashboard',
+                    path: '/dashboard',
+                    component: 'DashboardPage',
+                    status: 1,
+                    sort: 0,
+                  },
+                ],
+              };
+            case '/api/notify/announcements/current/popup':
+              return [];
+            case '/api/auth/profile':
+              return {
+                id: 'admin',
+                username: 'admin',
+                nickname: 'Administrator',
+                email: 'admin@example.com',
+                phone: '13800000000',
+                status: 1,
+              };
+            case '/api/auth/profile/oauth2/bindings':
+              return { providers: [] };
+            case '/api/auth/profile/login-records/page':
+              return { data: [], total: 0 };
+            default:
+              return undefined;
+          }
+        },
+      }),
+    }));
+
+    const browserEntryPath = './index.tsx';
+    const entry = (await import(/* @vite-ignore */ browserEntryPath)) as { root: Root };
+    mountedRoot = entry.root;
+
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText('用户名'), 'admin');
+    await user.type(screen.getByLabelText('密码'), 'password123');
+    await user.click(screen.getByRole('button', { name: /登\s*录/ }));
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/profile/info');
+    });
+    expect(await screen.findByText('基本资料')).toBeInTheDocument();
+    const profileTab = await screen.findByRole('tab', { name: '个人信息' });
+    expect(profileTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Dashboard' })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.queryByText('Operations Overview')).not.toBeInTheDocument();
   });
 
   it('renders auth management pages with menu items and route headings', async () => {
