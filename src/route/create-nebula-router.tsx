@@ -7,13 +7,14 @@ import { GitHubCallbackPage } from '@/pages/login/github-callback';
 import { LoginPage } from '@/pages/login';
 import { WechatCallbackPage } from '@/pages/login/wechat-callback';
 import { NotificationInboxPage } from '@/pages/notify/inbox';
+import { ProfileBindCallbackPage } from '@/pages/profile/bind-callback';
 import { ProfileInfoPage } from '@/pages/profile/info';
 import { RegisterPage } from '@/pages/register';
 import { buildMenuRoutes } from './build-menu-routes';
 import { RouteGuard } from './route-guard';
 import type { CreateNebulaRouterOptions, NebulaRouteObject } from './types';
 
-const authPagePaths = new Set(['/login', '/login/wechat-callback', '/login/github-callback', '/register', '/forgot-password']);
+const authPagePaths = new Set(['/login', '/login/wechat-callback', '/login/github-callback', '/profile/bind-callback', '/register', '/forgot-password']);
 const redirectPathPrefix = '/redirect';
 
 function RedirectRoute() {
@@ -88,6 +89,9 @@ export function createNebulaRouter(options: CreateNebulaRouterOptions) {
   }
   if (!sourceRoutePaths.has('/login/github-callback')) {
     builtInAuthRoutes.push({ path: '/login/github-callback', element: <GitHubCallbackPage /> });
+  }
+  if (!sourceRoutePaths.has('/profile/bind-callback')) {
+    builtInAuthRoutes.push({ path: '/profile/bind-callback', element: <ProfileBindCallbackPage /> });
   }
   if (!sourceRoutePaths.has('/register')) {
     builtInAuthRoutes.push({ path: '/register', element: <RegisterPage /> });

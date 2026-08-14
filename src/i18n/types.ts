@@ -516,7 +516,7 @@ export interface NebulaProfileInfoMessages {
   columns: {
     loginType: string;
     loginIp: string;
-    userAgent: string;
+    deviceInfo: string;
     loginTime: string;
     success: string;
     failReason: string;
@@ -553,6 +553,8 @@ export interface NebulaProfileInfoMessages {
   };
   confirm: {
     unbindTitle: string;
+    takeoverTitle: string;
+    takeoverContent: string;
   };
   feedback: {
     profileLoadFailed: string;
@@ -562,9 +564,24 @@ export interface NebulaProfileInfoMessages {
     passwordChangeFailed: string;
     oauth2LoadFailed: string;
     bindUnavailable: string;
+    bindSuccess: string;
+    bindFailed: string;
     unbindSuccess: string;
     unbindFailed: string;
     loginRecordsLoadFailed: string;
+  };
+  bindCallback: {
+    loading: string;
+    confirming: string;
+    successTitle: string;
+    successMessage: string;
+    errorTitle: string;
+    missingParams: string;
+    providerError: string;
+    failed: string;
+    cancelled: string;
+    retryBind: string;
+    backToProfile: string;
   };
 }
 
