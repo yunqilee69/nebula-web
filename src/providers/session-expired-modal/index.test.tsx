@@ -47,6 +47,7 @@ describe('session expiration bridge', () => {
 describe('SessionExpiredModal', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     mockClearAuthTokens.mockClear();
   });
 
@@ -77,5 +78,35 @@ describe('SessionExpiredModal', () => {
     });
     expect(mockClearAuthTokens).not.toHaveBeenCalled();
     expect(mockClearUser).not.toHaveBeenCalled();
+  });
+
+  it('sends the current route as redirect when the user chooses to log in again', async () => {
+    const user = userEvent.setup();
+    const assign = vi.fn();
+
+    vi.stubGlobal('location', {
+      pathname: '/dashboard',
+      search: '?tab=home',
+      hash: '#section',
+      assign,
+    });
+
+    render(
+      <ConfigProvider>
+        <AntdApp>
+          <SessionExpiredModal />
+        </AntdApp>
+      </ConfigProvider>,
+    );
+
+    await act(async () => {
+      notifySessionExpired();
+    });
+
+    await user.click(await screen.findByRole('button', { name: '重新登录' }));
+
+    expect(mockClearAuthTokens).toHaveBeenCalledTimes(1);
+    expect(mockClearUser).toHaveBeenCalledTimes(1);
+    expect(assign).toHaveBeenCalledWith('/login?redirect=%2Fdashboard%3Ftab%3Dhome%23section');
   });
 });

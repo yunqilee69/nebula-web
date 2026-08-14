@@ -2,6 +2,7 @@ import { Modal } from 'antd';
 import { useEffect, useState } from 'react';
 import { clearAuthTokens } from '@/utils/auth/token-session';
 import { resolveSessionExpired, subscribeSessionExpired } from '@/utils/auth/session-expired';
+import { createLoginRedirectPath, getCurrentAuthReturnPath } from '@/utils/auth/return-path';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function SessionExpiredModal() {
@@ -25,7 +26,7 @@ export function SessionExpiredModal() {
         clearSession();
         resolveSessionExpired();
         setOpen(false);
-        window.location.href = '/login';
+        window.location.assign(createLoginRedirectPath('/login', getCurrentAuthReturnPath()));
       }}
       onCancel={() => {
         setOpen(false);
