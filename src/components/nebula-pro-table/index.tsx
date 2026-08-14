@@ -7,7 +7,7 @@ import type { NebulaPageReq, NebulaPageResp, ProTableRawParams } from './params'
 import './toolbar.css';
 
 const DEFAULT_TABLE_OPTIONS: ProTableProps<Record<string, any>, Record<string, any>, any>['options'] = {
-  density: true,
+  density: false,
   fullScreen: true,
   reload: true,
   setting: true,

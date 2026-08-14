@@ -54,6 +54,12 @@ describe('NebulaProTable toolbar', () => {
     expect(builtInActions).toBeInTheDocument();
   });
 
+  it('does not enable the density toggle by default', () => {
+    const { container } = renderTable();
+
+    expect(container.querySelector('.anticon-column-height')).not.toBeInTheDocument();
+  });
+
   it('hides the whole toolbar when toolbar is false', () => {
     const { container } = renderTable({ toolbar: false });
 
