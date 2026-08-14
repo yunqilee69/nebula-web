@@ -132,15 +132,15 @@ export function ButtonManagementPage({ service: serviceProp }: ButtonManagementP
 
   return (
     <>
-      <Flex gap={16} style={{ height: '100%' }}>
-        <div style={{ flex: '0 0 280px' }}>
+      <Flex gap={16} style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
+        <div style={{ flex: '0 0 280px', minHeight: 0, overflow: 'hidden' }}>
           <MenuTreePanel
             tree={tree}
             selectedKey={selectedMenuId}
             onSelect={handleMenuSelect}
           />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
           <ButtonTable
             ref={tableRef}
             service={service}
