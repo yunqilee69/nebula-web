@@ -43,14 +43,14 @@ function createService(overrides: Partial<ProfileService> = {}): ProfileService 
     updateProfile: vi.fn().mockResolvedValue(profile),
     listOAuth2Bindings: vi.fn().mockResolvedValue({
       providers: [
-        { providerId: 'wechat-web', providerName: '微信网页', bound: true, providerUserId: 'openid-1', linkedAt: '2026-06-06 11:00:00' },
-        { providerId: 'github', providerName: 'GitHub', bound: false },
+        { providerId: 'github', providerName: 'GitHub', bound: true, providerUserId: 'github-user-1', linkedAt: '2026-06-06 11:00:00' },
+        { providerId: 'sso', providerName: '企业 SSO', bound: false },
       ],
     }),
     prepareOAuth2Bind: vi.fn().mockResolvedValue({
-      providerId: 'github',
+      providerId: 'sso',
       state: 'state-token',
-      authorizeUrl: 'https://github.com/login/oauth/authorize?state=state-token',
+      authorizeUrl: 'https://sso.example.com/oauth/authorize?state=state-token',
     }),
     bindOAuth2: vi.fn().mockResolvedValue({ bindingId: 'binding-1', status: 'BOUND' }),
     unbindOAuth2: vi.fn().mockResolvedValue(true),
@@ -83,7 +83,7 @@ describe('ProfileInfoPage', () => {
 
     expect(await screen.findByDisplayValue('云起')).toBeInTheDocument();
     expect(screen.getByDisplayValue('yunqi@cludix.com')).toBeInTheDocument();
-    expect(screen.getByText('微信网页')).toBeInTheDocument();
+    expect(screen.getByText('GitHub')).toBeInTheDocument();
     expect(screen.getByText('已绑定')).toBeInTheDocument();
     expect(await screen.findByText('127.0.0.1')).toBeInTheDocument();
     expect(screen.getByText('Chrome / Mac')).toBeInTheDocument();
@@ -117,14 +117,14 @@ describe('ProfileInfoPage', () => {
     const user = userEvent.setup();
     const service = renderPage();
 
-    await screen.findByText('微信网页');
-    const providerCard = screen.getByTestId('oauth2-provider-wechat-web');
+    await screen.findByText('GitHub');
+    const providerCard = screen.getByTestId('oauth2-provider-github');
 
     await user.click(within(providerCard).getByRole('button', { name: /解\s*绑/ }));
     await user.click(await screen.findByRole('button', { name: /确\s*定/ }));
 
     await waitFor(() => {
-      expect(service.unbindOAuth2).toHaveBeenCalledWith('wechat-web');
+      expect(service.unbindOAuth2).toHaveBeenCalledWith('github');
       expect(service.listOAuth2Bindings).toHaveBeenCalledTimes(2);
     });
   });
@@ -134,13 +134,13 @@ describe('ProfileInfoPage', () => {
     const service = createService();
     renderPage(service);
 
-    await screen.findByText('GitHub');
-    const providerCard = screen.getByTestId('oauth2-provider-github');
+    await screen.findByText('企业 SSO');
+    const providerCard = screen.getByTestId('oauth2-provider-sso');
     await user.click(within(providerCard).getByRole('button', { name: /绑\s*定/ }));
 
     await waitFor(() => {
-      expect(service.prepareOAuth2Bind).toHaveBeenCalledWith({ providerId: 'github' });
-      expect(redirectToAuthorizeUrl).toHaveBeenCalledWith('https://github.com/login/oauth/authorize?state=state-token');
+      expect(service.prepareOAuth2Bind).toHaveBeenCalledWith({ providerId: 'sso' });
+      expect(redirectToAuthorizeUrl).toHaveBeenCalledWith('https://sso.example.com/oauth/authorize?state=state-token');
     });
   });
 

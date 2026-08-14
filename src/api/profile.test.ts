@@ -72,10 +72,10 @@ describe('profileService', () => {
     const bindings: OAuth2BindingListResp = {
       providers: [
         {
-          providerId: 'wechat-web',
-          providerName: '微信网页',
+          providerId: 'github',
+          providerName: 'GitHub',
           bound: true,
-          providerUserId: 'openid-1',
+          providerUserId: 'github-user-1',
           linkedAt: '2026-06-06 11:00:00',
         },
       ],
@@ -89,7 +89,7 @@ describe('profileService', () => {
   });
 
   it('bindOAuth2 calls POST /api/auth/profile/oauth2/bindings with provider auth data', async () => {
-    const data: BindOAuth2Req = { providerId: 'wechat-web', code: 'auth-code', state: 'state-token', takeover: true };
+    const data: BindOAuth2Req = { providerId: 'github', code: 'auth-code', state: 'state-token', takeover: true };
     const bindResult = { bindingId: 'binding-1', status: 'BOUND' as const };
     mockedRequest.mockResolvedValueOnce(bindResult);
 
@@ -113,10 +113,10 @@ describe('profileService', () => {
   it('unbindOAuth2 calls DELETE /api/auth/profile/oauth2/bindings/{providerId}', async () => {
     mockedRequest.mockResolvedValueOnce(true);
 
-    const result = await profileService.unbindOAuth2('wechat-web');
+    const result = await profileService.unbindOAuth2('github');
 
     expect(result).toBe(true);
-    expect(mockedRequest).toHaveBeenCalledWith({ method: 'DELETE', url: '/api/auth/profile/oauth2/bindings/wechat-web' });
+    expect(mockedRequest).toHaveBeenCalledWith({ method: 'DELETE', url: '/api/auth/profile/oauth2/bindings/github' });
   });
 
   it('pageLoginRecords calls POST /api/auth/profile/login-records/page with backend pagination data', async () => {

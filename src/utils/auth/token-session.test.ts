@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { clearAuthTokens, getStoredAccessToken, getStoredRefreshToken, saveAuthTokens } from './token-session';
-import type { LoginResp, WechatWebLoginStatusResp } from '@/types/auth';
+import type { GitHubLoginStatusResp, LoginResp } from '@/types/auth';
 
 describe('token session storage', () => {
   afterEach(() => {
@@ -35,14 +35,14 @@ describe('token session storage', () => {
     expect(getStoredRefreshToken()).toBeNull();
   });
 
-  it('supports optional tokens returned by WeChat login status', () => {
-    const response: WechatWebLoginStatusResp = {
-      loginId: 'wechat-login-id',
+  it('supports optional tokens returned by OAuth login status', () => {
+    const response: GitHubLoginStatusResp = {
+      loginId: 'github-login-id',
       status: 'SUCCESS',
-      state: 'wechat-state',
+      state: 'github-state',
       loginResult: {
-        accessToken: 'wechat-access',
-        refreshToken: 'wechat-refresh',
+        accessToken: 'github-access',
+        refreshToken: 'github-refresh',
         accessTokenExpiresIn: 7200,
         refreshTokenExpiresIn: 604800,
       },
@@ -50,8 +50,8 @@ describe('token session storage', () => {
 
     saveAuthTokens(response);
 
-    expect(getStoredAccessToken()).toBe('wechat-access');
-    expect(getStoredRefreshToken()).toBe('wechat-refresh');
+    expect(getStoredAccessToken()).toBe('github-access');
+    expect(getStoredRefreshToken()).toBe('github-refresh');
   });
 
   it('stores tokens from snake_case login response fields', () => {

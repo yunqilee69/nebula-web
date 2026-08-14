@@ -264,17 +264,6 @@ describe('createNebulaRouter backend menus', () => {
     expect(screen.queryByRole('menuitem', { name: /登录/ })).not.toBeInTheDocument();
   });
 
-  it('renders the built-in WeChat callback route as an unauthenticated full page', async () => {
-    window.history.pushState({}, '', '/login/wechat-callback?error=expired_state');
-
-    const router = createNebulaRouter({ routes: [], menuItems: [] });
-    render(<RouterProvider router={router} />);
-
-    expect(await screen.findByText('微信登录已过期，请重新发起登录。')).toBeInTheDocument();
-    expect(screen.queryByRole('navigation', { name: '主导航' })).not.toBeInTheDocument();
-    expect(screen.queryByText('页面不存在')).not.toBeInTheDocument();
-  });
-
   it('renders the built-in GitHub callback route as an unauthenticated full page', async () => {
     window.history.pushState({}, '', '/login/github-callback?error=expired_state');
 

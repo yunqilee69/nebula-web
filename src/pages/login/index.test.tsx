@@ -17,13 +17,6 @@ import { LoginPage } from './index';
 
 const redirectToAuthorizeUrlMock = vi.hoisted(() => vi.fn());
 
-const wxLoginMock = vi.fn(({ id }: { id: string }) => {
-  const container = document.getElementById(id);
-  if (!container) return;
-  const iframe = document.createElement('iframe');
-  iframe.title = '微信登录二维码';
-  container.appendChild(iframe);
-});
 
 vi.mock('@/utils/auth/token-session', () => ({
   saveAuthTokens: vi.fn(),
@@ -51,10 +44,6 @@ function createMockAuthService(partial?: Partial<AuthService>): AuthService {
     refreshToken: partial?.refreshToken ?? vi.fn(),
     logout: partial?.logout ?? vi.fn(),
     getCurrentUser: partial?.getCurrentUser ?? vi.fn(),
-    createWechatWebQrCode: partial?.createWechatWebQrCode ?? vi.fn(),
-    getWechatWebLoginStatus: partial?.getWechatWebLoginStatus ?? vi.fn(),
-    prepareWechatWebRedirect: partial?.prepareWechatWebRedirect ?? vi.fn(),
-    completeWechatWebRedirectCallback: partial?.completeWechatWebRedirectCallback ?? vi.fn(),
     prepareGitHubRedirect: partial?.prepareGitHubRedirect ?? vi.fn(),
     getGitHubLoginStatus: partial?.getGitHubLoginStatus ?? vi.fn(),
     completeGitHubRedirectCallback: partial?.completeGitHubRedirectCallback ?? vi.fn(),
@@ -65,8 +54,6 @@ const fullConfig: AuthInitResp = {
   usernameEnabled: true,
   phoneEnabled: true,
   emailEnabled: true,
-  wechatWebEnabled: true,
-  wechatWebType: 'qr',
   githubEnabled: true,
   phoneSendIntervalSeconds: 60,
   emailSendIntervalSeconds: 60,
@@ -76,7 +63,6 @@ const passwordOnlyConfig: AuthInitResp = {
   usernameEnabled: true,
   phoneEnabled: false,
   emailEnabled: false,
-  wechatWebEnabled: false,
 };
 
 const loginResp: LoginResp = {
@@ -122,7 +108,6 @@ describe('LoginPage', () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.mocked(saveAuthTokens).mockClear();
-    wxLoginMock.mockClear();
     redirectToAuthorizeUrlMock.mockClear();
   });
 
@@ -146,10 +131,8 @@ describe('LoginPage', () => {
     expect(passwordTab).toHaveAttribute('aria-selected', 'true');
     expect(phoneTab.querySelector('.anticon-mobile')).toBeInTheDocument();
     expect(emailTab.querySelector('.anticon-mail')).toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: '微信扫码' })).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: 'GitHub' })).not.toBeInTheDocument();
     expect(screen.getByText(/其他登录方式/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '微信扫码' }).querySelector('.anticon-wechat')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'GitHub' }).querySelector('.anticon-github')).toBeInTheDocument();
 
     await user.click(phoneTab);
@@ -618,247 +601,6 @@ describe('LoginPage', () => {
       ],
     });
     expect(await screen.findByText('Workspace Home')).toBeInTheDocument();
-  });
-
-  it('mounts official WxLogin with backend QR session values and does not render QR URLs as images', async () => {
-    const user = userEvent.setup();
-    vi.stubGlobal('WxLogin', wxLoginMock);
-    const authService = createMockAuthService({
-      getAuthConfig: vi.fn().mockResolvedValue({ ...passwordOnlyConfig, wechatWebEnabled: true, wechatWebType: 'qr' }),
-      createWechatWebQrCode: vi.fn().mockResolvedValue({
-        loginId: 'wechat-login',
-        state: 'state',
-        appId: 'wx-app-id',
-        scope: 'snsapi_login',
-        redirectUri: 'https://auth.example.com/api/auth/wechat/web/callback',
-        status: 'WAITING',
-        qrCodeUrl: 'https://evil.example.com/track.png',
-        expiresInSeconds: 300,
-      }),
-    });
-
-    renderLoginPage({ authService });
-
-    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
-
-    await waitFor(() => {
-      expect(authService.createWechatWebQrCode).toHaveBeenCalled();
-      expect(wxLoginMock).toHaveBeenCalledWith({
-        id: 'wechat-login-qr',
-        appid: 'wx-app-id',
-        scope: 'snsapi_login',
-        redirect_uri: 'https://auth.example.com/api/auth/wechat/web/callback',
-        state: 'state',
-        self_redirect: false,
-      });
-    });
-    expect(document.querySelector('#wechat-login-qr iframe')).toBeInTheDocument();
-    expect(document.querySelector('img[alt="微信登录二维码"]')).not.toBeInTheDocument();
-  });
-
-  it('marks WeChat login ready after the widget iframe loads', async () => {
-    const user = userEvent.setup();
-    vi.stubGlobal('WxLogin', wxLoginMock);
-    const authService = createMockAuthService({
-      getAuthConfig: vi.fn().mockResolvedValue({ ...passwordOnlyConfig, wechatWebEnabled: true, wechatWebType: 'qr' }),
-      createWechatWebQrCode: vi.fn().mockResolvedValue({
-        loginId: 'wechat-login',
-        state: 'state',
-        appId: 'wx-app-id',
-        scope: 'snsapi_login',
-        redirectUri: 'https://auth.example.com/api/auth/wechat/web/callback',
-        status: 'WAITING',
-        qrCodeUrl: '/unused-by-official-widget.png',
-        expiresInSeconds: 300,
-      }),
-    });
-
-    renderLoginPage({ authService });
-
-    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
-    const iframe = await waitFor(() => {
-      const mountedIframe = document.querySelector<HTMLIFrameElement>('#wechat-login-qr iframe');
-      expect(mountedIframe).toBeInTheDocument();
-      if (!mountedIframe) throw new Error('WxLogin iframe was not mounted.');
-      return mountedIframe;
-    });
-    act(() => {
-      iframe.dispatchEvent(new Event('load'));
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId('wechat-login-ready')).toBeInTheDocument();
-    });
-  });
-
-  it('shows retry when the official WxLogin script fails to load', async () => {
-    const user = userEvent.setup();
-    const authService = createMockAuthService({
-      getAuthConfig: vi.fn().mockResolvedValue({ ...passwordOnlyConfig, wechatWebEnabled: true, wechatWebType: 'qr' }),
-      createWechatWebQrCode: vi.fn().mockResolvedValue({
-        loginId: 'wechat-login',
-        state: 'state',
-        appId: 'wx-app-id',
-        scope: 'snsapi_login',
-        redirectUri: 'https://auth.example.com/api/auth/wechat/web/callback',
-        status: 'WAITING',
-        qrCodeUrl: '/unused-by-official-widget.png',
-        expiresInSeconds: 300,
-      }),
-    });
-
-    renderLoginPage({ authService });
-
-    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
-    const script = await waitFor(() => {
-      const loadedScript = document.querySelector<HTMLScriptElement>('script[src="https://res.wx.qq.com/connect/zh_CN/htmledition/js/wxLogin.js"]');
-      expect(loadedScript).toBeInTheDocument();
-      if (!loadedScript) throw new Error('WxLogin script was not mounted.');
-      return loadedScript;
-    });
-    script.dispatchEvent(new Event('error'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('wechat-login-error')).toHaveTextContent('二维码加载失败，请稍后重试。');
-      expect(screen.getByTestId('wechat-login-retry')).toBeInTheDocument();
-    });
-  });
-
-  it('disposes the official WeChat iframe when the tab is unmounted', async () => {
-    const user = userEvent.setup();
-    vi.stubGlobal('WxLogin', wxLoginMock);
-    const authService = createMockAuthService({
-      getAuthConfig: vi.fn().mockResolvedValue(fullConfig),
-      createWechatWebQrCode: vi.fn().mockResolvedValue({
-        loginId: 'wechat-login',
-        state: 'state',
-        appId: 'wx-app-id',
-        scope: 'snsapi_login',
-        redirectUri: 'https://auth.example.com/api/auth/wechat/web/callback',
-        status: 'WAITING',
-        qrCodeUrl: '/unused-by-official-widget.png',
-        expiresInSeconds: 300,
-      }),
-    });
-
-    renderLoginPage({ authService });
-
-    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
-    await waitFor(() => {
-      expect(document.querySelector('#wechat-login-qr iframe')).toBeInTheDocument();
-    });
-    await user.click(screen.getByRole('tab', { name: '账号密码登录' }));
-
-    await waitFor(() => {
-      expect(document.querySelector('#wechat-login-qr iframe')).not.toBeInTheDocument();
-    });
-  });
-
-  it('polls WeChat login status and forwards successful token response', async () => {
-    const user = userEvent.setup();
-    vi.stubGlobal('WxLogin', wxLoginMock);
-    const wechatResp = {
-      status: 'SUCCESS',
-      loginId: 'wechat-login',
-      state: 'state',
-      loginResult: {
-        accessToken: 'wechat-access',
-        refreshToken: 'wechat-refresh',
-        accessTokenExpiresIn: 7200,
-        refreshTokenExpiresIn: 604800,
-      },
-    };
-    const authService = createMockAuthService({
-      getAuthConfig: vi.fn().mockResolvedValue({ ...passwordOnlyConfig, wechatWebEnabled: true, wechatWebType: 'qr' }),
-      createWechatWebQrCode: vi.fn().mockResolvedValue({
-        loginId: 'wechat-login',
-        state: 'state',
-        appId: 'wx-app-id',
-        scope: 'snsapi_login',
-        redirectUri: 'https://auth.example.com/api/auth/wechat/web/callback',
-        status: 'WAITING',
-        qrCodeUrl: '/wechat-qr.png',
-        expiresInSeconds: 300,
-      }),
-      getWechatWebLoginStatus: vi.fn().mockResolvedValue(wechatResp),
-    });
-    const onLoginSuccess = vi.fn();
-
-    renderLoginPage({ authService, onLoginSuccess });
-
-    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
-    await waitFor(() => {
-      expect(document.querySelector('#wechat-login-qr iframe')).toBeInTheDocument();
-    });
-
-    await waitFor(() => {
-      expect(authService.getWechatWebLoginStatus).toHaveBeenCalledWith('wechat-login');
-      expect(onLoginSuccess).toHaveBeenCalledWith(wechatResp);
-    }, { timeout: 3000 });
-  });
-
-  it('saves auth tokens after WeChat login returns tokens', async () => {
-    const user = userEvent.setup();
-    vi.stubGlobal('WxLogin', wxLoginMock);
-    const wechatResp = {
-      status: 'SUCCESS',
-      loginId: 'wechat-login',
-      state: 'state',
-      loginResult: {
-        accessToken: 'wechat-access',
-        refreshToken: 'wechat-refresh',
-        accessTokenExpiresIn: 7200,
-        refreshTokenExpiresIn: 604800,
-      },
-    };
-    const authService = createMockAuthService({
-      getAuthConfig: vi.fn().mockResolvedValue({ ...passwordOnlyConfig, wechatWebEnabled: true, wechatWebType: 'qr' }),
-      createWechatWebQrCode: vi.fn().mockResolvedValue({
-        loginId: 'wechat-login',
-        state: 'state',
-        appId: 'wx-app-id',
-        scope: 'snsapi_login',
-        redirectUri: 'https://auth.example.com/api/auth/wechat/web/callback',
-        status: 'WAITING',
-        qrCodeUrl: '/wechat-qr.png',
-        expiresInSeconds: 300,
-      }),
-      getWechatWebLoginStatus: vi.fn().mockResolvedValue(wechatResp),
-    });
-
-    renderLoginPage({ authService });
-
-    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
-    await waitFor(() => {
-      expect(document.querySelector('#wechat-login-qr iframe')).toBeInTheDocument();
-    });
-
-    await waitFor(() => {
-      expect(saveAuthTokens).toHaveBeenCalledWith(wechatResp);
-    }, { timeout: 3000 });
-  });
-
-  it('starts WeChat redirect login with the backend authorize URL when redirect mode is configured', async () => {
-    const user = userEvent.setup();
-    const authService = createMockAuthService({
-      getAuthConfig: vi.fn().mockResolvedValue({ ...passwordOnlyConfig, wechatWebEnabled: true, wechatWebType: 'redirect' }),
-      prepareWechatWebRedirect: vi.fn().mockResolvedValue({
-        loginId: 'redirect-login',
-        state: 'redirect-state',
-        status: 'WAITING',
-        authorizeUrl: 'https://open.weixin.qq.com/connect/qrconnect?appid=wx-app-id&state=redirect-state',
-      }),
-    });
-
-    renderLoginPage({ authService });
-
-    await user.click(await screen.findByRole('button', { name: '微信扫码' }));
-    await user.click(screen.getByTestId('wechat-redirect-login'));
-
-    await waitFor(() => {
-      expect(authService.prepareWechatWebRedirect).toHaveBeenCalledWith({ redirectAfterLogin: '/' });
-      expect(redirectToAuthorizeUrlMock).toHaveBeenCalledWith('https://open.weixin.qq.com/connect/qrconnect?appid=wx-app-id&state=redirect-state');
-    });
   });
 
   it('starts GitHub redirect login with the backend authorize URL when GitHub is enabled', async () => {

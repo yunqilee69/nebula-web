@@ -22,10 +22,9 @@ import type {
   SendEmailCodeReq,
   RefreshTokenReq,
   CurrentUserResp,
-  WechatWebCallbackResp,
-  WechatWebQrCodeResp,
-  WechatWebLoginStatusResp,
-  WechatWebRedirectPrepareResp,
+  GitHubRedirectPrepareResp,
+  GitHubLoginStatusResp,
+  GitHubCallbackResp,
 } from '@/types/auth';
 
 const mockedRequest = vi.mocked(request);
@@ -40,7 +39,7 @@ describe('authService', () => {
       usernameEnabled: true,
       phoneEnabled: false,
       emailEnabled: true,
-      wechatWebEnabled: false,
+      githubEnabled: false,
     };
     const mockResp: FrontendInitResp = {
       loginConfig,
@@ -256,41 +255,34 @@ describe('authService', () => {
     });
   });
 
-  it('createWechatWebQrCode calls POST /api/auth/wechat/web/qrcode and returns full QR response', async () => {
-    const mockResp: WechatWebQrCodeResp = {
-      loginId: 'lid',
-      state: 'random-state',
-      appId: 'wx-app-id',
-      scope: 'snsapi_login',
-      redirectUri: 'https://auth.example.com/api/auth/wechat/web/callback',
+  it('prepareGitHubRedirect calls POST /api/auth/github/redirect/prepare with redirectAfterLogin body', async () => {
+    const mockResp: GitHubRedirectPrepareResp = {
+      loginId: 'redirect-login-id',
+      state: 'redirect-state',
       status: 'WAITING',
-      qrCodeUrl: 'https://qr.example.com/abc',
-      expiresInSeconds: 300,
+      authorizeUrl: 'https://github.com/login/oauth/authorize?state=redirect-state',
     };
     mockedRequest.mockResolvedValueOnce(mockResp);
 
-    const result = await authService.createWechatWebQrCode({ redirectAfterLogin: '/dashboard' });
+    const result = await authService.prepareGitHubRedirect({ redirectAfterLogin: '/workspace' });
 
     expect(result).toBe(mockResp);
-    expect(result.loginId).toBe('lid');
-    expect(result.state).toBe('random-state');
-    expect(result.appId).toBe('wx-app-id');
-    expect(result.expiresInSeconds).toBe(300);
+    expect(result.authorizeUrl).toContain('redirect-state');
     expect(mockedRequest).toHaveBeenCalledWith({
       method: 'POST',
-      url: '/api/auth/wechat/web/qrcode',
-      data: { redirectAfterLogin: '/dashboard' },
+      url: '/api/auth/github/redirect/prepare',
+      data: { redirectAfterLogin: '/workspace' },
     });
   });
 
-  it('getWechatWebLoginStatus calls GET /api/auth/wechat/web/status with loginId param', async () => {
-    const mockResp: WechatWebLoginStatusResp = {
+  it('getGitHubLoginStatus calls GET /api/auth/github/status with loginId param', async () => {
+    const mockResp: GitHubLoginStatusResp = {
       loginId: 'test-login-id',
       status: 'SUCCESS',
       state: 'state-value',
       loginResult: {
-        accessToken: 'wechat-access',
-        refreshToken: 'wechat-refresh',
+        accessToken: 'github-access',
+        refreshToken: 'github-refresh',
         accessTokenExpiresIn: 7200,
         refreshTokenExpiresIn: 604800,
       },
@@ -298,54 +290,34 @@ describe('authService', () => {
     };
     mockedRequest.mockResolvedValueOnce(mockResp);
 
-    const result = await authService.getWechatWebLoginStatus('test-login-id');
+    const result = await authService.getGitHubLoginStatus('test-login-id');
 
     expect(result).toBe(mockResp);
-    expect(result.loginResult?.accessToken).toBe('wechat-access');
+    expect(result.loginResult?.accessToken).toBe('github-access');
     expect(result.loginId).toBe('test-login-id');
     expect(mockedRequest).toHaveBeenCalledWith({
       method: 'GET',
-      url: '/api/auth/wechat/web/status',
+      url: '/api/auth/github/status',
       params: { loginId: 'test-login-id' },
     });
   });
 
-  it('prepareWechatWebRedirect calls POST /api/auth/wechat/web/redirect/prepare with redirectAfterLogin body', async () => {
-    const mockResp: WechatWebRedirectPrepareResp = {
-      loginId: 'redirect-login-id',
-      state: 'redirect-state',
-      status: 'WAITING',
-      authorizeUrl: 'https://open.weixin.qq.com/connect/qrconnect?state=redirect-state',
-    };
-    mockedRequest.mockResolvedValueOnce(mockResp);
-
-    const result = await authService.prepareWechatWebRedirect({ redirectAfterLogin: '/workspace' });
-
-    expect(result).toBe(mockResp);
-    expect(result.authorizeUrl).toContain('redirect-state');
-    expect(mockedRequest).toHaveBeenCalledWith({
-      method: 'POST',
-      url: '/api/auth/wechat/web/redirect/prepare',
-      data: { redirectAfterLogin: '/workspace' },
-    });
-  });
-
-  it('completeWechatWebRedirectCallback calls POST /api/auth/wechat/web/redirect/callback without token fields', async () => {
-    const mockResp: WechatWebCallbackResp = {
+  it('completeGitHubRedirectCallback calls POST /api/auth/github/redirect/callback without token fields', async () => {
+    const mockResp: GitHubCallbackResp = {
       loginId: 'redirect-login-id',
       status: 'SUCCESS',
       returnPath: '/workspace',
     };
     mockedRequest.mockResolvedValueOnce(mockResp);
 
-    const result = await authService.completeWechatWebRedirectCallback({ code: 'wechat-code', state: 'redirect-state' });
+    const result = await authService.completeGitHubRedirectCallback({ code: 'github-code', state: 'redirect-state' });
 
     expect(result).toBe(mockResp);
     expect(result.returnPath).toBe('/workspace');
     expect(mockedRequest).toHaveBeenCalledWith({
       method: 'POST',
-      url: '/api/auth/wechat/web/redirect/callback',
-      data: { code: 'wechat-code', state: 'redirect-state' },
+      url: '/api/auth/github/redirect/callback',
+      data: { code: 'github-code', state: 'redirect-state' },
     });
   });
 });

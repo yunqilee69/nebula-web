@@ -8,11 +8,10 @@ describe('getBuiltInLoginMethods', () => {
       usernameEnabled: true,
       phoneEnabled: false,
       emailEnabled: true,
-      wechatWebEnabled: true,
-      wechatWebType: 'qr',
+      githubEnabled: true,
     };
 
-    expect(getBuiltInLoginMethods(config)).toEqual(['password', 'email', 'wechat-web']);
+    expect(getBuiltInLoginMethods(config)).toEqual(['password', 'email', 'github']);
   });
 
   it('returns only password when only usernameEnabled is true', () => {
@@ -21,7 +20,6 @@ describe('getBuiltInLoginMethods', () => {
         usernameEnabled: true,
         phoneEnabled: false,
         emailEnabled: false,
-        wechatWebEnabled: false,
       }),
     ).toEqual(['password']);
   });
@@ -32,7 +30,6 @@ describe('getBuiltInLoginMethods', () => {
         usernameEnabled: false,
         phoneEnabled: true,
         emailEnabled: false,
-        wechatWebEnabled: false,
       }),
     ).toEqual(['phone']);
   });
@@ -43,21 +40,20 @@ describe('getBuiltInLoginMethods', () => {
         usernameEnabled: false,
         phoneEnabled: false,
         emailEnabled: false,
-        wechatWebEnabled: false,
       }),
     ).toEqual([]);
   });
 
-  it('includes wechat-web only when wechatWebEnabled is true', () => {
+  it('includes github only when githubEnabled is true', () => {
     const result = getBuiltInLoginMethods({
       usernameEnabled: true,
       phoneEnabled: true,
       emailEnabled: true,
-      wechatWebEnabled: false,
+      githubEnabled: false,
     });
 
     expect(result).toEqual(['password', 'phone', 'email']);
-    expect(result).not.toContain('wechat-web');
+    expect(result).not.toContain('github');
   });
 
   it('handles empty partial config with all flags undefined (treated as false)', () => {
