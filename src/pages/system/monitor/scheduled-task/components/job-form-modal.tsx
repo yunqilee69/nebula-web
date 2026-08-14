@@ -51,6 +51,7 @@ export function JobFormModal({ form, open, submitting, detailLoading, job, onSub
       confirmLoading={submitting}
       okText={t('common.actions.confirm')}
       cancelText={t('common.actions.cancel')}
+      forceRender
       onOk={onSubmit}
       onCancel={onCancel}
     >

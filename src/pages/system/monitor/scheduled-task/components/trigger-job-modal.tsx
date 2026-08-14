@@ -158,6 +158,7 @@ export function TriggerJobModal({
       okText={t('scheduler.job.actions.trigger')}
       cancelText={t('common.actions.cancel')}
       okButtonProps={{ disabled: effectiveLoading || !canTrigger || !effectiveDetail }}
+      forceRender
       onOk={() => form.submit()}
       onCancel={onCancel}
     >

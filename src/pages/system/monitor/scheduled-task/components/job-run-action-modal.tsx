@@ -57,6 +57,7 @@ export function JobRunActionModal({
       okText={t('common.actions.confirm')}
       cancelText={t('common.actions.cancel')}
       destroyOnHidden
+      forceRender
       onOk={() => form.submit()}
       onCancel={onCancel}
     >
