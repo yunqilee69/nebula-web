@@ -28,7 +28,19 @@ function resolveLoginBadge(options?: LoginBadgeOptions): NebulaLoginBadgeContext
 const NebulaLoginBadgeContext = createContext<NebulaLoginBadgeContextValue>(defaultLoginBadge);
 
 export function NebulaLoginBadgeProvider({ loginBadge, children }: PropsWithChildren<{ loginBadge?: LoginBadgeOptions }>) {
-  const value = useMemo(() => resolveLoginBadge(loginBadge), [loginBadge]);
+  const value = useMemo(
+    () => resolveLoginBadge(loginBadge),
+    [
+      loginBadge?.loginPath,
+      loginBadge?.registerPath,
+      loginBadge?.defaultLoginMethods,
+      loginBadge?.extraLoginBadges,
+      loginBadge?.authService,
+      loginBadge?.onLoginSuccess,
+      loginBadge?.onLogoutSuccess,
+      loginBadge?.onRegisterSuccess,
+    ],
+  );
 
   return <NebulaLoginBadgeContext.Provider value={value}>{children}</NebulaLoginBadgeContext.Provider>;
 }

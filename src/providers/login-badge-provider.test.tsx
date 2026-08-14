@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { useEffect } from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import { useNebulaLoginBadge } from './login-badge-provider';
-import type { NebulaExtraLoginBadgeRenderContext } from '@/types/auth';
+import type { NebulaExtraLoginBadgeRenderContext, NebulaLoginBadgeContextValue } from '@/types/auth';
 
 function LoginBadgeProbe() {
   const loginBadge = useNebulaLoginBadge();
@@ -87,5 +88,34 @@ describe('Nebula login badge context', () => {
     );
 
     expect(screen.getByTestId('has-login-badge').textContent).toBe('yes');
+  });
+
+  it('keeps the resolved loginBadge context stable when an equivalent inline options object is rerendered', () => {
+    const onContextChange = vi.fn<(value: NebulaLoginBadgeContextValue) => void>();
+
+    function IdentityProbe() {
+      const loginBadge = useNebulaLoginBadge();
+      useEffect(() => {
+        onContextChange(loginBadge);
+      }, [loginBadge]);
+
+      return null;
+    }
+
+    const { rerender } = render(
+      <NebulaProvider loginBadge={{ loginPath: '/login' }}>
+        <IdentityProbe />
+      </NebulaProvider>,
+    );
+
+    expect(onContextChange).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <NebulaProvider loginBadge={{ loginPath: '/login' }}>
+        <IdentityProbe />
+      </NebulaProvider>,
+    );
+
+    expect(onContextChange).toHaveBeenCalledTimes(1);
   });
 });
