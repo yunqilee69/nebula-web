@@ -66,4 +66,31 @@ describe('RouteGuard', () => {
     expect(await screen.findByText('当前页面内容')).toBeInTheDocument();
     expect(screen.queryByText('登录页')).not.toBeInTheDocument();
   });
+
+  it('未登录访问认证路由时携带当前地址跳转登录页', async () => {
+    act(() => {
+      useAuthStore.getState().clearUser();
+    });
+
+    const router = createMemoryRouter([
+      {
+        path: '/dashboard',
+        element: (
+          <RouteGuard requiresAuth>
+            <div>Dashboard</div>
+          </RouteGuard>
+        ),
+      },
+      {
+        path: '/login',
+        element: <div>登录页</div>,
+      },
+    ], { initialEntries: ['/dashboard?tab=home#section'] });
+
+    render(<RouterProvider router={router} />);
+
+    expect(await screen.findByText('登录页')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/login');
+    expect(new URLSearchParams(router.state.location.search).get('redirect')).toBe('/dashboard?tab=home#section');
+  });
 });
