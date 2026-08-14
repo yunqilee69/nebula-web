@@ -52,9 +52,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return;
     }
 
+    const userBeforeRefresh = get().user;
     set({ loading: true });
     try {
-      get().setUser(await adapter.getCurrentUser());
+      const refreshedUser = await adapter.getCurrentUser();
+      if (get().user === userBeforeRefresh) {
+        get().setUser(refreshedUser);
+      }
     } finally {
       set({ loading: false });
     }
