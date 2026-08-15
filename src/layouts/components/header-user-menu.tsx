@@ -7,6 +7,7 @@ import type { NebulaLocale } from '@/i18n/types';
 import { useNebulaLoginBadge } from '@/providers/login-badge-provider';
 import { clearAuthTokens } from '@/utils/auth/token-session';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
+import { useStoragePreviewUrl } from '@/hooks/use-storage-preview-url';
 import { useNebulaTheme } from '@/hooks/use-nebula-theme';
 import { useAuthStore } from '@/stores/auth-store';
 import type { NebulaThemeMode } from '@/stores/theme-store';
@@ -46,6 +47,7 @@ export function HeaderUserMenu({ compact = false, onOpenProfile }: HeaderUserMen
   const user = useAuthStore((state) => state.user);
   const clearUser = useAuthStore((state) => state.clearUser);
   const displayName = user?.name || user?.username || t('layout.headerUser.anonymous');
+  const avatarPreviewUrl = useStoragePreviewUrl(user?.avatarPreview ?? user?.avatar);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [draftMode, setDraftMode] = useState<NebulaThemeMode>(mode);
   const [draftLocale, setDraftLocale] = useState<NebulaLocale>(locale);
@@ -118,7 +120,7 @@ export function HeaderUserMenu({ compact = false, onOpenProfile }: HeaderUserMen
           className={styles.trigger}
         >
           <Space size={token.marginXS} align="center">
-            <Avatar src={user?.avatar} alt={displayName} size={32} className={styles.avatar}>
+            <Avatar src={avatarPreviewUrl} alt={displayName} size={32} className={styles.avatar}>
               {getAvatarFallback(displayName)}
             </Avatar>
             {!compact && (
