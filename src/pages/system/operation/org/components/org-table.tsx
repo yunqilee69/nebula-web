@@ -1,8 +1,10 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { App, Button, Popconfirm, Tag } from 'antd';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { Access } from '@/components/access';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
+import { AUTH_BUTTON_CODES } from '@/constants/auth-button-codes';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { AuthManagementService } from '@/api/auth-management';
 import type { EnableStatus, OrgPageReq, OrgResp, OrgType } from '@/types/auth-management';
@@ -131,20 +133,23 @@ export const OrgTable = forwardRef<OrgTableHandle, OrgTableProps>(function OrgTa
       valueType: 'option',
       search: false,
       render: (_, record) => [
-        <Button key="edit" type="link" icon={<EditOutlined />} onClick={() => onEdit(record)}>
-          {t('auth.orgManagement.actions.edit')}
-        </Button>,
-        <Popconfirm
-          key="delete"
-          title={`${t('auth.orgManagement.actions.delete')}?`}
-          okText={t('auth.orgManagement.actions.delete')}
-          cancelText={t('auth.orgManagement.actions.cancel')}
-          onConfirm={() => void removeOrg(record)}
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>
-            {t('auth.orgManagement.actions.delete')}
+        <Access key="edit" permission={AUTH_BUTTON_CODES.ORG_EDIT} fallback={null}>
+          <Button type="link" icon={<EditOutlined />} onClick={() => onEdit(record)}>
+            {t('auth.orgManagement.actions.edit')}
           </Button>
-        </Popconfirm>,
+        </Access>,
+        <Access key="delete" permission={AUTH_BUTTON_CODES.ORG_DELETE} fallback={null}>
+          <Popconfirm
+            title={`${t('auth.orgManagement.actions.delete')}?`}
+            okText={t('auth.orgManagement.actions.delete')}
+            cancelText={t('auth.orgManagement.actions.cancel')}
+            onConfirm={() => void removeOrg(record)}
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              {t('auth.orgManagement.actions.delete')}
+            </Button>
+          </Popconfirm>
+        </Access>,
       ],
     },
   ], [onEdit, orgTypeLabels, removeOrg, statusValueEnum, t]);
@@ -156,9 +161,11 @@ export const OrgTable = forwardRef<OrgTableHandle, OrgTableProps>(function OrgTa
       options={TABLE_OPTIONS}
       request={requestOrgs}
       toolBarRender={() => (showCreateButton ? [
-        <Button key="create" type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-          {t('auth.orgManagement.actions.create')}
-        </Button>,
+        <Access key="create" permission={AUTH_BUTTON_CODES.ORG_CREATE} fallback={null}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
+            {t('auth.orgManagement.actions.create')}
+          </Button>
+        </Access>,
       ] : [])}
     />
   );

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import type { AuthManagementService } from '@/api/auth-management';
 import { useLocaleStore } from '@/stores/locale-store';
+import { clearAuthForTest, echoAuthAdapter, signInAsAdminForTest } from '@/test/auth-test-helpers';
 import type { OrgResp, OrgTreeResp, PageResp, UserResp } from '@/types/auth-management';
 import { OrgManagementPage } from './index';
 
@@ -64,8 +65,9 @@ function createService(overrides: Partial<AuthManagementService> = {}): AuthMana
 }
 
 function renderPage(service = createService()) {
+  signInAsAdminForTest();
   render(
-    <NebulaProvider>
+    <NebulaProvider authAdapter={echoAuthAdapter}>
       <OrgManagementPage service={service} />
     </NebulaProvider>,
   );
@@ -77,6 +79,7 @@ describe('OrgManagementPage', () => {
     act(() => {
       useLocaleStore.getState().setLocale('zh-CN');
     });
+    clearAuthForTest();
   });
 
   it('renders the org tree and selected organization users tab', async () => {

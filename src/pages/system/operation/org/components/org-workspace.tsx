@@ -1,6 +1,8 @@
 import { DeleteOutlined, EditOutlined, SwapOutlined } from '@ant-design/icons';
 import { Button, Flex, Tabs } from 'antd';
 import { useCallback, useMemo, type RefObject } from 'react';
+import { Access } from '@/components/access';
+import { AUTH_BUTTON_CODES } from '@/constants/auth-button-codes';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { AuthManagementService } from '@/api/auth-management';
 import type { OrgResp, OrgTreeResp } from '@/types/auth-management';
@@ -54,45 +56,51 @@ export function OrgWorkspace({
         <TreeNodeActionGroup ariaLabel={`${org.name} ${t('auth.orgManagement.actions.moreActions')}`}>
           {(close) => (
             <>
-              <Button
-                type="text"
-                size="small"
-                block
-                icon={<EditOutlined aria-hidden />}
-                onClick={() => {
-                  close();
-                  void onEditOrg(org);
-                }}
-              >
-                {t('auth.orgManagement.actions.rename')}
-              </Button>
+              <Access permission={AUTH_BUTTON_CODES.ORG_EDIT} fallback={null}>
+                <Button
+                  type="text"
+                  size="small"
+                  block
+                  icon={<EditOutlined aria-hidden />}
+                  onClick={() => {
+                    close();
+                    void onEditOrg(org);
+                  }}
+                >
+                  {t('auth.orgManagement.actions.rename')}
+                </Button>
+              </Access>
               {!isRoot ? (
                 <>
-                  <Button
-                    type="text"
-                    size="small"
-                    block
-                    icon={<SwapOutlined aria-hidden />}
-                    onClick={() => {
-                      close();
-                      onMoveOrg(org);
-                    }}
-                  >
-                    {t('auth.orgManagement.actions.move')}
-                  </Button>
-                  <Button
-                    type="text"
-                    size="small"
-                    danger
-                    block
-                    icon={<DeleteOutlined aria-hidden />}
-                    onClick={() => {
-                      close();
-                      onDeleteOrg(org);
-                    }}
-                  >
-                    {t('auth.orgManagement.actions.delete')}
-                  </Button>
+                  <Access permission={AUTH_BUTTON_CODES.ORG_EDIT} fallback={null}>
+                    <Button
+                      type="text"
+                      size="small"
+                      block
+                      icon={<SwapOutlined aria-hidden />}
+                      onClick={() => {
+                        close();
+                        onMoveOrg(org);
+                      }}
+                    >
+                      {t('auth.orgManagement.actions.move')}
+                    </Button>
+                  </Access>
+                  <Access permission={AUTH_BUTTON_CODES.ORG_DELETE} fallback={null}>
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      block
+                      icon={<DeleteOutlined aria-hidden />}
+                      onClick={() => {
+                        close();
+                        onDeleteOrg(org);
+                      }}
+                    >
+                      {t('auth.orgManagement.actions.delete')}
+                    </Button>
+                  </Access>
                 </>
               ) : null}
             </>
