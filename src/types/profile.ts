@@ -31,6 +31,7 @@ export interface OAuth2BindingResp {
   providerName?: string;
   bound: boolean;
   providerUserId?: string;
+  displayName?: string;
   linkedAt?: string;
 }
 

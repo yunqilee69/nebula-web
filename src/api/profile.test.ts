@@ -76,6 +76,7 @@ describe('profileService', () => {
           providerName: 'GitHub',
           bound: true,
           providerUserId: 'github-user-1',
+          displayName: 'Octo Cat',
           linkedAt: '2026-06-06 11:00:00',
         },
       ],
