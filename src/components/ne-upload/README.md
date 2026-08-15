@@ -25,6 +25,7 @@ Pass `sourceEntity` and `sourceId` with `listBySource` to load existing formal f
 | `value` | `NeUploadFile[]` | Controlled file list. When provided, the component does not manage internal state. |
 | `defaultValue` | `NeUploadFile[]` | Initial file list for uncontrolled usage. Ignored when `value` is set. |
 | `maxCount` | `number` | Maximum number of displayed files. Defaults to `1`. When backfill or upload exceeds this limit, only the first `maxCount` items are shown. |
+| `replaceable` | `boolean` | Keeps the upload button visible for `maxCount={1}` so selecting a new file replaces the existing one. Use for avatars and single-slot images. |
 | `accept` | `string` | HTML file-type filter passed to the browser file picker (e.g. `".pdf,.docx"`). |
 | `disabled` | `boolean` | Disables the upload button and remove actions. |
 | `sourceEntity` | `string` | Business entity name used with `listBySource` to backfill existing files (e.g. `"contract"`). |
