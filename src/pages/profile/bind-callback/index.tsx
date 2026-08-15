@@ -8,10 +8,32 @@ import { useNotice } from '@/hooks/use-notice';
 import { profileService as defaultProfileService } from '@/api/profile';
 import { redirectToAuthorizeUrl } from '@/pages/login/wechat-redirect-navigation';
 import type { ProfileService } from '@/api/profile';
-import type { BindOAuth2Req } from '@/types/profile';
+import type { BindOAuth2Req, BindOAuth2Resp } from '@/types/profile';
 
 export interface ProfileBindCallbackPageProps {
   service?: ProfileService;
+}
+
+const bindRequestPromises = new WeakMap<ProfileService, Map<string, Promise<BindOAuth2Resp>>>();
+
+function createBindRequestKey(request: BindOAuth2Req): string {
+  return `${encodeURIComponent(request.providerId)}:${encodeURIComponent(request.code)}:${encodeURIComponent(request.state)}`;
+}
+
+function getBindRequestPromise(service: ProfileService, request: BindOAuth2Req): Promise<BindOAuth2Resp> {
+  let serviceRequests = bindRequestPromises.get(service);
+  if (!serviceRequests) {
+    serviceRequests = new Map<string, Promise<BindOAuth2Resp>>();
+    bindRequestPromises.set(service, serviceRequests);
+  }
+
+  const requestKey = createBindRequestKey(request);
+  const existingRequest = serviceRequests.get(requestKey);
+  if (existingRequest) return existingRequest;
+
+  const bindRequest = service.bindOAuth2(request);
+  serviceRequests.set(requestKey, bindRequest);
+  return bindRequest;
 }
 
 const useStyles = createStyles(({ token }) => ({
@@ -91,8 +113,7 @@ export function ProfileBindCallbackPage({ service: serviceProp }: ProfileBindCal
     }
   }, [backToProfile, notice, providerId, service, t]);
 
-  const bindWithRequest = useCallback(async (request: BindOAuth2Req) => {
-    const result = await service.bindOAuth2(request);
+  const handleBindResult = useCallback((request: BindOAuth2Req, result: BindOAuth2Resp) => {
     if (result.status === 'TAKEOVER_CONFIRMATION_REQUIRED') {
       setMessage(t('auth.profileInfo.bindCallback.confirming'));
       modal.confirm({
@@ -128,8 +149,13 @@ export function ProfileBindCallbackPage({ service: serviceProp }: ProfileBindCal
       return;
     }
 
+    const request = { providerId, code, state };
     let active = true;
-    bindWithRequest({ providerId, code, state })
+    getBindRequestPromise(service, request)
+      .then((result) => {
+        if (!active) return;
+        handleBindResult(request, result);
+      })
       .catch((error: unknown) => {
         if (!active) return;
         if (!(error instanceof Error)) throw error;
@@ -142,7 +168,7 @@ export function ProfileBindCallbackPage({ service: serviceProp }: ProfileBindCal
     return () => {
       active = false;
     };
-  }, [bindWithRequest, callbackError, code, notice, providerId, state, t]);
+  }, [callbackError, code, handleBindResult, notice, providerId, service, state, t]);
 
   return (
     <AuthShell>

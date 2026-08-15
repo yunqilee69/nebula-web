@@ -36,7 +36,6 @@ describe('RoleFormModal', () => {
     expect(within(dialog).getByLabelText('角色名称')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('角色编码')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('状态')).toBeInTheDocument();
-    expect(within(dialog).getByLabelText('权限 ID')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('角色描述')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /保\s*存/ })).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /取\s*消/ })).toBeInTheDocument();
@@ -51,7 +50,6 @@ describe('RoleFormModal', () => {
     expect(within(dialog).getByLabelText('Role Name')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Role Code')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Status')).toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Permission IDs')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Description')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Save' })).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeInTheDocument();

@@ -139,7 +139,7 @@ export function PopupAnnouncement({ service = notifyService }: PopupAnnouncement
         open={showAnnouncement}
         title={announcement?.title}
         closable={false}
-        destroyOnClose
+        destroyOnHidden
         className={styles.modal}
         footer={(
           <Button type="primary" loading={state === 'acknowledging'} onClick={handleAcknowledge}>
@@ -159,7 +159,7 @@ export function PopupAnnouncement({ service = notifyService }: PopupAnnouncement
       <Modal
         open={state === 'loadError'}
         title="公告加载失败"
-        destroyOnClose
+        destroyOnHidden
         onCancel={dismissLoadError}
         footer={(
           <>

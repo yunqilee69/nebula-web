@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import type { RenderResult } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -26,8 +27,8 @@ function createService(overrides: Partial<ProfileService> = {}): ProfileService 
   };
 }
 
-function renderCallbackPage(initialEntry: string, service = createService()) {
-  render(
+function renderCallbackPageView(initialEntry: string, service = createService()): { readonly service: ProfileService; readonly view: RenderResult } {
+  const view = render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <NebulaProvider>
         <Routes>
@@ -37,7 +38,12 @@ function renderCallbackPage(initialEntry: string, service = createService()) {
       </NebulaProvider>
     </MemoryRouter>,
   );
-  return service;
+  return { service, view };
+}
+
+function renderCallbackPage(initialEntry: string, service = createService()) {
+  const { service: renderedService } = renderCallbackPageView(initialEntry, service);
+  return renderedService;
 }
 
 describe('ProfileBindCallbackPage', () => {
@@ -51,6 +57,32 @@ describe('ProfileBindCallbackPage', () => {
     await waitFor(() => {
       expect(service.bindOAuth2).toHaveBeenCalledWith({ providerId: 'github', code: 'auth-code', state: 'state-token' });
     });
+    expect(await screen.findByText('Profile Home')).toBeInTheDocument();
+  });
+
+  it('reuses the same bind request when the callback route remounts with the same code and state', async () => {
+    let resolveBind: (value: { readonly bindingId: string; readonly status: 'BOUND' }) => void = () => undefined;
+    const service = createService({
+      bindOAuth2: vi.fn().mockImplementation(() => new Promise((resolve) => {
+        resolveBind = resolve;
+      })),
+    });
+
+    const firstRender = renderCallbackPageView('/profile/bind-callback?provider=github&code=auth-code&state=state-token', service);
+
+    await waitFor(() => {
+      expect(service.bindOAuth2).toHaveBeenCalledTimes(1);
+    });
+
+    firstRender.view.unmount();
+    renderCallbackPageView('/profile/bind-callback?provider=github&code=auth-code&state=state-token', service);
+
+    await waitFor(() => {
+      expect(service.bindOAuth2).toHaveBeenCalledTimes(1);
+    });
+
+    resolveBind({ bindingId: 'binding-1', status: 'BOUND' });
+
     expect(await screen.findByText('Profile Home')).toBeInTheDocument();
   });
 

@@ -20,6 +20,17 @@ const receiverItems: readonly ReceiverItem[] = [
   },
 ];
 
+const useDictItemsMock = vi.hoisted(() => vi.fn(() => ({
+  options: [
+    { label: 'SITE', value: 'SITE', disabled: false },
+    { label: 'EMAIL', value: 'EMAIL', disabled: false },
+  ],
+  items: [],
+  loading: false,
+  getItemByValue: () => undefined,
+  getLabelByValue: () => undefined,
+})));
+
 vi.mock('@/components/dict-select', () => ({
   DictSelect: ({
     dictCode,
@@ -47,6 +58,7 @@ vi.mock('@/components/dict-select', () => ({
       <option value="EMAIL">EMAIL</option>
     </select>
   ),
+  useDictItems: useDictItemsMock,
 }));
 
 vi.mock('@/pages/system/notify/components/receiver-selector', () => ({
@@ -98,6 +110,7 @@ function createNotifyService(overrides: Partial<NotifyService> = {}): NotifyServ
           channelType: 'SITE',
           subjectTemplate: 'Hello ${name}',
           contentTemplate: '${message} ${notify.currentDate}',
+          enabled: true,
         },
       ],
     }),
@@ -186,9 +199,8 @@ describe('NotifySendPage', () => {
     renderPage();
 
     // Then
-    const channels = screen.getByLabelText('通知渠道');
-    expect(channels).toHaveAttribute('data-dict-code', 'NOTIFY_CHANNEL_TYPE');
-    expect(channels).toHaveAttribute('data-mode', 'multiple');
+    expect(useDictItemsMock).toHaveBeenCalledWith('NOTIFY_CHANNEL_TYPE', true);
+    expect(screen.getByRole('combobox', { name: '通知渠道' })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('combobox', { name: '通知模板' })).toBeEnabled());
   });
 

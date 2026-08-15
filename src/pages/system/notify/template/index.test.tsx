@@ -53,6 +53,16 @@ vi.mock('@/components/dict-select', () => ({
       <option value="EMAIL">EMAIL</option>
     </select>
   ),
+  useDictItems: () => ({
+    options: [
+      { label: 'SITE', value: 'SITE', disabled: false },
+      { label: 'EMAIL', value: 'EMAIL', disabled: false },
+    ],
+    items: [],
+    loading: false,
+    getItemByValue: () => undefined,
+    getLabelByValue: () => undefined,
+  }),
 }));
 
 const sendUsers: readonly UserResp[] = [

@@ -4,13 +4,8 @@ import type { TableColumnsType, TableProps } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { OrgTree } from '@/components/org-tree';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
-import type { OrgOptionResp, OrgResp, OrgTreeResp } from '@/types/auth-management';
+import type { OrgOptionResp, OrgResp } from '@/types/auth-management';
 import type { OrgSelectProps } from './types';
-
-interface OrgSelectState {
-  selectedKeys: string[];
-  selectedOrgs: OrgResp[];
-}
 
 export function OrgSelect({
   open,
@@ -19,7 +14,6 @@ export function OrgSelect({
   value,
   treeData,
   orgList,
-  disabled = false,
   onChange,
   onClose,
   service,
@@ -173,7 +167,7 @@ export function OrgSelect({
       width={800}
       footer={null}
       onCancel={handleCancel}
-      destroyOnClose
+      destroyOnHidden
     >
       <Flex gap={token.marginMD} style={{ minHeight: 400 }}>
         <div style={{ flex: '0 0 240px' }}>

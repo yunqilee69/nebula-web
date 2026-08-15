@@ -126,6 +126,8 @@ describe('send page helpers', () => {
         emailRecipientCount: 2,
         emailExcludedCount: 1,
         wecomTargetCount: 0,
+        feishuTargetCount: 0,
+        dingtalkTargetCount: 0,
       },
     });
   });
