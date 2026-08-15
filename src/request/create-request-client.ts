@@ -67,6 +67,10 @@ export function createRequestClient(options: RequestClientOptions = {}) {
 
   client.interceptors.response.use(
     ((response: AxiosResponse) => {
+      if (response.config.responseType === 'blob') {
+        return response.data;
+      }
+
       if (!isApiResult(response.data)) {
         return response;
       }

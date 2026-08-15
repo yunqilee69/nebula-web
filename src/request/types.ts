@@ -4,7 +4,9 @@ export interface NebulaRequestConfig {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   url: string;
   data?: unknown;
-  params?: Record<string, string>;
+  params?: Record<string, string | number | undefined>;
+  headers?: Record<string, string>;
+  responseType?: 'blob';
   _nebulaSkipAuthRefresh?: boolean;
 }
 
