@@ -1,10 +1,10 @@
-export type PermissionRequirement = string | string[];
+export type PermissionRequirement = string | readonly string[];
 export type PermissionMatchMode = 'any' | 'all';
 
 export interface PermissionCheckOptions {
   mode?: PermissionMatchMode;
-  roles?: string[];
-  superRoles?: string[];
+  roles?: readonly string[];
+  superRoles?: readonly string[];
 }
 
 const defaultSuperRoles = ['ADMIN', 'SUPER_ADMIN'];
@@ -13,7 +13,7 @@ export function createPermissionCode(resourceType: string, resourceCode: string,
   return `${resourceType}:${resourceCode}:${effect}`;
 }
 
-function hasSuperRole(roles: string[] = [], superRoles: string[] = defaultSuperRoles): boolean {
+function hasSuperRole(roles: readonly string[] = [], superRoles: readonly string[] = defaultSuperRoles): boolean {
   return roles.some((role) => superRoles.includes(role));
 }
 
@@ -34,12 +34,12 @@ function matchPermission(ownedPermission: string, requiredPermission: string): b
   return requiredPermission.startsWith(ownedPermission.slice(0, -1));
 }
 
-function hasSinglePermission(permissions: string[], required: string): boolean {
+function hasSinglePermission(permissions: readonly string[], required: string): boolean {
   return permissions.some((permission) => matchPermission(permission, required));
 }
 
 export function hasPermission(
-  permissions: string[],
+  permissions: readonly string[],
   required?: PermissionRequirement,
   options: PermissionCheckOptions = {},
 ): boolean {
