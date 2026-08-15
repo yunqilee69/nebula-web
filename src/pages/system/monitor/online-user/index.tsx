@@ -1,8 +1,10 @@
 import { StopOutlined } from '@ant-design/icons';
 import { Button, Popconfirm, Space, Tag } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { Access } from '@/components/access';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
+import { AUTH_BUTTON_CODES } from '@/constants/auth-button-codes';
 import { useNotice } from '@/hooks/use-notice';
 import { onlineUserService, type OnlineUserService } from '@/services/online-user';
 import type { OnlineUserPageReq, OnlineUserResp } from '@/types/online-user';
@@ -104,22 +106,24 @@ export function OnlineUserPage({ service: serviceProp }: OnlineUserPageProps) {
       width: 120,
       search: false,
       render: (_, record) => (
-        <Popconfirm
-          title="确认踢出该在线用户？"
-          okText="踢出"
-          cancelText="取消"
-          onConfirm={() => void kickOutUser(record)}
-        >
-          <Button
-            danger
-            type="link"
-            icon={<StopOutlined />}
-            loading={kickingKey === record.cacheKey}
-            aria-label={`踢出用户 ${record.username}`}
+        <Access permission={AUTH_BUTTON_CODES.ONLINE_USER_KICK_OUT} fallback={null}>
+          <Popconfirm
+            title="确认踢出该在线用户？"
+            okText="踢出"
+            cancelText="取消"
+            onConfirm={() => void kickOutUser(record)}
           >
-            踢出
-          </Button>
-        </Popconfirm>
+            <Button
+              danger
+              type="link"
+              icon={<StopOutlined />}
+              loading={kickingKey === record.cacheKey}
+              aria-label={`踢出用户 ${record.username}`}
+            >
+              踢出
+            </Button>
+          </Popconfirm>
+        </Access>
       ),
     },
   ], [kickOutUser, kickingKey]);

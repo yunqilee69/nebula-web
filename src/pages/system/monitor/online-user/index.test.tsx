@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import type { OnlineUserService } from '@/services/online-user';
+import { clearAuthForTest, echoAuthAdapter, signInAsAdminForTest } from '@/test/auth-test-helpers';
 import type { OnlineUserResp } from '@/types/online-user';
 import { OnlineUserPage } from './index';
 
@@ -30,8 +31,9 @@ function createService(): OnlineUserService {
 }
 
 function renderPage(service = createService()): OnlineUserService {
+  signInAsAdminForTest();
   render(
-    <NebulaProvider>
+    <NebulaProvider authAdapter={echoAuthAdapter}>
       <OnlineUserPage service={service} />
     </NebulaProvider>,
   );
@@ -46,6 +48,7 @@ describe('OnlineUserPage', () => {
 
   afterEach(() => {
     cleanup();
+    clearAuthForTest();
   });
 
   it('renders online users from the injected service', async () => {
