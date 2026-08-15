@@ -500,10 +500,12 @@ export interface NebulaProfileInfoMessages {
     refresh: string;
     bind: string;
     unbind: string;
+    uploadAvatar: string;
   };
   fields: {
     username: string;
     accountName: string;
+    displayName: string;
     nickname: string;
     avatar: string;
     email: string;
@@ -524,7 +526,6 @@ export interface NebulaProfileInfoMessages {
   };
   placeholders: {
     nickname: string;
-    avatar: string;
     email: string;
     phone: string;
     oldPassword: string;
@@ -552,6 +553,9 @@ export interface NebulaProfileInfoMessages {
     loginRecords: string;
     notProvided: string;
   };
+  hints: {
+    avatarUpload: string;
+  };
   confirm: {
     unbindTitle: string;
     takeoverTitle: string;
@@ -561,6 +565,7 @@ export interface NebulaProfileInfoMessages {
     profileLoadFailed: string;
     profileUpdateSuccess: string;
     profileUpdateFailed: string;
+    avatarUploadFailed: string;
     passwordChangeSuccess: string;
     passwordChangeFailed: string;
     oauth2LoadFailed: string;
