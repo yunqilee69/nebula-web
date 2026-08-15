@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Card, Col, Empty, Flex, Input, Row, Spin, Tag, Tree, Typography, theme as antdTheme } from 'antd';
 import type { TreeProps } from 'antd';
+import { Access } from '@/components/access';
+import { AUTH_BUTTON_PERMISSION_CODES } from '@/constants/auth-button-codes';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import { permissionService as defaultPermissionService } from '@/api/permission';
@@ -390,9 +392,11 @@ export function ButtonPermissionPage({ service: serviceProp }: ButtonPermissionP
         <Card
           title={t('auth.buttonPermission.title')}
           extra={
-            <Button type="primary" loading={saving} onClick={handleSave}>
-              {t('auth.buttonPermission.actions.save')}
-            </Button>
+            <Access permission={AUTH_BUTTON_PERMISSION_CODES} mode="any" fallback={null}>
+              <Button type="primary" loading={saving} onClick={handleSave}>
+                {t('auth.buttonPermission.actions.save')}
+              </Button>
+            </Access>
           }
           styles={{ body: { padding: 14, maxHeight: 'calc(100vh - 280px)', overflow: 'auto' } }}
         >

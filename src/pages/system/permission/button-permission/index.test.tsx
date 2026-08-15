@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PermissionService } from '@/api/permission';
+import { clearAuthForTest, signInAsAdminForTest } from '@/test/auth-test-helpers';
 import type { ButtonResp, MenuPageResp } from '@/types/menu';
 import { ButtonPermissionPage } from './index';
 
@@ -48,7 +49,12 @@ vi.mock('@/api/permission', () => ({
 }));
 
 describe('ButtonPermissionPage', () => {
+  afterEach(() => {
+    clearAuthForTest();
+  });
+
   it('renders without crashing', async () => {
+    signInAsAdminForTest();
     render(<ButtonPermissionPage />);
     // Wait for loading to complete
     expect(await screen.findByText('auth.buttonPermission.title')).toBeInTheDocument();
@@ -97,6 +103,7 @@ describe('ButtonPermissionPage', () => {
       removePermissionsBySubjectAndResources: vi.fn().mockResolvedValue(undefined),
     } satisfies PermissionService;
 
+    signInAsAdminForTest();
     render(<ButtonPermissionPage service={service} />);
 
     expect(await screen.findByText('Parent Menu')).toBeInTheDocument();
@@ -141,6 +148,7 @@ describe('ButtonPermissionPage', () => {
       removePermissionsBySubjectAndResources: vi.fn().mockResolvedValue(undefined),
     };
 
+    signInAsAdminForTest();
     render(<ButtonPermissionPage service={service} />);
 
     expect(await screen.findByText('新增')).toBeInTheDocument();

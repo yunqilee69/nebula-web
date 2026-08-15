@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import type { PermissionService } from '@/api/permission';
 import { useLocaleStore } from '@/stores/locale-store';
+import { clearAuthForTest, echoAuthAdapter, signInAsAdminForTest } from '@/test/auth-test-helpers';
 import type { MenuTreeResp } from '@/types/menu';
 import { MenuPermissionPage } from './index';
 
@@ -26,8 +27,9 @@ function createPermissionService(overrides: Partial<PermissionService> = {}): Pe
 }
 
 function renderMenuPermissionPage(service: PermissionService) {
+  signInAsAdminForTest();
   return render(
-    <NebulaProvider>
+    <NebulaProvider authAdapter={echoAuthAdapter}>
       <MenuPermissionPage service={service} />
     </NebulaProvider>,
   );
@@ -71,6 +73,7 @@ describe('MenuPermissionPage', () => {
 
   afterEach(() => {
     useLocaleStore.getState().setLocale('zh-CN');
+    clearAuthForTest();
   });
 
   it('renders every nested menu and selects every menu in the hierarchy', async () => {
