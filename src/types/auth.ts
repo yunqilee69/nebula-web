@@ -7,6 +7,7 @@ export interface CurrentUser {
   name: string;
   username?: string;
   avatar?: string;
+  avatarPreview?: string;
   roles: string[];
   permissions: string[];
   organizations?: Organization[];
