@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import { useLocaleStore } from '@/stores/locale-store';
+import { clearAuthForTest, echoAuthAdapter, signInAsAdminForTest } from '@/test/auth-test-helpers';
 import { menuService as defaultMenuService } from '@/api/menu';
 import type { MenuService } from '@/api/menu';
 import type { MenuPageResp, MenuTreeResp, ButtonResp } from '@/types/menu';
@@ -29,8 +30,9 @@ function createMenuService(overrides: Partial<MenuService> = {}): MenuService {
 }
 
 function renderMenuManagementPage(menuService?: MenuService) {
+  signInAsAdminForTest();
   return render(
-    <NebulaProvider>
+    <NebulaProvider authAdapter={echoAuthAdapter}>
       <MenuManagementPage menuService={menuService} />
     </NebulaProvider>,
   );
@@ -87,6 +89,7 @@ describe('MenuManagementPage', () => {
 
   afterEach(() => {
     useLocaleStore.getState().setLocale('zh-CN');
+    clearAuthForTest();
   });
 
   it('loads menu tree through getMenuTree and renders parent and child rows', async () => {
@@ -313,8 +316,9 @@ describe('MenuManagementPage', () => {
       createMenu: vi.fn().mockResolvedValue('menu-1'),
     });
 
+    signInAsAdminForTest();
     render(
-      <NebulaProvider>
+      <NebulaProvider authAdapter={echoAuthAdapter}>
         <MenuManagementPage
           menuService={menuService}
           componentOptions={[
@@ -353,8 +357,9 @@ describe('MenuManagementPage', () => {
       createMenu: vi.fn().mockResolvedValue('menu-1'),
     });
 
+    signInAsAdminForTest();
     render(
-      <NebulaProvider>
+      <NebulaProvider authAdapter={echoAuthAdapter}>
         <MenuManagementPage
           menuService={menuService}
           componentOptions={[

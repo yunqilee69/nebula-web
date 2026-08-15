@@ -2,8 +2,10 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Popconfirm, Tag } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { Key } from 'react';
+import { Access } from '@/components/access';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
+import { AUTH_BUTTON_CODES } from '@/constants/auth-button-codes';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import type { MenuComponentRegistry } from '@/route/types';
@@ -454,20 +456,23 @@ export function MenuManagementPage({
       valueType: 'option',
       search: false,
       render: (_, record) => [
-        <Button key="edit" type="link" icon={<EditOutlined />} onClick={() => void openUpdateModal(record)}>
-          {t('auth.menuManagement.actions.edit')}
-        </Button>,
-        <Popconfirm
-          key="delete"
-          title={t('auth.menuManagement.confirm.deleteTitle')}
-          okText={t('auth.menuManagement.actions.delete')}
-          cancelText={t('auth.menuManagement.actions.cancel')}
-          onConfirm={() => void removeMenu(record)}
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>
-            {t('auth.menuManagement.actions.delete')}
+        <Access key="edit" permission={AUTH_BUTTON_CODES.MENU_EDIT} fallback={null}>
+          <Button type="link" icon={<EditOutlined />} onClick={() => void openUpdateModal(record)}>
+            {t('auth.menuManagement.actions.edit')}
           </Button>
-        </Popconfirm>,
+        </Access>,
+        <Access key="delete" permission={AUTH_BUTTON_CODES.MENU_DELETE} fallback={null}>
+          <Popconfirm
+            title={t('auth.menuManagement.confirm.deleteTitle')}
+            okText={t('auth.menuManagement.actions.delete')}
+            cancelText={t('auth.menuManagement.actions.cancel')}
+            onConfirm={() => void removeMenu(record)}
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              {t('auth.menuManagement.actions.delete')}
+            </Button>
+          </Popconfirm>
+        </Access>,
         isMenuType(record.type) ? (
           <Button key="buttons" type="link" onClick={() => openButtonModal(record)}>
             {t('auth.menuManagement.actions.manageButtons')}
@@ -489,7 +494,9 @@ export function MenuManagementPage({
         size="middle"
         scroll={{ x: 1200 }}
         toolBarRender={() => [
-          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>{t('auth.menuManagement.actions.create')}</Button>,
+          <Access key="create" permission={AUTH_BUTTON_CODES.MENU_CREATE} fallback={null}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>{t('auth.menuManagement.actions.create')}</Button>
+          </Access>,
         ]}
       />
 

@@ -2,8 +2,10 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Tag } from 'antd';
 import type { FormInstance } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { Access } from '@/components/access';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
+import { AUTH_BUTTON_CODES } from '@/constants/auth-button-codes';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import type { MenuService } from '@/api/menu';
@@ -333,25 +335,27 @@ export function ButtonManagementModal({
       valueType: 'option',
       search: false,
       render: (_, record) => [
-        <Button
-          key="edit"
-          type="link"
-          icon={<EditOutlined />}
-          onClick={() => void openEditForm(record)}
-        >
-          {t('auth.menuManagement.actions.edit')}
-        </Button>,
-        <Popconfirm
-          key="delete"
-          title={t('auth.menuManagement.confirm.buttonDeleteTitle')}
-          okText={t('auth.menuManagement.actions.delete')}
-          cancelText={t('auth.menuManagement.actions.cancel')}
-          onConfirm={() => void removeButton(record)}
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>
-            {t('auth.menuManagement.actions.delete')}
+        <Access key="edit" permission={AUTH_BUTTON_CODES.BUTTON_EDIT} fallback={null}>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => void openEditForm(record)}
+          >
+            {t('auth.menuManagement.actions.edit')}
           </Button>
-        </Popconfirm>,
+        </Access>,
+        <Access key="delete" permission={AUTH_BUTTON_CODES.BUTTON_DELETE} fallback={null}>
+          <Popconfirm
+            title={t('auth.menuManagement.confirm.buttonDeleteTitle')}
+            okText={t('auth.menuManagement.actions.delete')}
+            cancelText={t('auth.menuManagement.actions.cancel')}
+            onConfirm={() => void removeButton(record)}
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              {t('auth.menuManagement.actions.delete')}
+            </Button>
+          </Popconfirm>
+        </Access>,
       ],
     },
   ], [openEditForm, removeButton, statusValueEnum, t]);
@@ -377,9 +381,11 @@ export function ButtonManagementModal({
         size="middle"
         scroll={{ x: 640 }}
         toolBarRender={() => [
-          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={openCreateForm}>
-            {t('auth.menuManagement.actions.createButton')}
-          </Button>,
+          <Access key="create" permission={AUTH_BUTTON_CODES.BUTTON_CREATE} fallback={null}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateForm}>
+              {t('auth.menuManagement.actions.createButton')}
+            </Button>
+          </Access>,
         ]}
       />
 
