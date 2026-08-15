@@ -43,7 +43,7 @@ function createService(overrides: Partial<ProfileService> = {}): ProfileService 
     updateProfile: vi.fn().mockResolvedValue(profile),
     listOAuth2Bindings: vi.fn().mockResolvedValue({
       providers: [
-        { providerId: 'github', providerName: 'GitHub', bound: true, providerUserId: 'github-user-1', linkedAt: '2026-06-06 11:00:00' },
+        { providerId: 'github', providerName: 'GitHub', bound: true, providerUserId: 'github-user-1', displayName: 'Octo Cat', linkedAt: '2026-06-06 11:00:00' },
         { providerId: 'sso', providerName: '企业 SSO', bound: false },
       ],
     }),
@@ -84,6 +84,8 @@ describe('ProfileInfoPage', () => {
     expect(await screen.findByDisplayValue('云起')).toBeInTheDocument();
     expect(screen.getByDisplayValue('yunqi@cludix.com')).toBeInTheDocument();
     expect(screen.getByText('GitHub')).toBeInTheDocument();
+    expect(screen.getByText('Octo Cat')).toBeInTheDocument();
+    expect(screen.queryByText('github-user-1')).not.toBeInTheDocument();
     expect(screen.getByText('已绑定')).toBeInTheDocument();
     expect(await screen.findByText('127.0.0.1')).toBeInTheDocument();
     expect(screen.getByText('Chrome / Mac')).toBeInTheDocument();
@@ -92,6 +94,20 @@ describe('ProfileInfoPage', () => {
     expect(service.getProfile).toHaveBeenCalledTimes(1);
     expect(service.listOAuth2Bindings).toHaveBeenCalledTimes(1);
     expect(service.pageLoginRecords).toHaveBeenCalledWith({ pageNum: 1, pageSize: 10 });
+  });
+
+  it('falls back to provider user id when OAuth2 display name is unavailable', async () => {
+    const service = createService({
+      listOAuth2Bindings: vi.fn().mockResolvedValue({
+        providers: [
+          { providerId: 'github', providerName: 'GitHub', bound: true, providerUserId: 'github-user-1', linkedAt: '2026-06-06 11:00:00' },
+        ],
+      }),
+    });
+
+    renderPage(service);
+
+    expect(await screen.findByText('github-user-1')).toBeInTheDocument();
   });
 
   it('submits editable profile fields through the service', async () => {
@@ -168,6 +184,7 @@ describe('ProfileInfoPage', () => {
 
     expect(await screen.findByText('Basic Information')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Save Profile/ })).toBeInTheDocument();
+    expect(screen.getAllByText('Account')).not.toHaveLength(0);
     expect(await screen.findByText('127.0.0.1')).toBeInTheDocument();
   });
 });

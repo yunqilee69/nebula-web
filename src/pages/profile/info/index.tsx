@@ -300,7 +300,7 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
                   <Space orientation="vertical" size={token.marginSM} className="w-full">
                     <Tag color={binding.bound ? 'success' : 'default'}>{binding.bound ? t('auth.profileInfo.status.bound') : t('auth.profileInfo.status.unbound')}</Tag>
                     <Descriptions column={1} size="small">
-                      <Descriptions.Item label="ID">{renderNotProvided(binding.providerUserId)}</Descriptions.Item>
+                      <Descriptions.Item label={t('auth.profileInfo.fields.accountName')}>{renderNotProvided(binding.displayName ?? binding.providerUserId)}</Descriptions.Item>
                       <Descriptions.Item label={t('auth.profileInfo.fields.createTime')}>{renderNotProvided(binding.linkedAt)}</Descriptions.Item>
                     </Descriptions>
                     {binding.bound ? (
