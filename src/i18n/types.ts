@@ -503,6 +503,7 @@ export interface NebulaProfileInfoMessages {
   };
   fields: {
     username: string;
+    accountName: string;
     nickname: string;
     avatar: string;
     email: string;
