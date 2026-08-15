@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { clearAuthForTest, signInAsAdminForTest } from '@/test/auth-test-helpers';
 import { ButtonManagementPage } from './index';
 
 vi.mock('@/hooks/use-nebula-i18n', () => ({
@@ -23,7 +24,12 @@ vi.mock('@/api/menu', () => ({
 }));
 
 describe('ButtonManagementPage', () => {
+  afterEach(() => {
+    clearAuthForTest();
+  });
+
   it('renders without crashing', () => {
+    signInAsAdminForTest();
     render(<ButtonManagementPage />);
     expect(screen.getByText('auth.buttonManagement.tree.title')).toBeInTheDocument();
   });
