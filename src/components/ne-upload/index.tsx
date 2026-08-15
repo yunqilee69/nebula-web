@@ -1,11 +1,11 @@
-import { DeleteOutlined, FileOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Flex, Image, Progress, Typography, Upload, message, theme as antdTheme } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { Button, Flex, Typography, Upload, message, theme as antdTheme } from 'antd';
 import type { UploadProps } from 'antd';
-import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ListStorageFilesBySourceReq, StorageFileDetailResp, UploadTaskDetailResp } from '../../types/storage';
 import type { NeImageUploadProps, NeUploadFile, NeUploadProps } from './types';
+import { FileUploadList, ImageUploadList } from './upload-lists';
 
 const defaultMaxCount = 1;
 
@@ -71,6 +71,7 @@ function NeUploadView({
   value,
   defaultValue,
   maxCount = defaultMaxCount,
+  replaceable = false,
   accept,
   disabled,
   sourceEntity,
@@ -103,8 +104,13 @@ function NeUploadView({
 
   const pendingFilesRef = useRef(files);
 
+  useEffect(() => {
+    if (controlled) pendingFilesRef.current = files;
+  }, [controlled, files]);
+
   const visibleFiles = useMemo(() => limitFiles(files, maxCount), [files, maxCount]);
   const atLimit = visibleFiles.length >= maxCount;
+  const canReplaceSingleFile = replaceable && maxCount === 1;
 
   const applyUpdate = useCallback(
     (updater: (prev: NeUploadFile[]) => NeUploadFile[]) => {
@@ -190,7 +196,7 @@ function NeUploadView({
 
   const beforeUpload: UploadProps['beforeUpload'] = (file, selectedFiles) => {
     const currentVisible = visibleFilesRef.current;
-    const remaining = maxCount === 1 ? 1 : Math.max(0, maxCount - currentVisible.length);
+    const remaining = canReplaceSingleFile || maxCount === 1 ? 1 : Math.max(0, maxCount - currentVisible.length);
     const allowedFiles = selectedFiles.slice(0, remaining);
     const overflowFiles = selectedFiles.slice(remaining);
 
@@ -206,7 +212,7 @@ function NeUploadView({
 
   const uploadButton = (
     <Upload accept={accept} disabled={disabled} showUploadList={false} beforeUpload={beforeUpload} multiple={maxCount > 1}>
-      {!atLimit ? (
+      {canReplaceSingleFile || !atLimit ? (
         <Button aria-label={variant === 'image' ? '上传图片' : '上传附件'} icon={<PlusOutlined />} disabled={disabled}>
           {uploadText ?? (variant === 'image' ? '上传图片' : '上传附件')}
         </Button>
@@ -230,67 +236,6 @@ function NeUploadView({
         <FileUploadList files={visibleFiles} uploadButton={uploadButton} onRemove={removeFile} disabled={disabled} />
       )}
       {helperText ? <Typography.Text type="secondary">{helperText}</Typography.Text> : null}
-    </Flex>
-  );
-}
-
-interface FileUploadListProps {
-  files: NeUploadFile[];
-  uploadButton: ReactNode;
-  onRemove: (file: NeUploadFile) => void | Promise<void>;
-  disabled?: boolean;
-}
-
-function FileUploadList({ files, uploadButton, onRemove, disabled }: FileUploadListProps) {
-  const { token } = antdTheme.useToken();
-  return (
-    <Flex vertical gap={token.marginXS} role="list">
-      {files.map((file) => (
-        <Flex key={file.uid} role="listitem" align="center" gap={token.marginSM} style={{ padding: token.paddingSM, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: token.borderRadiusLG }}>
-          <FileOutlined aria-hidden="true" />
-          <Flex vertical style={{ flex: 1, minWidth: 0 }}>
-            <Typography.Text ellipsis>{file.name}</Typography.Text>
-            {file.status === 'uploading' ? <Progress percent={file.percent ?? 0} size="small" /> : null}
-            {file.status === 'error' ? <Typography.Text type="danger" role="alert">{file.errorMessage}</Typography.Text> : null}
-          </Flex>
-          <Button aria-label={`删除 ${file.name}`} type="text" icon={<DeleteOutlined />} disabled={disabled} onClick={() => void onRemove(file)} />
-        </Flex>
-      ))}
-      {uploadButton}
-    </Flex>
-  );
-}
-
-interface ImageUploadListProps {
-  files: NeUploadFile[];
-  shape: 'square' | 'circle';
-  size: number;
-  preview: boolean;
-  uploadButton: ReactNode;
-  onRemove: (file: NeUploadFile) => void | Promise<void>;
-  disabled?: boolean;
-}
-
-function ImageUploadList({ files, shape, size, preview, uploadButton, onRemove, disabled }: ImageUploadListProps) {
-  const { token } = antdTheme.useToken();
-  const radius = shape === 'circle' ? '50%' : token.borderRadiusLG;
-  return (
-    <Flex gap={token.marginSM} wrap role="list">
-      {files.map((file) => (
-        <div key={file.uid} role="listitem" style={{ width: size, position: 'relative' }}>
-          <div style={{ width: size, height: size, overflow: 'hidden', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: radius, background: token.colorFillAlter }}>
-            {file.thumbUrl || file.url ? (
-              <Image src={file.thumbUrl ?? file.url} alt={file.name} width={size} height={size} preview={preview} style={{ objectFit: 'cover' }} />
-            ) : (
-              <Flex align="center" justify="center" style={{ width: '100%', height: '100%' }} aria-label={`文件占位: ${file.name}`}>
-                <FileOutlined aria-hidden="true" />
-              </Flex>
-            )}
-          </div>
-          <Button aria-label={`删除 ${file.name}`} type="text" size="small" icon={<DeleteOutlined />} disabled={disabled} onClick={() => void onRemove(file)} style={{ position: 'absolute', top: 4, right: 4, background: token.colorBgElevated }} />
-        </div>
-      ))}
-      {uploadButton}
     </Flex>
   );
 }

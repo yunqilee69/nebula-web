@@ -1,9 +1,25 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { request } from '@/request/request';
 import { NeImageUpload, NeUpload } from './index';
 import type { NeUploadFile } from './types';
+
+vi.mock('@/request/request', () => ({
+  request: vi.fn(),
+}));
+
+const originalCreateObjectURL = URL.createObjectURL;
+const originalRevokeObjectURL = URL.revokeObjectURL;
+
+function mockObjectUrl(objectUrl: string) {
+  const createObjectURL = vi.fn(() => objectUrl);
+  const revokeObjectURL = vi.fn();
+  Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: createObjectURL });
+  Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectURL });
+  return { createObjectURL, revokeObjectURL };
+}
 
 function createFile(name: string, content = 'hello', type = 'text/plain') {
   return new File([content], name, { type });
@@ -16,6 +32,13 @@ function getFileInput() {
 }
 
 describe('NeUpload', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: originalCreateObjectURL });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: originalRevokeObjectURL });
+  });
+
   it('uploads a file and emits the normalized task value', async () => {
     const onChange = vi.fn();
     const uploadRequest = vi.fn().mockResolvedValue({
@@ -229,6 +252,13 @@ describe('NeUpload', () => {
 });
 
 describe('NeImageUpload', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: originalCreateObjectURL });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: originalRevokeObjectURL });
+  });
+
   it('renders a single image upload control by default', () => {
     render(<NeImageUpload />);
 
@@ -245,5 +275,49 @@ describe('NeImageUpload', () => {
 
     expect(screen.getByAltText('avatar.png')).toBeInTheDocument();
     expect(screen.queryByLabelText('上传图片')).not.toBeInTheDocument();
+  });
+
+  it('loads protected storage thumbnails through the authenticated request client', async () => {
+    const storageUrl = '/api/storage/download?fileId=avatar-file&filename=avatar.png';
+    const avatarBlob = new Blob(['avatar'], { type: 'image/png' });
+    vi.mocked(request).mockResolvedValue(avatarBlob);
+    const { createObjectURL } = mockObjectUrl('blob:storage-avatar');
+
+    render(
+      <NeImageUpload
+        maxCount={1}
+        value={[{ uid: 'img-1', name: 'avatar.png', status: 'done', thumbUrl: storageUrl }]}
+      />,
+    );
+
+    expect(document.querySelector('img[src*="/api/storage/download"]')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByAltText('avatar.png')).toHaveAttribute('src', 'blob:storage-avatar'));
+    expect(createObjectURL).toHaveBeenCalledWith(avatarBlob);
+    expect(request).toHaveBeenCalledWith({
+      url: storageUrl,
+      method: 'GET',
+      responseType: 'blob',
+    });
+  });
+
+  it('removes the latest controlled image value after parent rerender', async () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <NeImageUpload
+        value={[{ uid: 'local-upload', name: 'local-avatar.png', status: 'done' }]}
+        onChange={onChange}
+      />,
+    );
+
+    rerender(
+      <NeImageUpload
+        value={[{ uid: 'server-avatar', name: 'server-avatar.png', status: 'done', thumbUrl: '/server-avatar.png' }]}
+        onChange={onChange}
+      />,
+    );
+
+    await userEvent.click(screen.getByLabelText('删除 server-avatar.png'));
+
+    expect(onChange).toHaveBeenLastCalledWith([]);
   });
 });

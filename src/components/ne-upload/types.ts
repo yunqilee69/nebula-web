@@ -23,6 +23,7 @@ export interface NeUploadProps {
   value?: NeUploadFile[];
   defaultValue?: NeUploadFile[];
   maxCount?: number;
+  replaceable?: boolean;
   accept?: string;
   disabled?: boolean;
   sourceEntity?: string;
