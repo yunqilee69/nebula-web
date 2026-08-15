@@ -1,8 +1,10 @@
 import { PlusOutlined, TeamOutlined, UserDeleteOutlined } from '@ant-design/icons';
 import { Button, Popconfirm, Tag } from 'antd';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Access } from '@/components/access';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
+import { AUTH_BUTTON_CODES } from '@/constants/auth-button-codes';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import type { AuthManagementService } from '@/api/auth-management';
@@ -160,35 +162,39 @@ export const RoleUsersTable = forwardRef<RoleUsersTableHandle, RoleUsersTablePro
       toolBarRender={() => {
         if (scope.kind === 'role') {
           return [
-            <Button key="bind" type="primary" icon={<PlusOutlined />} loading={bindingLoading} onClick={onBindUsers}>
-              {t('auth.roleManagement.actions.addUsers')}
-            </Button>,
-            <Popconfirm
-              key="unbind"
-              title={t('auth.roleManagement.confirm.unbindUsersTitle')}
-              okText={t('auth.roleManagement.actions.removeUsers')}
-              cancelText={t('auth.roleManagement.actions.cancel')}
-              disabled={selectedUserIds.length === 0}
-              onConfirm={() => void unbindSelectedUsers()}
-            >
-              <Button danger icon={<UserDeleteOutlined />} disabled={selectedUserIds.length === 0} loading={assignmentLoading}>
-                {t('auth.roleManagement.actions.removeUsers')}
+            <Access key="bind" permission={AUTH_BUTTON_CODES.USER_ASSIGN} fallback={null}>
+              <Button type="primary" icon={<PlusOutlined />} loading={bindingLoading} onClick={onBindUsers}>
+                {t('auth.roleManagement.actions.addUsers')}
               </Button>
-            </Popconfirm>,
+            </Access>,
+            <Access key="unbind" permission={AUTH_BUTTON_CODES.USER_ASSIGN} fallback={null}>
+              <Popconfirm
+                title={t('auth.roleManagement.confirm.unbindUsersTitle')}
+                okText={t('auth.roleManagement.actions.removeUsers')}
+                cancelText={t('auth.roleManagement.actions.cancel')}
+                disabled={selectedUserIds.length === 0}
+                onConfirm={() => void unbindSelectedUsers()}
+              >
+                <Button danger icon={<UserDeleteOutlined />} disabled={selectedUserIds.length === 0} loading={assignmentLoading}>
+                  {t('auth.roleManagement.actions.removeUsers')}
+                </Button>
+              </Popconfirm>
+            </Access>,
           ];
         }
         if (scope.kind === 'withoutRole') {
           return [
-            <Button
-              key="assign"
-              type="primary"
-              icon={<TeamOutlined />}
-              disabled={selectedUserIds.length === 0}
-              loading={assignmentLoading}
-              onClick={assignSelectedUsers}
-            >
-              {t('auth.assignment.actions.setRoles')}
-            </Button>,
+            <Access key="assign" permission={AUTH_BUTTON_CODES.USER_ASSIGN} fallback={null}>
+              <Button
+                type="primary"
+                icon={<TeamOutlined />}
+                disabled={selectedUserIds.length === 0}
+                loading={assignmentLoading}
+                onClick={assignSelectedUsers}
+              >
+                {t('auth.assignment.actions.setRoles')}
+              </Button>
+            </Access>,
           ];
         }
         return [];

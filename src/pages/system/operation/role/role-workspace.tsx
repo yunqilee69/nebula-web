@@ -2,8 +2,10 @@ import { DeleteOutlined, EditOutlined, PlusOutlined, TeamOutlined, UserOutlined 
 import { Button, Flex, Popconfirm, Tag } from 'antd';
 import { createStyles } from 'antd-style';
 import { useMemo, type ReactNode } from 'react';
+import { Access } from '@/components/access';
 import { NeTree } from '@/components/ne-tree';
 import type { NeTreeNode } from '@/components/ne-tree/types';
+import { AUTH_BUTTON_CODES } from '@/constants/auth-button-codes';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { RoleOptionResp } from '@/types/auth-management';
 import { TreeNodeActionGroup } from '../components/tree-node-action-group';
@@ -72,31 +74,35 @@ export function RoleWorkspace({
           <TreeNodeActionGroup ariaLabel={`${role.name} ${t('auth.roleManagement.actions.moreActions')}`}>
             {(close) => (
               <>
-                <Button
-                  size="small"
-                  type="text"
-                  block
-                  icon={<EditOutlined aria-hidden />}
-                  onClick={() => {
-                    close();
-                    void onEditRole(role.id);
-                  }}
-                >
-                  {t('auth.roleManagement.actions.edit')}
-                </Button>
-                <Popconfirm
-                  title={t('auth.roleManagement.confirm.deleteTitle')}
-                  okText={t('auth.roleManagement.actions.delete')}
-                  cancelText={t('auth.roleManagement.actions.cancel')}
-                  onConfirm={() => {
-                    close();
-                    void onDeleteRole(role.id);
-                  }}
-                >
-                  <Button size="small" type="text" danger block icon={<DeleteOutlined aria-hidden />}>
-                    {t('auth.roleManagement.actions.delete')}
+                <Access permission={AUTH_BUTTON_CODES.ROLE_EDIT} fallback={null}>
+                  <Button
+                    size="small"
+                    type="text"
+                    block
+                    icon={<EditOutlined aria-hidden />}
+                    onClick={() => {
+                      close();
+                      void onEditRole(role.id);
+                    }}
+                  >
+                    {t('auth.roleManagement.actions.edit')}
                   </Button>
-                </Popconfirm>
+                </Access>
+                <Access permission={AUTH_BUTTON_CODES.ROLE_DELETE} fallback={null}>
+                  <Popconfirm
+                    title={t('auth.roleManagement.confirm.deleteTitle')}
+                    okText={t('auth.roleManagement.actions.delete')}
+                    cancelText={t('auth.roleManagement.actions.cancel')}
+                    onConfirm={() => {
+                      close();
+                      void onDeleteRole(role.id);
+                    }}
+                  >
+                    <Button size="small" type="text" danger block icon={<DeleteOutlined aria-hidden />}>
+                      {t('auth.roleManagement.actions.delete')}
+                    </Button>
+                  </Popconfirm>
+                </Access>
               </>
             )}
           </TreeNodeActionGroup>
@@ -137,9 +143,11 @@ export function RoleWorkspace({
           searchable
           searchPlaceholder={t('auth.roleManagement.tree.searchPlaceholder')}
           extra={(
-            <Button type="primary" icon={<PlusOutlined />} onClick={onCreateRole}>
-              {t('auth.roleManagement.actions.create')}
-            </Button>
+            <Access permission={AUTH_BUTTON_CODES.ROLE_CREATE} fallback={null}>
+              <Button type="primary" icon={<PlusOutlined />} onClick={onCreateRole}>
+                {t('auth.roleManagement.actions.create')}
+              </Button>
+            </Access>
           )}
           onSelect={selectScope}
           style={{ minHeight: 0, flex: 1 }}

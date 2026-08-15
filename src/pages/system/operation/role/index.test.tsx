@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import type { AuthManagementService } from '@/api/auth-management';
 import { useLocaleStore } from '@/stores/locale-store';
+import { clearAuthForTest, echoAuthAdapter, signInAsAdminForTest } from '@/test/auth-test-helpers';
 import type { RoleService } from '@/api/role';
 import type { PageResp as AuthPageResp, UserResp } from '@/types/auth-management';
 import { RoleManagementPage } from './index';
@@ -42,8 +43,9 @@ function createAuthService(overrides: Partial<AuthManagementService> = {}): Auth
 }
 
 function renderRoleManagementPage(roleService: RoleService, authService = createAuthService()) {
+  signInAsAdminForTest();
   return render(
-    <NebulaProvider>
+    <NebulaProvider authAdapter={echoAuthAdapter}>
       <RoleManagementPage roleService={roleService} authService={authService} />
     </NebulaProvider>,
   );
@@ -64,6 +66,7 @@ describe('RoleManagementPage', () => {
 
   afterEach(() => {
     useLocaleStore.getState().setLocale('zh-CN');
+    clearAuthForTest();
   });
 
   it('loads roles into the workspace tree and starts from the global role-users scope', async () => {
@@ -344,8 +347,9 @@ describe('RoleManagementPage', () => {
   it('uses the default role service when roleService is not provided', async () => {
     const authService = createAuthService();
 
+    signInAsAdminForTest();
     render(
-      <NebulaProvider>
+      <NebulaProvider authAdapter={echoAuthAdapter}>
         <RoleManagementPage authService={authService} />
       </NebulaProvider>,
     );

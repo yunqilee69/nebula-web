@@ -1,8 +1,10 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Popconfirm, Tag } from 'antd';
 import { useMemo, type RefObject } from 'react';
+import { Access } from '@/components/access';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaProColumns, NebulaProTableAction, NebulaProTableRequest } from '@/components/nebula-pro-table';
+import { AUTH_BUTTON_CODES } from '@/constants/auth-button-codes';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import type { RoleResp, RoleStatus } from '@/types/role';
@@ -97,20 +99,23 @@ export function RoleTable({ actionRef, request, defaultPageSize, actions }: Role
       valueType: 'option',
       search: false,
       render: (_, record) => [
-        <Button key="edit" type="link" icon={<EditOutlined />} onClick={() => void actions.onEdit(record)}>
-          {t('auth.roleManagement.actions.edit')}
-        </Button>,
-        <Popconfirm
-          key="delete"
-          title={t('auth.roleManagement.confirm.deleteTitle')}
-          okText={t('auth.roleManagement.actions.delete')}
-          cancelText={t('auth.roleManagement.actions.cancel')}
-          onConfirm={() => void actions.onDelete(record)}
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>
-            {t('auth.roleManagement.actions.delete')}
+        <Access key="edit" permission={AUTH_BUTTON_CODES.ROLE_EDIT} fallback={null}>
+          <Button type="link" icon={<EditOutlined />} onClick={() => void actions.onEdit(record)}>
+            {t('auth.roleManagement.actions.edit')}
           </Button>
-        </Popconfirm>,
+        </Access>,
+        <Access key="delete" permission={AUTH_BUTTON_CODES.ROLE_DELETE} fallback={null}>
+          <Popconfirm
+            title={t('auth.roleManagement.confirm.deleteTitle')}
+            okText={t('auth.roleManagement.actions.delete')}
+            cancelText={t('auth.roleManagement.actions.cancel')}
+            onConfirm={() => void actions.onDelete(record)}
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              {t('auth.roleManagement.actions.delete')}
+            </Button>
+          </Popconfirm>
+        </Access>,
       ],
     },
   ], [actions, statusValueEnum, t]);
@@ -126,7 +131,9 @@ export function RoleTable({ actionRef, request, defaultPageSize, actions }: Role
       scroll={{ x: 960 }}
       toolBarRender={() => [
         <Button key="unassigned" onClick={actions.onShowUnassigned}>{t('auth.assignment.tabs.unassignedRoleUsers')}</Button>,
-        <Button key="create" type="primary" icon={<PlusOutlined />} onClick={actions.onCreate}>{t('auth.roleManagement.actions.create')}</Button>,
+        <Access key="create" permission={AUTH_BUTTON_CODES.ROLE_CREATE} fallback={null}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={actions.onCreate}>{t('auth.roleManagement.actions.create')}</Button>
+        </Access>,
       ]}
     />
   );

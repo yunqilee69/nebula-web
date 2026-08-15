@@ -1,7 +1,9 @@
 import { Button, Tag } from 'antd';
 import { useCallback, useMemo, useRef } from 'react';
+import { Access } from '@/components/access';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
+import { AUTH_BUTTON_CODES } from '@/constants/auth-button-codes';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
 import type { AuthManagementService } from '@/api/auth-management';
@@ -94,9 +96,11 @@ export function UnassignedUsersTable({ service, filter, onAssign, onAddUsers }: 
         valueType: 'option',
         search: false,
         render: (_, record) => [
-          <Button key="assign" type="link" onClick={() => onAssign(record.id)}>
-            {t('auth.assignment.actions.assign')}
-          </Button>,
+          <Access key="assign" permission={AUTH_BUTTON_CODES.USER_ASSIGN} fallback={null}>
+            <Button type="link" onClick={() => onAssign(record.id)}>
+              {t('auth.assignment.actions.assign')}
+            </Button>
+          </Access>,
         ],
       },
     ];
@@ -112,9 +116,11 @@ export function UnassignedUsersTable({ service, filter, onAssign, onAddUsers }: 
       size="middle"
       scroll={{ x: 720 }}
       toolBarRender={() => (onAddUsers ? [
-        <Button key="add-users" type="primary" aria-label={t('auth.orgManagement.actions.addUsers')} onClick={onAddUsers}>
-          {t('auth.orgManagement.actions.addUsers')}
-        </Button>,
+        <Access key="add-users" permission={AUTH_BUTTON_CODES.USER_ASSIGN} fallback={null}>
+          <Button type="primary" aria-label={t('auth.orgManagement.actions.addUsers')} onClick={onAddUsers}>
+            {t('auth.orgManagement.actions.addUsers')}
+          </Button>
+        </Access>,
       ] : [])}
     />
   );
