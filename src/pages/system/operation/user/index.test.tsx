@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NebulaProvider } from '@/providers/nebula-provider';
 import type { AuthManagementService } from '@/api/auth-management';
 import { useLocaleStore } from '@/stores/locale-store';
+import { clearAuthForTest, echoAuthAdapter, signInAsAdminForTest } from '@/test/auth-test-helpers';
 import type { PageResp, UserResp } from '@/types/auth-management';
 import { UserManagementPage } from './index';
 
@@ -35,8 +36,9 @@ function createService(overrides: Partial<AuthManagementService> = {}): AuthMana
 }
 
 function renderPage(service = createService()) {
+  signInAsAdminForTest();
   render(
-    <NebulaProvider>
+    <NebulaProvider authAdapter={echoAuthAdapter}>
       <UserManagementPage service={service} />
     </NebulaProvider>,
   );
@@ -48,6 +50,7 @@ describe('UserManagementPage', () => {
     act(() => {
       useLocaleStore.getState().setLocale('zh-CN');
     });
+    clearAuthForTest();
   });
 
   it('renders a ProTable search form, toolbar, and user rows', async () => {
@@ -137,7 +140,8 @@ describe('UserManagementPage', () => {
       throw new Error('Expected batch assignment modal');
     }
     expect(within(modal).getByText(/已选择\s*1\s*个用户[:：]\s*云起/)).toBeInTheDocument();
-    expect(within(modal).getByLabelText('角色')).toBeInTheDocument();
+    await user.click(within(modal).getByLabelText('角色'));
+    await user.click(await screen.findByText('平台管理员'));
     expect(within(modal).queryByLabelText('组织')).not.toBeInTheDocument();
     expect(within(modal).queryByText(/勾选.*移除/)).not.toBeInTheDocument();
     await user.click(within(modal).getByRole('button', { name: '追加归属' }));
@@ -145,7 +149,7 @@ describe('UserManagementPage', () => {
     await waitFor(() => {
       expect(service.batchUpdateUserAssignments).toHaveBeenCalledWith({
         userIds: ['user-1'],
-        roleIds: null,
+        roleIds: ['role-1'],
         orgIds: null,
         operation: 'ADD',
       });

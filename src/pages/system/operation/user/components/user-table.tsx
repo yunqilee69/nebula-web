@@ -1,8 +1,10 @@
 import { ApartmentOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, TeamOutlined } from '@ant-design/icons';
 import { Button, Popconfirm, Tag } from 'antd';
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Access } from '@/components/access';
 import { NebulaProTable } from '@/components/nebula-pro-table';
 import type { NebulaPageReq, NebulaProColumns, NebulaProTableAction } from '@/components/nebula-pro-table';
+import { AUTH_BUTTON_CODES } from '@/constants/auth-button-codes';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import type { AuthManagementService } from '@/api/auth-management';
 import type { EnableStatus, OrgOptionResp, RoleOptionResp, UserPageReq, UserResp } from '@/types/auth-management';
@@ -140,20 +142,24 @@ export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function Us
       valueType: 'option',
       search: false,
       render: (_, record) => [
-        <Button key="edit" type="link" icon={<EditOutlined />} onClick={() => onEditUser(record)}>
-          {t('auth.userManagement.actions.edit')}
-        </Button>,
-        <Popconfirm
+        <Access key="edit" permission={AUTH_BUTTON_CODES.USER_EDIT} fallback={null}>
+          <Button type="link" icon={<EditOutlined />} onClick={() => onEditUser(record)}>
+            {t('auth.userManagement.actions.edit')}
+          </Button>
+        </Access>,
+        <Access key="delete" permission={AUTH_BUTTON_CODES.USER_DELETE} fallback={null}>
+          <Popconfirm
           key="delete"
           title={t('auth.userManagement.confirm.deleteTitle')}
           okText={t('auth.userManagement.actions.delete')}
           cancelText={t('auth.userManagement.actions.cancel')}
           onConfirm={() => void removeUser(record)}
-        >
-          <Button type="link" danger icon={<DeleteOutlined />}>
-            {t('auth.userManagement.actions.delete')}
-          </Button>
-        </Popconfirm>,
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              {t('auth.userManagement.actions.delete')}
+            </Button>
+          </Popconfirm>
+        </Access>,
       ],
     },
   ], [onEditUser, removeUser, statusOptions, t, roles, orgs]);
@@ -176,39 +182,44 @@ export const UserTable = forwardRef<UserTableHandle, UserTableProps>(function Us
       }}
       tableAlertRender={false}
       toolBarRender={() => [
-        <Button key="create" type="primary" icon={<PlusOutlined />} onClick={onAddUser}>
-          {t('auth.userManagement.actions.create')}
-        </Button>,
-        <Button
-          key="set-orgs"
-          icon={<ApartmentOutlined />}
-          disabled={selectedUserIds.length === 0}
-          loading={batchAssignLoading}
-          onClick={() => onBatchAssign(selectedUsers, 'orgs')}
-        >
-          {t('auth.assignment.actions.setOrgs')}
-        </Button>,
-        <Button
-          key="set-roles"
-          icon={<TeamOutlined />}
-          disabled={selectedUserIds.length === 0}
-          loading={batchAssignLoading}
-          onClick={() => onBatchAssign(selectedUsers, 'roles')}
-        >
-          {t('auth.assignment.actions.setRoles')}
-        </Button>,
-        <Popconfirm
-          key="reset-password"
-          title={t('auth.userManagement.confirm.resetPasswordTitle')}
-          okText={t('auth.userManagement.actions.resetPassword')}
-          cancelText={t('auth.userManagement.actions.cancel')}
-          onConfirm={() => void resetSelectedUsersPassword()}
-          disabled={selectedUserIds.length === 0}
-        >
-          <Button icon={<ReloadOutlined />} disabled={selectedUserIds.length === 0} loading={resetPasswordLoading}>
-            {t('auth.userManagement.actions.resetPassword')}
+        <Access key="create" permission={AUTH_BUTTON_CODES.USER_CREATE} fallback={null}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={onAddUser}>
+            {t('auth.userManagement.actions.create')}
           </Button>
-        </Popconfirm>,
+        </Access>,
+        <Access key="set-orgs" permission={AUTH_BUTTON_CODES.USER_ASSIGN} fallback={null}>
+          <Button
+            icon={<ApartmentOutlined />}
+            disabled={selectedUserIds.length === 0}
+            loading={batchAssignLoading}
+            onClick={() => onBatchAssign(selectedUsers, 'orgs')}
+          >
+            {t('auth.assignment.actions.setOrgs')}
+          </Button>
+        </Access>,
+        <Access key="set-roles" permission={AUTH_BUTTON_CODES.USER_ASSIGN} fallback={null}>
+          <Button
+            icon={<TeamOutlined />}
+            disabled={selectedUserIds.length === 0}
+            loading={batchAssignLoading}
+            onClick={() => onBatchAssign(selectedUsers, 'roles')}
+          >
+            {t('auth.assignment.actions.setRoles')}
+          </Button>
+        </Access>,
+        <Access key="reset-password" permission={AUTH_BUTTON_CODES.USER_RESET_PASSWORD} fallback={null}>
+          <Popconfirm
+            title={t('auth.userManagement.confirm.resetPasswordTitle')}
+            okText={t('auth.userManagement.actions.resetPassword')}
+            cancelText={t('auth.userManagement.actions.cancel')}
+            onConfirm={() => void resetSelectedUsersPassword()}
+            disabled={selectedUserIds.length === 0}
+          >
+            <Button icon={<ReloadOutlined />} disabled={selectedUserIds.length === 0} loading={resetPasswordLoading}>
+              {t('auth.userManagement.actions.resetPassword')}
+            </Button>
+          </Popconfirm>
+        </Access>,
       ]}
     />
   );
