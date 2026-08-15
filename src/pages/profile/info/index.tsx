@@ -1,61 +1,45 @@
-import { ReloadOutlined } from '@ant-design/icons';
-import { Avatar, Button, Card, Descriptions, Empty, Form, Input, Popconfirm, Space, Tag, theme as antdTheme } from 'antd';
-import { createStyles } from 'antd-style';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { NebulaProTable } from '@/components/nebula-pro-table';
-import type { NebulaPageReq, NebulaProColumns } from '@/components/nebula-pro-table';
+import { Form, Space, theme as antdTheme } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNebulaI18n } from '@/hooks/use-nebula-i18n';
 import { useNotice } from '@/hooks/use-notice';
+import { useStoragePreviewUrl } from '@/hooks/use-storage-preview-url';
 import { profileService as defaultProfileService } from '@/api/profile';
 import type { ProfileService } from '@/api/profile';
 import { redirectToAuthorizeUrl } from '@/pages/login/wechat-redirect-navigation';
-import type { LoginRecordResp, OAuth2BindingResp, ProfileResp, UpdateProfileReq } from '@/types/profile';
+import { useAuthStore } from '@/stores/auth-store';
+import type { OAuth2BindingResp, ProfileResp } from '@/types/profile';
+import { createAvatarUploadAdapter } from './avatar-upload';
+import type { AvatarUploadResult } from './avatar-upload';
+import { BasicProfileCard } from './basic-profile-card';
+import type { ProfileFormValues } from './basic-profile-card';
+import {
+  buildProfilePayload,
+  createAvatarPreviewUrl,
+  keepSavedAvatar,
+  mergeProfileIntoCurrentUser,
+  revokeAvatarPreviewUrl,
+} from './profile-save';
+import { profileStorageService } from './profile-storage-service';
+import { LoginRecordsCard, OAuth2BindingsCard, PasswordCard } from './section-cards';
+import type { PasswordFormValues } from './section-cards';
 
 export interface ProfileInfoPageProps {
   service?: ProfileService;
+  uploadAvatar?: (file: File) => Promise<AvatarUploadResult>;
 }
 
-type ProfileFormValues = UpdateProfileReq;
-
-interface PasswordFormValues {
-  oldPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
-
-const useStyles = createStyles(({ token }) => ({
-  avatar: {
-    background: token.colorPrimary,
-  },
-  oauthGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: token.marginMD,
-  },
-}));
-
-function normalizeOptionalText(value: string | undefined) {
-  const nextValue = value?.trim();
-  return nextValue ? nextValue : undefined;
-}
-
-function buildLoginRecordPageReq(params: NebulaPageReq) {
-  return {
-    pageNum: params.pageNum,
-    pageSize: params.pageSize,
-  };
-}
-
-export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) {
+export function ProfileInfoPage({ service: serviceProp, uploadAvatar }: ProfileInfoPageProps) {
   const service = serviceProp ?? defaultProfileService;
   const { t } = useNebulaI18n();
   const notice = useNotice();
   const { token } = antdTheme.useToken();
-  const { styles } = useStyles();
+  const setStoredUser = useAuthStore((state) => state.setUser);
   const [form] = Form.useForm<ProfileFormValues>();
   const [passwordForm] = Form.useForm<PasswordFormValues>();
 
   const [profile, setProfile] = useState<ProfileResp>();
+  const [avatarUrl, setAvatarUrl] = useState<string>();
+  const avatarPreviewUrl = useStoragePreviewUrl(avatarUrl);
   const [profileLoading, setProfileLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -63,51 +47,36 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
   const [bindingsLoading, setBindingsLoading] = useState(false);
   const [unbindProviderId, setUnbindProviderId] = useState<string>();
   const [bindProviderId, setBindProviderId] = useState<string>();
+  const storedAvatarPreviewUrlRef = useRef<string>();
 
-  const loginRecordColumns = useMemo<NebulaProColumns<LoginRecordResp>[]>(() => [
-    {
-      title: t('auth.profileInfo.columns.loginType'),
-      dataIndex: 'loginType',
-      render: (_, record) => renderNotProvided(record.loginType),
+  const replaceStoredAvatarPreviewUrl = useCallback((nextPreviewUrl: string | undefined) => {
+    const previousPreviewUrl = storedAvatarPreviewUrlRef.current;
+    storedAvatarPreviewUrlRef.current = nextPreviewUrl;
+    if (previousPreviewUrl && previousPreviewUrl !== nextPreviewUrl) revokeAvatarPreviewUrl(previousPreviewUrl);
+  }, []);
+
+  const syncStoredUser = useCallback(
+    (nextProfile: ProfileResp, avatarPreviewUrl?: string) => {
+      const nextUser = mergeProfileIntoCurrentUser(useAuthStore.getState().user, nextProfile, avatarPreviewUrl);
+      if (!nextUser) {
+        revokeAvatarPreviewUrl(avatarPreviewUrl);
+        return;
+      }
+      replaceStoredAvatarPreviewUrl(avatarPreviewUrl);
+      setStoredUser(nextUser);
     },
-    {
-      title: t('auth.profileInfo.columns.loginIp'),
-      dataIndex: 'loginIp',
-      render: (_, record) => renderNotProvided(record.loginIp),
-    },
-    {
-      title: t('auth.profileInfo.columns.deviceInfo'),
-      dataIndex: 'deviceInfo',
-      render: (_, record) => renderNotProvided(record.deviceInfo),
-    },
-    {
-      title: t('auth.profileInfo.columns.loginTime'),
-      dataIndex: 'loginTime',
-      render: (_, record) => renderNotProvided(record.loginTime),
-    },
-    {
-      title: t('auth.profileInfo.columns.success'),
-      key: 'success',
-      render: (_, record) => {
-        const success = record.loginResult === 'SUCCESS';
-        return <Tag color={success ? 'success' : 'error'}>{success ? t('auth.profileInfo.status.success') : t('auth.profileInfo.status.failed')}</Tag>;
-      },
-    },
-    {
-      title: t('auth.profileInfo.columns.failReason'),
-      dataIndex: 'failReason',
-      render: (_, record) => renderNotProvided(record.failReason),
-    },
-  ], [t]);
+    [replaceStoredAvatarPreviewUrl, setStoredUser],
+  );
 
   const loadProfile = useCallback(async () => {
     setProfileLoading(true);
     try {
       const nextProfile = await service.getProfile();
       setProfile(nextProfile);
+      setAvatarUrl(nextProfile.avatar);
+      syncStoredUser(nextProfile);
       form.setFieldsValue({
         nickname: nextProfile.nickname,
-        avatar: nextProfile.avatar,
         email: nextProfile.email,
         phone: nextProfile.phone,
       });
@@ -118,7 +87,7 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
     } finally {
       setProfileLoading(false);
     }
-  }, [form, notice, service, t]);
+  }, [form, notice, service, syncStoredUser, t]);
 
   const loadBindings = useCallback(async () => {
     setBindingsLoading(true);
@@ -139,24 +108,27 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
     void loadBindings();
   }, [loadBindings, loadProfile]);
 
+  const saveProfile = useCallback(
+    async (values: ProfileFormValues, nextAvatarUrl: string | undefined, avatarPreviewUrl?: string) => {
+      const updatedProfile = await service.updateProfile(buildProfilePayload(values, nextAvatarUrl));
+      const nextProfile = keepSavedAvatar(updatedProfile, nextAvatarUrl);
+      setProfile(nextProfile);
+      setAvatarUrl(nextProfile.avatar);
+      syncStoredUser(nextProfile, avatarPreviewUrl);
+      form.setFieldsValue({
+        nickname: nextProfile.nickname,
+        email: nextProfile.email,
+        phone: nextProfile.phone,
+      });
+    },
+    [form, service, syncStoredUser],
+  );
+
   const submitProfile = useCallback(
     async (values: ProfileFormValues) => {
       setSaving(true);
       try {
-        const payload: UpdateProfileReq = {
-          nickname: normalizeOptionalText(values.nickname),
-          avatar: normalizeOptionalText(values.avatar),
-          email: normalizeOptionalText(values.email),
-          phone: normalizeOptionalText(values.phone),
-        };
-        const updatedProfile = await service.updateProfile(payload);
-        setProfile(updatedProfile);
-        form.setFieldsValue({
-          nickname: updatedProfile.nickname,
-          avatar: updatedProfile.avatar,
-          email: updatedProfile.email,
-          phone: updatedProfile.phone,
-        });
+        await saveProfile(values, avatarUrl);
         notice.success(t('auth.profileInfo.feedback.profileUpdateSuccess'));
       } catch (error: unknown) {
         notice.error(t('auth.profileInfo.feedback.profileUpdateFailed'));
@@ -166,7 +138,35 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
         setSaving(false);
       }
     },
-    [form, notice, service, t],
+    [avatarUrl, notice, saveProfile, t],
+  );
+
+  const avatarUpload = useMemo(() => {
+    if (uploadAvatar) return uploadAvatar;
+    if (!profile?.id) return undefined;
+    return createAvatarUploadAdapter(profileStorageService, profile.id).uploadAvatar;
+  }, [profile?.id, uploadAvatar]);
+
+  const uploadAvatarFile = useCallback(
+    async (file: File) => {
+      if (!avatarUpload) throw new Error(t('auth.profileInfo.feedback.profileLoadFailed'));
+      const result = await avatarUpload(file);
+      const avatarPreviewUrl = createAvatarPreviewUrl(file);
+      setSaving(true);
+      try {
+        await saveProfile(form.getFieldsValue(), result.avatarUrl, avatarPreviewUrl);
+        notice.success(t('auth.profileInfo.feedback.profileUpdateSuccess'));
+      } catch (error: unknown) {
+        revokeAvatarPreviewUrl(avatarPreviewUrl);
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Profile avatar auto-save failed', message);
+        throw new Error(t('auth.profileInfo.feedback.profileUpdateFailed'));
+      } finally {
+        setSaving(false);
+      }
+      return result;
+    },
+    [avatarUpload, form, notice, saveProfile, t],
   );
 
   const unbindOAuth2 = useCallback(
@@ -224,115 +224,35 @@ export function ProfileInfoPage({ service: serviceProp }: ProfileInfoPageProps) 
     [notice, passwordForm, service, t],
   );
 
-  const renderNotProvided = useCallback((value: string | number | undefined) => value ?? t('auth.profileInfo.empty.notProvided'), [t]);
-
   return (
     <>
       <Space orientation="vertical" size={token.marginMD} className="w-full">
-        <Card title={t('auth.profileInfo.sections.basic')} loading={profileLoading} extra={<Button icon={<ReloadOutlined />} onClick={() => void loadProfile()}>{t('auth.profileInfo.actions.refresh')}</Button>}>
-          <Space orientation="vertical" size={token.marginMD} className="w-full">
-            <Space align="center" size={token.marginMD}>
-              <Avatar src={profile?.avatar} size={64} className={styles.avatar}>
-                {profile?.nickname?.slice(0, 1) ?? profile?.username?.slice(0, 1)}
-              </Avatar>
-              <Descriptions column={2} size="small">
-                <Descriptions.Item label={t('auth.profileInfo.fields.username')}>{renderNotProvided(profile?.username)}</Descriptions.Item>
-                <Descriptions.Item label={t('auth.profileInfo.fields.status')}>
-                  <Tag color={profile?.status === 1 ? 'success' : 'default'}>{profile?.status === 1 ? t('auth.profileInfo.status.enabled') : t('auth.profileInfo.status.disabled')}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label={t('auth.profileInfo.fields.createTime')}>{renderNotProvided(profile?.createTime)}</Descriptions.Item>
-              </Descriptions>
-            </Space>
-            <Form form={form} layout="vertical" onFinish={(values) => void submitProfile(values)}>
-              <Form.Item name="nickname" label={t('auth.profileInfo.fields.nickname')} htmlFor="profile-nickname">
-                <Input id="profile-nickname" allowClear placeholder={t('auth.profileInfo.placeholders.nickname')} />
-              </Form.Item>
-              <Form.Item name="avatar" label={t('auth.profileInfo.fields.avatar')} htmlFor="profile-avatar">
-                <Input id="profile-avatar" allowClear placeholder={t('auth.profileInfo.placeholders.avatar')} />
-              </Form.Item>
-              <Form.Item name="email" label={t('auth.profileInfo.fields.email')} htmlFor="profile-email" rules={[{ type: 'email', message: t('auth.profileInfo.validation.email') }]}> 
-                <Input id="profile-email" allowClear placeholder={t('auth.profileInfo.placeholders.email')} />
-              </Form.Item>
-              <Form.Item name="phone" label={t('auth.profileInfo.fields.phone')} htmlFor="profile-phone">
-                <Input id="profile-phone" allowClear placeholder={t('auth.profileInfo.placeholders.phone')} />
-              </Form.Item>
-              <Button type="primary" htmlType="submit" loading={saving}>{t('auth.profileInfo.actions.save')}</Button>
-            </Form>
-          </Space>
-        </Card>
+        <BasicProfileCard
+          profile={profile}
+          avatarUrl={avatarUrl}
+          avatarPreviewUrl={avatarPreviewUrl}
+          form={form}
+          loading={profileLoading}
+          saving={saving}
+          uploadDisabled={saving || profileLoading || !profile?.id}
+          onRefresh={loadProfile}
+          onSubmit={submitProfile}
+          uploadAvatarFile={uploadAvatarFile}
+        />
 
-        <Card title={t('auth.profileInfo.sections.password')}>
-          <Form form={passwordForm} layout="vertical" onFinish={(values) => void submitPassword(values)} disabled={passwordSaving}>
-            <Form.Item name="oldPassword" label={t('auth.profileInfo.fields.oldPassword')} htmlFor="profile-old-password" rules={[{ required: true, message: t('auth.profileInfo.validation.oldPasswordRequired') }]}> 
-              <Input.Password id="profile-old-password" autoComplete="current-password" placeholder={t('auth.profileInfo.placeholders.oldPassword')} />
-            </Form.Item>
-            <Form.Item name="newPassword" label={t('auth.profileInfo.fields.newPassword')} htmlFor="profile-new-password" rules={[{ required: true, message: t('auth.profileInfo.validation.newPasswordRequired') }]}> 
-              <Input.Password id="profile-new-password" autoComplete="new-password" placeholder={t('auth.profileInfo.placeholders.newPassword')} />
-            </Form.Item>
-            <Form.Item
-              name="confirmPassword"
-              label={t('auth.profileInfo.fields.confirmPassword')}
-              htmlFor="profile-confirm-password"
-              dependencies={['newPassword']}
-              rules={[
-                { required: true, message: t('auth.profileInfo.validation.confirmPasswordRequired') },
-                ({ getFieldValue }) => ({
-                  validator(_, value: string | undefined) {
-                    if (!value || getFieldValue('newPassword') === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error(t('auth.profileInfo.validation.passwordMismatch')));
-                  },
-                }),
-              ]}
-            >
-              <Input.Password id="profile-confirm-password" autoComplete="new-password" placeholder={t('auth.profileInfo.placeholders.confirmPassword')} />
-            </Form.Item>
-            <Button type="primary" htmlType="submit" loading={passwordSaving}>{t('auth.profileInfo.actions.changePassword')}</Button>
-          </Form>
-        </Card>
+        <PasswordCard form={passwordForm} saving={passwordSaving} onSubmit={submitPassword} />
 
-        <Card title={t('auth.profileInfo.sections.oauth2')} loading={bindingsLoading} extra={<Button icon={<ReloadOutlined />} onClick={() => void loadBindings()}>{t('auth.profileInfo.actions.refresh')}</Button>}>
-          {bindings.length > 0 ? (
-            <div className={styles.oauthGrid}>
-              {bindings.map((binding) => (
-                <Card key={binding.providerId} data-testid={`oauth2-provider-${binding.providerId}`} size="small" title={binding.providerName ?? binding.providerId}>
-                  <Space orientation="vertical" size={token.marginSM} className="w-full">
-                    <Tag color={binding.bound ? 'success' : 'default'}>{binding.bound ? t('auth.profileInfo.status.bound') : t('auth.profileInfo.status.unbound')}</Tag>
-                    <Descriptions column={1} size="small">
-                      <Descriptions.Item label={t('auth.profileInfo.fields.accountName')}>{renderNotProvided(binding.displayName ?? binding.providerUserId)}</Descriptions.Item>
-                      <Descriptions.Item label={t('auth.profileInfo.fields.createTime')}>{renderNotProvided(binding.linkedAt)}</Descriptions.Item>
-                    </Descriptions>
-                    {binding.bound ? (
-                      <Popconfirm title={t('auth.profileInfo.confirm.unbindTitle')} onConfirm={() => void unbindOAuth2(binding.providerId)}>
-                        <Button danger loading={unbindProviderId === binding.providerId}>{t('auth.profileInfo.actions.unbind')}</Button>
-                      </Popconfirm>
-                    ) : (
-                      <Button loading={bindProviderId === binding.providerId} onClick={() => void startOAuth2Bind(binding.providerId)}>{t('auth.profileInfo.actions.bind')}</Button>
-                    )}
-                  </Space>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Empty description={t('auth.profileInfo.empty.oauth2')} />
-          )}
-        </Card>
+        <OAuth2BindingsCard
+          bindings={bindings}
+          loading={bindingsLoading}
+          unbindProviderId={unbindProviderId}
+          bindProviderId={bindProviderId}
+          onRefresh={loadBindings}
+          onUnbind={unbindOAuth2}
+          onBind={startOAuth2Bind}
+        />
 
-        <Card title={t('auth.profileInfo.sections.loginRecords')}>
-          <NebulaProTable<LoginRecordResp>
-            columns={loginRecordColumns}
-            rowKey={(record) => [record.loginTime, record.loginAccount, record.loginType, record.loginIp].filter((value) => value !== undefined && value !== '').join('-')}
-            search={false}
-            request={(params) => service.pageLoginRecords(buildLoginRecordPageReq(params))}
-            onRequestError={(error) => {
-              notice.error(t('auth.profileInfo.feedback.loginRecordsLoadFailed'));
-              const message = error instanceof Error ? error.message : String(error);
-              console.error('Failed to load login records', message);
-            }}
-            locale={{ emptyText: t('auth.profileInfo.empty.loginRecords') }}
-          />
-        </Card>
+        <LoginRecordsCard service={service} />
       </Space>
     </>
   );
