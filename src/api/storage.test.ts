@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createStorageService } from './storage';
+import { createStorageService, parseStorageDownloadUrl } from './storage';
 
 describe('createStorageService', () => {
   it('uploads a simple file with multipart fields', async () => {
@@ -50,6 +50,28 @@ describe('createStorageService', () => {
     const service = createStorageService(vi.fn());
 
     expect(service.getDownloadUrl('file-1', '合同.pdf')).toBe('/api/storage/download?fileId=file-1&filename=%E5%90%88%E5%90%8C.pdf');
+  });
+
+  it('downloads files as blobs through the authenticated request client', async () => {
+    const blob = new Blob(['avatar'], { type: 'image/png' });
+    const request = vi.fn().mockResolvedValue(blob);
+    const service = createStorageService(request);
+
+    await expect(service.downloadFile('file-1', 'avatar.png')).resolves.toBe(blob);
+
+    expect(request).toHaveBeenCalledWith({
+      url: '/api/storage/download?fileId=file-1&filename=avatar.png',
+      method: 'get',
+      responseType: 'blob',
+    });
+  });
+
+  it('parses storage download URLs for authenticated preview loading', () => {
+    expect(parseStorageDownloadUrl('/api/storage/download?fileId=file-1&filename=avatar.png')).toEqual({
+      fileId: 'file-1',
+      filename: 'avatar.png',
+    });
+    expect(parseStorageDownloadUrl('https://cdn.example.com/avatar.png')).toBeUndefined();
   });
 
   it('binds an upload task to a source', async () => {

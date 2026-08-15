@@ -11,6 +11,7 @@ export interface StorageRequestConfig {
   data?: unknown;
   params?: Record<string, string | number | undefined>;
   headers?: Record<string, string>;
+  responseType?: 'blob';
 }
 
 export type StorageRequestFn = <T = unknown>(config: StorageRequestConfig) => Promise<T>;
@@ -26,6 +27,31 @@ export interface StorageService {
   listFilesBySource: (req: ListStorageFilesBySourceReq) => Promise<StorageFileDetailResp[]>;
   deleteFile: (fileId: string) => Promise<void>;
   getDownloadUrl: (fileId: string, filename?: string) => string;
+  downloadFile: (fileId: string, filename?: string) => Promise<Blob>;
+}
+
+const storageDownloadPath = '/api/storage/download';
+
+function buildStorageDownloadUrl(fileId: string, filename?: string) {
+  const searchParams = new URLSearchParams({ fileId });
+  if (filename) searchParams.set('filename', filename);
+  return `${storageDownloadPath}?${searchParams.toString()}`;
+}
+
+function normalizeOptionalText(value: string | undefined) {
+  const nextValue = value?.trim();
+  return nextValue ? nextValue : undefined;
+}
+
+export function parseStorageDownloadUrl(downloadUrl: string): { readonly fileId: string; readonly filename?: string } | undefined {
+  const url = new URL(downloadUrl, 'http://nebula.local');
+  if (url.pathname !== storageDownloadPath) return undefined;
+
+  const fileId = normalizeOptionalText(url.searchParams.get('fileId') ?? undefined);
+  if (!fileId) return undefined;
+
+  const filename = normalizeOptionalText(url.searchParams.get('filename') ?? undefined);
+  return filename ? { fileId, filename } : { fileId };
 }
 
 function normalizeSourceReq(req: ListStorageFilesBySourceReq): ListStorageFilesBySourceReq {
@@ -81,9 +107,15 @@ export function createStorageService(request: StorageRequestFn): StorageService 
     },
 
     getDownloadUrl(fileId, filename) {
-      const searchParams = new URLSearchParams({ fileId });
-      if (filename) searchParams.set('filename', filename);
-      return `/api/storage/download?${searchParams.toString()}`;
+      return buildStorageDownloadUrl(fileId, filename);
+    },
+
+    downloadFile(fileId, filename) {
+      return request<Blob>({
+        url: buildStorageDownloadUrl(fileId, filename),
+        method: 'get',
+        responseType: 'blob',
+      });
     },
   };
 }
